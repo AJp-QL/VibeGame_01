@@ -4,10 +4,10 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] ทุก library มีเวอร์ชันที่แนะนำ พร้อมลิงก์ไป docs หรือ release note ต้นฉบับ
-- [ ] ระบุวิธีตั้ง workspace, คำสั่ง build/test/dev และ TypeScript config ที่ใช้ร่วมกัน
-- [ ] ระบุวิธี render pixel art ให้คมใน Phaser และวิธีให้ React กับ Phaser คุยกันผ่าน engine เท่านั้น
-- [ ] ระบุทางเลือก deploy เว็บ static (GitHub Pages หรือ Cloudflare Pages) และวิธีใส่เวอร์ชันหรือ git tag ใน build
-- [ ] เสนอ PRNG แบบจำนวนเต็มที่มีสเปกชัด 1–2 ตัวเป็นตัวเลือกให้ ticket 02
+- [x] ทุก library มีเวอร์ชันที่แนะนำ พร้อมลิงก์ไป docs หรือ release note ต้นฉบับ
+- [x] ระบุวิธีตั้ง workspace, คำสั่ง build/test/dev และ TypeScript config ที่ใช้ร่วมกัน
+- [x] ระบุวิธี render pixel art ให้คมใน Phaser และวิธีให้ React กับ Phaser คุยกันผ่าน engine เท่านั้น
+- [x] ระบุทางเลือก deploy เว็บ static (GitHub Pages หรือ Cloudflare Pages) และวิธีใส่เวอร์ชันหรือ git tag ใน build
+- [x] เสนอ PRNG แบบจำนวนเต็มที่มีสเปกชัด 1–2 ตัวเป็นตัวเลือกให้ ticket 02
