@@ -1,0 +1,685 @@
+{
+ "results": {
+  "S1": {
+   "n": 2000,
+   "winA": 0.762,
+   "winB": 0.238,
+   "draw": 0.0,
+   "win_first": 0.515,
+   "first_A": 0.503,
+   "turnsA_mean": 4.828,
+   "turnsB_mean": 4.584,
+   "rounds_mean": 4.9605,
+   "rounds_median": 5.0,
+   "limit": 0.014,
+   "by_tamer": 0.7665,
+   "by_monsters": 0.2195,
+   "tamer_first_drop": 0.597,
+   "first_drop": {
+    "Tidewall": 560,
+    "Tamer": 1194,
+    "Quillfox": 168,
+    "Wispling": 51,
+    "Fangrel": 27
+   },
+   "hits_to_drop_obs": {
+    "Tidewall": [
+     3.6937799043062203,
+     627
+    ],
+    "Quillfox": [
+     2.6125461254612548,
+     542
+    ],
+    "Tamer": [
+     4.607305936073059,
+     1533
+    ],
+    "Wispling": [
+     2.6216216216216215,
+     74
+    ],
+    "Fangrel": [
+     2.048780487804878,
+     41
+    ]
+   },
+   "hit_by_attacker": {
+    "Wispling": 0.6698172652804033,
+    "Fangrel": 0.6892370572207085,
+    "Quillfox": 0.8934506353861192,
+    "Tidewall": 0.7359687652513421,
+    "Tamer": 0.6874051593323217
+   },
+   "hit_vs_defender": {
+    "Tidewall": 0.7702231520223152,
+    "Tamer": 0.7579034482758621,
+    "Fangrel": 0.7678571428571429,
+    "Quillfox": 0.5663968497046599,
+    "Wispling": 0.8192771084337349
+   },
+   "skill_per_game": {
+    "Defend": 4.3615,
+    "First Aid": 3.4375,
+    "Long Shot": 3.437,
+    "Command (adv)": 3.085,
+    "Element Bolt": 2.8745,
+    "Heavy Blow": 2.2295,
+    "Counter": 1.9175,
+    "Basic Attack": 1.89,
+    "Command (move)": 1.5885,
+    "Burst": 1.4805,
+    "Pack Howl": 0.787,
+    "Rend": 0.7115,
+    "Attune": 0.593,
+    "Shield Wall": 0.311,
+    "Hit and Run": 0.259,
+    "Taunt": 0.213,
+    "Distract": 0.1935,
+    "(Counter triggered)": 0.071,
+    "Cover": 0.06,
+    "Pin": 0.018,
+    "Camouflage": 0.014
+   },
+   "insp_per_game": {
+    "attack_vs_tamer": 1.2805,
+    "save": 0.2095
+   },
+   "terr_adv": 0.3670289249289416,
+   "terr_dis": 0.0022069887978598897,
+   "elem_adv": 0.19083765256646046,
+   "elem_dis": 0.18328038789500084,
+   "attacks_per_game": 14.9525,
+   "activations_mean": 24.8955,
+   "minutes_mean": 4.9791,
+   "minutes_median": 4.6,
+   "cover_redirect_per_game": 0.0415,
+   "bleed_dmg_per_game": 0.534
+  },
+  "S2-current": {
+   "n": 2000,
+   "winA": 0.9615,
+   "winB": 0.0385,
+   "draw": 0.0,
+   "win_first": 0.5245,
+   "first_A": 0.503,
+   "turnsA_mean": 2.9555,
+   "turnsB_mean": 2.52,
+   "rounds_mean": 3.008,
+   "rounds_median": 3.0,
+   "limit": 0.0005,
+   "by_tamer": 0.967,
+   "by_monsters": 0.0325,
+   "tamer_first_drop": 0.6855,
+   "first_drop": {
+    "Tamer": 1371,
+    "Quillfox": 627,
+    "Tidewall": 2
+   },
+   "hits_to_drop_obs": {
+    "Tamer": [
+     3.717683557394002,
+     1934
+    ],
+    "Quillfox": [
+     1.5796178343949046,
+     628
+    ],
+    "Tidewall": [
+     4.106060606060606,
+     66
+    ]
+   },
+   "hit_by_attacker": {
+    "Fangrel": 0.8035426731078905,
+    "Wispling": 0.7453619497999272,
+    "Quillfox": 0.9915599534342259,
+    "Tamer": 0.5961995249406176,
+    "Tidewall": 0.8169014084507042
+   },
+   "hit_vs_defender": {
+    "Tamer": 0.8222669869063299,
+    "Tidewall": 0.8400158793171894,
+    "Quillfox": 0.7072790969248735,
+    "Fangrel": 0.7916666666666666,
+    "Wispling": 0.4
+   },
+   "skill_per_game": {
+    "First Aid": 1.7575,
+    "Defend": 1.6515,
+    "Heavy Blow": 1.564,
+    "Long Shot": 1.528,
+    "Element Bolt": 1.2835,
+    "Burst": 1.2785,
+    "Command (move)": 1.2335,
+    "Basic Attack": 1.042,
+    "Command (adv)": 0.938,
+    "Shield Wall": 0.821,
+    "Counter": 0.631,
+    "Rend": 0.601,
+    "Hit and Run": 0.212,
+    "Cover": 0.209,
+    "Attune": 0.1715,
+    "Distract": 0.076,
+    "Taunt": 0.0715,
+    "(Counter triggered)": 0.003,
+    "Pin": 0.001
+   },
+   "insp_per_game": {
+    "attack_vs_tamer": 0.8395,
+    "save": 0.2655
+   },
+   "terr_adv": 0.28291223404255317,
+   "terr_dis": 0.0,
+   "elem_adv": 0.1882203014184397,
+   "elem_dis": 0.07413563829787234,
+   "attacks_per_game": 9.024,
+   "activations_mean": 13.166,
+   "minutes_mean": 2.6332000000000004,
+   "minutes_median": 2.6,
+   "cover_redirect_per_game": 0.076,
+   "bleed_dmg_per_game": 0.544
+  },
+  "S2-plus": {
+   "n": 2000,
+   "winA": 0.956,
+   "winB": 0.044,
+   "draw": 0.0,
+   "win_first": 0.532,
+   "first_A": 0.503,
+   "turnsA_mean": 2.6445,
+   "turnsB_mean": 2.2085,
+   "rounds_mean": 2.695,
+   "rounds_median": 3.0,
+   "limit": 0.0,
+   "by_tamer": 0.9995,
+   "by_monsters": 0.0005,
+   "tamer_first_drop": 0.99,
+   "first_drop": {
+    "Tamer": 1980,
+    "Quillfox": 20
+   },
+   "hits_to_drop_obs": {
+    "Tamer": [
+     3.701350675337669,
+     1999
+    ],
+    "Quillfox": [
+     2.1,
+     20
+    ],
+    "Tidewall": [
+     4,
+     1
+    ]
+   },
+   "hit_by_attacker": {
+    "Fangrel": 0.8007984031936127,
+    "Wispling": 0.7470020855057351,
+    "Quillfox": 0.9868238557558946,
+    "Tidewall": 0.7891373801916933,
+    "Tamer": 0.6976744186046512
+   },
+   "hit_vs_defender": {
+    "Tamer": 0.8356787183373025,
+    "Tidewall": 0.8738120380147836,
+    "Fangrel": 0.8051948051948052,
+    "Quillfox": 0.6457925636007827,
+    "Wispling": 0.6666666666666666
+   },
+   "skill_per_game": {
+    "Long Shot": 2.136,
+    "First Aid": 1.6785,
+    "Heavy Blow": 1.369,
+    "Defend": 1.24,
+    "Burst": 1.2135,
+    "Command (adv)": 1.1745,
+    "Element Bolt": 1.0495,
+    "Command (move)": 0.892,
+    "Counter": 0.751,
+    "Basic Attack": 0.7315,
+    "Shield Wall": 0.7,
+    "Rend": 0.548,
+    "Attune": 0.284,
+    "Cover": 0.165,
+    "Hit and Run": 0.105,
+    "Distract": 0.06,
+    "Taunt": 0.055,
+    "Pin": 0.0045
+   },
+   "insp_per_game": {
+    "attack_vs_tamer": 0.8725,
+    "save": 0.2295
+   },
+   "terr_adv": 0.3141557244874453,
+   "terr_dis": 0.0,
+   "elem_adv": 0.120997466021654,
+   "elem_dis": 0.08028104123473855,
+   "attacks_per_game": 8.682,
+   "activations_mean": 12.094,
+   "minutes_mean": 2.4187999999999996,
+   "minutes_median": 2.4,
+   "cover_redirect_per_game": 0.0415,
+   "bleed_dmg_per_game": 0.4405
+  },
+  "S1 rushA": {
+   "n": 2000,
+   "winA": 0.782,
+   "winB": 0.218,
+   "draw": 0.0,
+   "win_first": 0.486,
+   "first_A": 0.503,
+   "turnsA_mean": 4.378,
+   "turnsB_mean": 4.122,
+   "rounds_mean": 4.4965,
+   "rounds_median": 4.0,
+   "limit": 0.003,
+   "by_tamer": 0.953,
+   "by_monsters": 0.044,
+   "tamer_first_drop": 0.8515,
+   "first_drop": {
+    "Tamer": 1703,
+    "Quillfox": 47,
+    "Tidewall": 176,
+    "Wispling": 42,
+    "Fangrel": 30,
+    "null": 2
+   },
+   "hits_to_drop_obs": {
+    "Tamer": [
+     4.6190975865687305,
+     1906
+    ],
+    "Quillfox": [
+     2.2982456140350878,
+     114
+    ],
+    "Tidewall": [
+     3.304812834224599,
+     187
+    ],
+    "Wispling": [
+     2.4444444444444446,
+     54
+    ],
+    "Fangrel": [
+     2.027027027027027,
+     37
+    ]
+   },
+   "hit_by_attacker": {
+    "Wispling": 0.6297386495406297,
+    "Fangrel": 0.6867865296803652,
+    "Quillfox": 0.9041565490644193,
+    "Tidewall": 0.7161163134549039,
+    "Tamer": 0.6801346801346801
+   },
+   "hit_vs_defender": {
+    "Tamer": 0.7349236641221374,
+    "Tidewall": 0.7640412097042206,
+    "Quillfox": 0.5373188405797101,
+    "Wispling": 0.8417391304347827,
+    "Fangrel": 0.7235621521335807
+   },
+   "skill_per_game": {
+    "Long Shot": 3.3235,
+    "Defend": 3.1375,
+    "First Aid": 3.1235,
+    "Element Bolt": 2.7225,
+    "Command (adv)": 2.5365,
+    "Heavy Blow": 2.1255,
+    "Counter": 1.927,
+    "Basic Attack": 1.7635,
+    "Command (move)": 1.6065,
+    "Burst": 1.245,
+    "Rend": 0.864,
+    "Pack Howl": 0.772,
+    "Attune": 0.656,
+    "Shield Wall": 0.499,
+    "Taunt": 0.2385,
+    "Hit and Run": 0.171,
+    "Distract": 0.1415,
+    "(Counter triggered)": 0.053,
+    "Cover": 0.0205,
+    "Pin": 0.0165,
+    "Camouflage": 0.004
+   },
+   "insp_per_game": {
+    "attack_vs_tamer": 1.355,
+    "save": 0.234
+   },
+   "terr_adv": 0.3804187767122796,
+   "terr_dis": 0.0035197356606687497,
+   "elem_adv": 0.08371942678590669,
+   "elem_dis": 0.1444169090974392,
+   "attacks_per_game": 13.9215,
+   "activations_mean": 22.7805,
+   "minutes_mean": 4.5561,
+   "minutes_median": 4.4,
+   "cover_redirect_per_game": 0.011,
+   "bleed_dmg_per_game": 0.699
+  },
+  "S1 rushB": {
+   "n": 2000,
+   "winA": 0.818,
+   "winB": 0.182,
+   "draw": 0.0,
+   "win_first": 0.479,
+   "first_A": 0.503,
+   "turnsA_mean": 4.2335,
+   "turnsB_mean": 3.9295,
+   "rounds_mean": 4.325,
+   "rounds_median": 4.0,
+   "limit": 0.004,
+   "by_tamer": 0.7675,
+   "by_monsters": 0.2285,
+   "tamer_first_drop": 0.529,
+   "first_drop": {
+    "Tidewall": 246,
+    "Quillfox": 683,
+    "Tamer": 1058,
+    "Fangrel": 13
+   },
+   "hits_to_drop_obs": {
+    "Tidewall": [
+     3.9685185185185183,
+     540
+    ],
+    "Quillfox": [
+     2.1946386946386944,
+     858
+    ],
+    "Tamer": [
+     4.4390879478827365,
+     1535
+    ],
+    "Fangrel": [
+     1.6363636363636365,
+     33
+    ]
+   },
+   "hit_by_attacker": {
+    "Wispling": 0.6964498669846803,
+    "Fangrel": 0.7472895194753045,
+    "Quillfox": 0.9201853759011328,
+    "Tamer": 0.6900093370681606,
+    "Tidewall": 0.7592190889370932
+   },
+   "hit_vs_defender": {
+    "Tidewall": 0.7685019663925634,
+    "Tamer": 0.7920599339310995,
+    "Quillfox": 0.6473913043478261,
+    "Fangrel": 0.7647768395657418,
+    "Wispling": 0.6166666666666667
+   },
+   "skill_per_game": {
+    "First Aid": 2.977,
+    "Defend": 2.7365,
+    "Long Shot": 2.7035,
+    "Element Bolt": 2.6265,
+    "Basic Attack": 2.411,
+    "Heavy Blow": 2.298,
+    "Command (adv)": 2.03,
+    "Counter": 1.814,
+    "Burst": 1.2305,
+    "Rend": 0.773,
+    "Command (move)": 0.758,
+    "Hit and Run": 0.316,
+    "Distract": 0.2045,
+    "Shield Wall": 0.131,
+    "Taunt": 0.127,
+    "Attune": 0.1205,
+    "Pack Howl": 0.0695,
+    "(Counter triggered)": 0.0655,
+    "Cover": 0.033,
+    "Pin": 0.0145
+   },
+   "insp_per_game": {
+    "attack_vs_tamer": 1.224,
+    "save": 0.246
+   },
+   "terr_adv": 0.37834849295523454,
+   "terr_dis": 0.0010344212591403602,
+   "elem_adv": 0.21219903691813805,
+   "elem_dis": 0.14902800071339398,
+   "attacks_per_game": 14.0175,
+   "activations_mean": 20.8475,
+   "minutes_mean": 4.1695,
+   "minutes_median": 4.0,
+   "cover_redirect_per_game": 0.031,
+   "bleed_dmg_per_game": 0.634
+  },
+  "S2-plus rushA": {
+   "n": 2000,
+   "winA": 0.9635,
+   "winB": 0.0365,
+   "draw": 0.0,
+   "win_first": 0.5325,
+   "first_A": 0.503,
+   "turnsA_mean": 2.5865,
+   "turnsB_mean": 2.16,
+   "rounds_mean": 2.6445,
+   "rounds_median": 2.0,
+   "limit": 0.0,
+   "by_tamer": 1.0,
+   "by_monsters": 0.0,
+   "tamer_first_drop": 1.0,
+   "first_drop": {
+    "Tamer": 2000
+   },
+   "hits_to_drop_obs": {
+    "Tamer": [
+     3.655,
+     2000
+    ]
+   },
+   "hit_by_attacker": {
+    "Fangrel": 0.8198604842018876,
+    "Wispling": 0.7160423219902774,
+    "Quillfox": 0.9912735849056604,
+    "Tidewall": 0.7791044776119403,
+    "Tamer": 0.625
+   },
+   "hit_vs_defender": {
+    "Tamer": 0.8255662020905923,
+    "Tidewall": 0.8617834394904459,
+    "Fangrel": 0.7793103448275862,
+    "Quillfox": 0.6594871794871795,
+    "Wispling": 1.0
+   },
+   "skill_per_game": {
+    "Long Shot": 2.1095,
+    "First Aid": 1.663,
+    "Heavy Blow": 1.3195,
+    "Element Bolt": 1.2155,
+    "Defend": 1.166,
+    "Burst": 1.036,
+    "Command (adv)": 1.0095,
+    "Command (move)": 0.847,
+    "Rend": 0.7675,
+    "Counter": 0.7145,
+    "Shield Wall": 0.6535,
+    "Basic Attack": 0.5215,
+    "Attune": 0.2405,
+    "Cover": 0.19,
+    "Taunt": 0.0685,
+    "Hit and Run": 0.0515,
+    "Distract": 0.048,
+    "Pin": 0.004
+   },
+   "insp_per_game": {
+    "attack_vs_tamer": 0.8745,
+    "save": 0.3665
+   },
+   "terr_adv": 0.321309285237141,
+   "terr_dis": 6.0727515637335276e-05,
+   "elem_adv": 0.09862148539503249,
+   "elem_dis": 0.06461407663812474,
+   "attacks_per_game": 8.2335,
+   "activations_mean": 11.769,
+   "minutes_mean": 2.3538,
+   "minutes_median": 2.2,
+   "cover_redirect_per_game": 0.0555,
+   "bleed_dmg_per_game": 0.5275
+  },
+  "S2-plus rushB": {
+   "n": 2000,
+   "winA": 0.961,
+   "winB": 0.039,
+   "draw": 0.0,
+   "win_first": 0.514,
+   "first_A": 0.503,
+   "turnsA_mean": 2.2485,
+   "turnsB_mean": 1.798,
+   "rounds_mean": 2.279,
+   "rounds_median": 2.0,
+   "limit": 0.0,
+   "by_tamer": 1.0,
+   "by_monsters": 0.0,
+   "tamer_first_drop": 1.0,
+   "first_drop": {
+    "Tamer": 2000
+   },
+   "hits_to_drop_obs": {
+    "Tamer": [
+     3.636,
+     2000
+    ]
+   },
+   "hit_by_attacker": {
+    "Fangrel": 0.8798979828425689,
+    "Wispling": 0.8168029993183368,
+    "Quillfox": 0.9893527598767161,
+    "Tidewall": 0.8709386281588448,
+    "Tamer": 0.7307692307692307
+   },
+   "hit_vs_defender": {
+    "Tamer": 0.9030816278522701,
+    "Quillfox": 0.6339754816112084,
+    "Fangrel": 0.7619047619047619,
+    "Tidewall": 0.8873720136518771,
+    "Wispling": 0.4
+   },
+   "skill_per_game": {
+    "Long Shot": 1.7555,
+    "First Aid": 1.6835,
+    "Heavy Blow": 1.1625,
+    "Basic Attack": 1.138,
+    "Command (adv)": 1.1205,
+    "Element Bolt": 1.1065,
+    "Counter": 1.016,
+    "Burst": 0.7835,
+    "Command (move)": 0.549,
+    "Rend": 0.4005,
+    "Defend": 0.3915,
+    "Shield Wall": 0.1795,
+    "Cover": 0.122,
+    "Hit and Run": 0.0985,
+    "Distract": 0.0405,
+    "Attune": 0.0105,
+    "Taunt": 0.0025,
+    "Pin": 0.0025
+   },
+   "insp_per_game": {
+    "attack_vs_tamer": 0.7675,
+    "save": 0.1425
+   },
+   "terr_adv": 0.3638134909970438,
+   "terr_dis": 0.0003359312012899758,
+   "elem_adv": 0.06564095673206127,
+   "elem_dis": 0.07712980381617844,
+   "attacks_per_game": 7.442,
+   "activations_mean": 9.8935,
+   "minutes_mean": 1.9787,
+   "minutes_median": 2.0,
+   "cover_redirect_per_game": 0.02,
+   "bleed_dmg_per_game": 0.224
+  }
+ },
+ "analytic": {
+  "S1": {
+   "Tamer": {
+    "Fangrel": 4.1405,
+    "Wispling": 4.13635
+   },
+   "Fangrel": {
+    "Tidewall": 3.226,
+    "Quillfox": 3.25095
+   },
+   "Wispling": {
+    "Tidewall": 2.8928,
+    "Quillfox": 2.8989
+   },
+   "Tidewall": {
+    "Fangrel": 4.6058,
+    "Wispling": 4.57715
+   },
+   "Quillfox": {
+    "Fangrel": 2.8137,
+    "Wispling": 2.83605
+   }
+  },
+  "S2-current": {
+   "Tamer": {
+    "Fangrel": 3.4279,
+    "Wispling": 3.42635
+   },
+   "Fangrel": {
+    "Tidewall": 2.89425,
+    "Quillfox": 2.9274
+   },
+   "Wispling": {
+    "Tidewall": 2.6478,
+    "Quillfox": 2.68005
+   },
+   "Tidewall": {
+    "Fangrel": 4.01355,
+    "Wispling": 3.9995
+   },
+   "Quillfox": {
+    "Fangrel": 2.05355,
+    "Wispling": 2.06215
+   }
+  },
+  "S2-plus": {
+   "Tamer": {
+    "Fangrel": 3.42755,
+    "Wispling": 3.4307
+   },
+   "Fangrel": {
+    "Tidewall": 4.4169,
+    "Quillfox": 4.4707
+   },
+   "Wispling": {
+    "Tidewall": 4.1791,
+    "Quillfox": 4.21525
+   },
+   "Tidewall": {
+    "Fangrel": 5.1215,
+    "Wispling": 5.08395
+   },
+   "Quillfox": {
+    "Fangrel": 3.1497,
+    "Wispling": 3.16995
+   }
+  }
+ },
+ "ambiguities": [
+  "Nat 20 always hits (rule only says 'critical').",
+  "Crit doubles dice only; modifiers added once.",
+  "Inspiration reroll re-rolls the whole attack roll (both d20s under adv/dis).",
+  "Status applied during the owner's own turn skips that turn's end-of-turn tick (literal: 'duration 1 = expires at the end of that side's NEXT turn'). Applies to Rallied, Attune.",
+  "'Until own next turn' statuses (Guarded, Countering, Cover) end at the START of the owner's side turn, before Bleed ticks.",
+  "Guarded from two sources does not stack; the higher bonus is kept.",
+  "Taunted: if the unit can attack the taunter this activation (move+attack) it must; otherwise it must move to minimise distance to the taunter and may only take non-attack actions.",
+  "Counterattacks do not trigger counters; Counter triggers on hits and misses; Burst from distance 1 triggers it.",
+  "First Aid range 1 includes self.",
+  "Cover redirects all damage incl. Bleed while active (Cover always expires before Bleed ticks, so moot).",
+  "Blink may be used while Pinned (teleport, not movement). Otherwise it is a subset of normal flying movement.",
+  "Burst cannot hit Hidden units at distance >= 2; Taunt/Hex/Distract need no LOS (not attacks).",
+  "Light vs dark: both 'beat' each other, so element adv and dis cancel (no light/dark monsters in test).",
+  "Turn-limit HP% tie = draw.",
+  "Command is issued either at the start or end of the Tamer's activation (from its position then).",
+  "Mark is an attack roll (ends Hidden, can be countered, can use Command advantage)."
+ ]
+}

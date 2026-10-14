@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+dist/
+out/
+.cache/
+
+# Environment / secrets
+.env*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs
+logs/
+*.log
+!prototype/simulation/*.log
+!docs/playtest/rolls.log
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# art/source is NOT ignored: working files are tracked.
+# Large binaries in art/source may later move to Git LFS.
