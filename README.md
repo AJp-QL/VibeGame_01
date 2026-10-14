@@ -34,10 +34,11 @@
 หมายเหตุ: คอลัมน์เฟสเป็นการประมาณ ให้ยึด MVP roadmap (เฟส 0-5) ใน PRD เป็นหลัก
 
 ## การไหลของไฟล์
-prototype/rules -> data/ -> packages/engine
-- กติกาทดลองใน prototype/rules และวัดผลด้วย prototype/simulation
-- เมื่อนิ่งแล้วแปลงเป็นข้อมูลใน data/ (validate ด้วย schema ใน packages/shared)
-- packages/engine อ่าน data/ แล้ว ai, battle, web, server ใช้ engine ตัวเดียวกัน
+docs/rules -> data/ -> packages/engine
+- กติกาทั้งหมดอยู่ใน docs/rules/rules.md ฉบับเดียว (ADR 0001) การเปลี่ยนกติกาลง docs/decisions/decision-log.md
+- ตัวเลขที่ปรับบาลานซ์ได้แปลงเป็นข้อมูลใน data/ (validate ด้วย schema ใน packages/shared)
+- packages/engine implement กติกาตาม docs/rules และอ่าน data/ แล้ว ai, battle, web, server ใช้ engine ตัวเดียวกัน
+- prototype/rules (v1-v4) และ prototype/simulation เป็นประวัติแบบอ่านอย่างเดียว ใช้อ้างอิงและเทียบผลเท่านั้น
 
 ## สถานะปัจจุบัน
 - PRD เสร็จแล้ว

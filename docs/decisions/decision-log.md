@@ -46,3 +46,10 @@
 | 2026-10-14 | ระยะเดินของ Tidewall | ตัดข้อยกเว้นใน kit ใช้สูตรล้วน (เดิน 2 ช่อง) | คงข้อยกเว้นเดิน 3 ช่อง | grill-with-docs (แทนที่ข้อยกเว้นใน Prototype kit) |
 | 2026-10-14 | Replay กับการปรับตัวเลข | ฝัง hash ของ data/ + เวอร์ชัน engine, ไม่ตรงแจ้งเตือนไม่แปลง, เปิดของเก่าด้วย git tag | ฝังข้อมูลทั้งชุดใน Replay | grill-with-docs |
 | 2026-10-14 | simulator | TS headless ใน tools/ ใช้ engine + AI ตัวเดียวกับเกม, ผลต่างจาก sim v4 ไม่เกิน ±5 pp แล้วเลิกใช้ Python sim | ใช้ Python sim ควบคู่ | grill-with-docs, ADR 0001 |
+| 2026-10-15 | ต้องตัดสิน D-01 ถึง D-27 ใน rules ฉบับรวม | ใช้ค่าตาม rules §23 ทุกข้อ (ส่วนใหญ่ตาม sim.py) ยกเว้น D-05; D-03 เปิด ticket tuning หลัง simulator ผ่าน | ตีความใหม่ต่างจาก sim | rules §23 |
+| 2026-10-15 | Taunted กับการจบ Turn (D-05) | บังคับเฉพาะ Unit ที่ติด Taunted ฝั่งนั้นจบ Turn ได้ตามปกติ | ห้ามจบ Turn จนกว่าจะโจมตีผู้ taunt | rules §14.3, spec user story 31 |
+| 2026-10-15 | Guard +2 ของ Tidewall (D-06) | คงไว้เป็น Guard bonus ของ species ที่เห็นใน data | ตัดทิ้ง | rules §3, v2, kit |
+| 2026-10-15 | stat ที่ใช้เทียบกับ sim v4 (D-25) | การเทียบ ±5 pp ใช้ stat ของ sim v4 (POW 16, SPI 12); Scenario ในเกมใช้ค่า kit | เทียบด้วยค่า kit | rules §23 |
+| 2026-10-15 | PRNG | xoshiro128** 1.1, seed ด้วย SplitMix64 จาก Dice Seed 64 บิต, rejection sampling, AI ใช้ stream แยกด้วย jump() | PCG32, mulberry32, sfc32 | docs/research/phase-1-stack.md §6, rules §21.5 |
+| 2026-10-15 | stack phase 1 | Node 24 LTS, pnpm 12.11.2 (ยกเว้นกฎอายุ 2 สัปดาห์เพราะมี security fix), TypeScript 7 (ถอยเป็น 6 ถ้า ticket 03 พบปัญหา), Vite 8, Vitest 5, React 19.3, Phaser 4.2 | pnpm 12.8.2, Node 26, TypeScript 6 | docs/research/phase-1-stack.md |
+| 2026-10-15 | ที่ deploy เว็บ static | Cloudflare (repo เป็น private, GitHub Pages ฟรีต้องเป็น public) | GitHub Pages | docs/research/phase-1-stack.md §5 |
