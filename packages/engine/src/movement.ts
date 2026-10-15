@@ -12,12 +12,17 @@ export function distance(a: Tile, b: Tile): number {
   return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
 }
 
-/** Movement range for this Move (rules §6.1): base + Aquatic on water, but 0 while Pinned (rules §14.2). */
+/**
+ * Movement range for this Move (rules §6.1): base + Aquatic on water (Attune
+ * included) + Command's +1 (§16.2), but 0 while Pinned (rules §14.2).
+ */
 export function moveRangeNow(state: BattleState, unit: UnitState): number {
   if (isImmobile(state, unit)) return 0
   const aquaticBonus =
     unit.kind === 'monster' && unit.movement === 'aquatic' && terrainAt(state, unit.tile) === 'water' ? 1 : 0
-  return baseMoveRange(unit) + aquaticBonus
+  const command = state.command
+  const commandBonus = command !== null && command.option === 'move' && command.target === unit.id ? 1 : 0
+  return baseMoveRange(unit) + aquaticBonus + commandBonus
 }
 
 /** Neighbour order is fixed so that paths are deterministic. */

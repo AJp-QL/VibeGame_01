@@ -29,6 +29,12 @@ interface UnitBase {
    * (rules §17.3) in which it was last used. Cooldowns count from it (rules §13.2).
    */
   readonly skillsUsed: Readonly<Record<string, number>>
+  /**
+   * Cover (rules §15.4, D-21): the Tamer whose Cover is on this Monster. Until
+   * the start of that side's next Turn, damage the Monster would take comes off
+   * the Tamer's HP instead. Absent when not covered.
+   */
+  readonly coveredBy?: UnitId
 }
 
 /** A status id from data/statuses, e.g. "bleed", "rallied", "guarded". */
@@ -177,11 +183,56 @@ export interface TauntDuty {
   readonly mustAttack: boolean
 }
 
+/** The Command options of phase 1 (rules §16.2); passing a loyalty check is out of scope (§22). */
+export const COMMAND_OPTIONS = ['advantage', 'move'] as const
+export type CommandOption = (typeof COMMAND_OPTIONS)[number]
+
+/**
+ * The Command issued this Turn (rules §16): one per Turn, gone at the end of
+ * the Turn (§17.4 end of Turn step 4).
+ */
+export interface CommandEffect {
+  readonly side: Side
+  readonly tamer: UnitId
+  /** The allied Monster commanded: it had not started its activation yet. */
+  readonly target: UnitId
+  /** `advantage`: on its next attack roll this Turn; `move`: +1 movement range this Turn. */
+  readonly option: CommandOption
+  /** `advantage` only: spent by the target's first attack roll after it, even when Tamer protection drops it (D-04). */
+  readonly spent?: true
+}
+
+/**
+ * A tile whose terrain Attune changed (rules §4.3, §15.4, D-20). Counted like a
+ * status on the user's side: the end of each Turn of `side` counts it down
+ * (not the Turn it was made in, D-02); at 0 the tile goes back to `original`.
+ */
+export interface AttunedTile {
+  readonly tile: Tile
+  /** The terrain now: one of the 6 elements. */
+  readonly terrain: Element
+  /** The Board's own terrain, which comes back when it ends. */
+  readonly original: Terrain
+  /** The side whose Turn ends count it down: the side of the Tamer that attuned it last. */
+  readonly side: Side
+  readonly by: UnitId
+  readonly turnsLeft: number
+  /** Made during `side`'s own Turn: the end of that Turn does not count (D-02). */
+  readonly skipCountdown?: true
+}
+
 export interface BattleState {
   readonly scenarioId: string
   readonly boardId: string
-  /** `terrain[y][x]` (rules §2.1). */
+  /**
+   * `terrain[y][x]` now (rules §2.1): the Board's terrain with Attune's
+   * changes on top (§4.3). `attuned` holds what goes back when they end.
+   */
   readonly terrain: readonly (readonly Terrain[])[]
+  /** Tiles Attune changed that have not gone back yet (rules §15.4), reading order. */
+  readonly attuned: readonly AttunedTile[]
+  /** The Command issued this Turn, or `null` (rules §16). */
+  readonly command: CommandEffect | null
   readonly phase: BattlePhase
   /**
    * Units on the Board, in Unit order (rules §21.4): team A Tamer, Monster 1,

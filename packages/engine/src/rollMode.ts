@@ -2,14 +2,14 @@
  * Advantage and disadvantage on attack rolls (rules §4, §5, §9): every
  * source that applies to one attack roll, and how they combine.
  *
- * Sources so far: the element wheel (§4.2), the terrain under the attacker
- * (§4.3) and Tamer protection (§9). Marked, Off-balance (ticket 07 and
- * later) and Command (ticket 11) join `rollModeSources`; Defend gives no
- * advantage or disadvantage, it raises Guard and Ward (§12).
+ * Sources: the element wheel (§4.2), the terrain under the attacker (§4.3,
+ * Attune included), Off-balance on the attacker (§14.2), Command (§16) and
+ * Tamer protection (§9). Marked (ticket 10) joins `rollModeSources`; Defend
+ * gives no advantage or disadvantage, it raises Guard and Ward (§12).
  */
 import type { Element, ElementWheel, Terrain } from '@mt/shared'
 import { distance } from './movement.ts'
-import { terrainAt, type BattleState, type UnitId, type UnitState } from './state.ts'
+import { terrainAt, type BattleState, type StatusId, type UnitId, type UnitState } from './state.ts'
 
 /** How the d20 of an attack roll is rolled (rules §5.2). */
 export type RollMode = 'normal' | 'advantage' | 'disadvantage'
@@ -43,9 +43,30 @@ export type RollModeSource =
       readonly aquatic: boolean
     }
   /**
+   * The attacker has a status that gives its next attack roll disadvantage
+   * (Off-balance, rules §14.2). That attack roll spends it (§10.5 step 5).
+   */
+  | {
+      readonly kind: 'nextAttackRoll'
+      readonly effect: 'disadvantage'
+      readonly status: StatusId
+    }
+  /**
+   * Command's advantage on the commanded Monster's next attack roll this Turn
+   * (rules §16.3). Never on a counterattack. When a source with
+   * `cancellableByCommand: false` is present it is left out before cancelling
+   * (§5.3), but the attack roll still spends it (D-04).
+   */
+  | {
+      readonly kind: 'command'
+      readonly effect: 'advantage'
+      /** The Tamer that issued it. */
+      readonly tamer: UnitId
+    }
+  /**
    * The target is a Tamer with at least one allied Monster adjacent (rules
-   * §9), at any range. Advantage from Command cannot cancel it (§5.3), so
-   * ticket 11 must leave Command out before cancelling when this is present.
+   * §9), at any range. Advantage from Command cannot cancel it (§5.3):
+   * `combineRollMode` leaves Command out before cancelling when this is present.
    */
   | {
       readonly kind: 'tamerProtection'
@@ -98,30 +119,66 @@ function tamerProtectionSources(state: BattleState, target: UnitState): RollMode
   return [{ kind: 'tamerProtection', effect: 'disadvantage', protectors, cancellableByCommand: false }]
 }
 
+/** Off-balance and the like on the attacker (rules §14.2): disadvantage on its next attack roll. */
+function nextAttackRollSources(state: BattleState, attacker: UnitState): RollModeSource[] {
+  return attacker.statuses.flatMap((status) =>
+    state.statusTypes[status.id]?.effects.nextAttackRollMode === 'disadvantage'
+      ? [{ kind: 'nextAttackRoll', effect: 'disadvantage', status: status.id } as const]
+      : [],
+  )
+}
+
+/**
+ * Command's advantage (rules §16.2, §16.3): the commanded Monster's next attack
+ * roll this Turn, until spent; never a counterattack (§14.2).
+ */
+export function commandSources(state: BattleState, attacker: UnitState, isCounterattack: boolean): RollModeSource[] {
+  const command = state.command
+  if (isCounterattack || command === null || command.option !== 'advantage' || command.spent === true) return []
+  if (command.target !== attacker.id || command.side !== attacker.side) return []
+  return [{ kind: 'command', effect: 'advantage', tamer: command.tamer }]
+}
+
 /**
  * Every source of advantage or disadvantage for this attacker's attack roll
  * against this target, as things stand now (rules §5.2: worked out again for
- * every attack roll). Order: element, terrain, Tamer protection.
+ * every attack roll). Order as in rules §5.1: element, terrain, Off-balance,
+ * Command, Tamer protection. `isCounterattack`: Command never applies (§14.2).
  */
-export function rollModeSources(state: BattleState, attacker: UnitState, target: UnitState): RollModeSource[] {
+export function rollModeSources(
+  state: BattleState,
+  attacker: UnitState,
+  target: UnitState,
+  isCounterattack = false,
+): RollModeSource[] {
   return [
     ...elementSources(state, attacker, target),
     ...terrainSources(state, attacker),
+    ...nextAttackRollSources(state, attacker),
+    ...commandSources(state, attacker, isCounterattack),
     ...tamerProtectionSources(state, target),
   ]
 }
 
 /**
+ * Whether Command's advantage is left out of this roll (rules §5.3): a source
+ * Command cannot cancel (Tamer protection) is present.
+ */
+export function commandCancelledOut(sources: readonly RollModeSource[]): boolean {
+  return sources.some((s) => s.kind === 'tamerProtection' && !s.cancellableByCommand)
+}
+
+/**
  * Combine sources (rules §5.2): any number of advantages alone = advantage;
  * disadvantages alone = disadvantage; at least one of each = normal, however
- * many there are on each side.
- *
- * Ticket 11: before counting, drop advantage from Command when a source with
- * `cancellableByCommand: false` is present (rules §5.3).
+ * many there are on each side. Before counting, Command's advantage is left
+ * out when a source with `cancellableByCommand: false` is present (rules
+ * §5.3); other advantages (terrain, Marked) still cancel it.
  */
 export function combineRollMode(sources: readonly RollModeSource[]): RollMode {
-  const advantage = sources.some((s) => s.effect === 'advantage')
-  const disadvantage = sources.some((s) => s.effect === 'disadvantage')
+  const counted = commandCancelledOut(sources) ? sources.filter((s) => s.kind !== 'command') : sources
+  const advantage = counted.some((s) => s.effect === 'advantage')
+  const disadvantage = counted.some((s) => s.effect === 'disadvantage')
   if (advantage === disadvantage) return 'normal'
   return advantage ? 'advantage' : 'disadvantage'
 }

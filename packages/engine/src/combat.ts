@@ -10,18 +10,19 @@
  * `checkEnemyTarget`, roll mode sources (Marked, Off-balance, Command) in
  * `rollModeSources`, defence bonuses in `defenceOf`, damage adjustments
  * (Weakened, `damageDealtModifiers`) in `previewAttack`, Cover where `loseHp` is called in
- * `attackOnce`, and Counter after the attack in `attackOnce` (ticket 08:
+ * `attackOnce`, what an attack roll spends (Off-balance, Command, Hidden) in
+ * `spendAttackRoll`, and Counter after the attack in `attackOnce` (ticket 08:
  * `counterattackAfter`).
  */
 import type { Dice, Skill } from '@mt/shared'
-import type { Rejection } from './battle.ts'
+import type { BattleEvent, Rejection } from './battle.ts'
 import { loseHp } from './damage.ts'
 import { derive } from './derived.ts'
 import { rollDice } from './dice.ts'
 import { unitsOnLine } from './lineOfSight.ts'
 import { distance } from './movement.ts'
 import { emit, rollD20, type Resolution } from './resolution.ts'
-import { combineRollMode, rollModeSources, type RollMode, type RollModeSource } from './rollMode.ts'
+import { combineRollMode, commandSources, rollModeSources, type RollMode, type RollModeSource } from './rollMode.ts'
 import { findUnit, replaceUnit, type BattleState, type PendingDecision, type UnitId, type UnitState } from './state.ts'
 import {
   attackRollBonuses,
@@ -49,9 +50,10 @@ export const COUNTERATTACK = 'counterattack'
 /**
  * Why `unitId` cannot act now, or the Unit (rules §17.4): Battle going on, in
  * play, no decision pending, its side to act, its activation open (or able
- * to start) and the part of its activation it would use (Action or Move) unused.
+ * to start) and the part of its activation it would use (Action or Move)
+ * unused. `neither`: uses no Action or Move (Command, rules §16.1).
  */
-export function checkActor(state: BattleState, unitId: UnitId, uses: 'action' | 'move' = 'action'): UnitState | Rejection {
+export function checkActor(state: BattleState, unitId: UnitId, uses: 'action' | 'move' | 'neither' = 'action'): UnitState | Rejection {
   if (state.outcome !== null) return { code: 'battle-over', message: 'The Battle is over' }
   if (state.phase !== 'play') return { code: 'wrong-phase', message: 'Not during deployment' }
   if (state.pending !== null) return pendingRejection(state.pending)
@@ -270,7 +272,7 @@ function d20Chance(mode: RollMode, test: (face: number) => boolean): Chance {
 /** `isCounterattack`: this attack is itself a counterattack, which never triggers another (rules §14.2). */
 export function previewAttack(state: BattleState, plan: AttackPlan, isCounterattack = false): AttackPreview {
   const { attacker, target, skill } = plan
-  const sources = rollModeSources(state, attacker, target)
+  const sources = rollModeSources(state, attacker, target, isCounterattack)
   const mode = combineRollMode(sources)
   const bonuses = attackRollBonuses(state, attacker)
   const attackBonus = derive(attacker).attackBonus + bonuses.reduce((sum, b) => sum + b.bonus, 0)
@@ -410,7 +412,9 @@ export function* attackOnce(
     const damage = rollDice(state.dice, range.dice.count, range.dice.sides)
     const sum = damage.rolls.reduce((total, roll) => total + roll, 0)
     const amount = Math.max(MIN_DAMAGE, sum + range.modifier)
-    const loss = loseHp({ ...state, dice: damage.stream }, target.id, amount)
+    // Cover (rules §10.3 step 5, §15.4): the damage, worked out in full, comes off the covering Tamer instead.
+    const cover = coverOf(state, target.id)
+    const loss = loseHp({ ...state, dice: damage.stream }, cover ?? target.id, amount)
     yield* emit(
       {
         type: 'damageDealt',
@@ -422,6 +426,7 @@ export function* attackOnce(
         modifier: range.modifier,
         ...(range.statusModifiers !== undefined ? { statusModifiers: range.statusModifiers } : {}),
         amount,
+        ...(cover !== undefined ? { coveredBy: cover } : {}),
         hpBefore: loss.hpBefore,
         hpAfter: loss.hpAfter,
       },
@@ -434,9 +439,53 @@ export function* attackOnce(
   if (hit && state.outcome === null && findUnit(state, target.id) !== undefined) {
     state = yield* giveSkillStatuses(state, attacker, target.id, skill)
   }
-  // Rules §10.5 step 5 (Off-balance, Hidden, Command: tickets 10 and 11) goes here, before the counterattack.
+  // Rules §10.5 step 5: Off-balance and Command's advantage are spent, hit or miss (Hidden: ticket 10).
+  if (state.outcome === null) {
+    const spent = spendAttackRoll(state, attacker.id, isCounterattack)
+    yield* emit(...spent.events)
+    state = spent.state
+  }
   if (!isCounterattack) state = yield* counterattackAfter(state, attacker.id, target.id)
   return { state, hit }
+}
+
+/**
+ * The covering Tamer still on the Board when `unitId` is under Cover (rules
+ * §15.4, D-21), or `undefined`.
+ */
+export function coverOf(state: BattleState, unitId: UnitId): UnitId | undefined {
+  const tamer = findUnit(state, unitId)?.coveredBy
+  return tamer !== undefined && findUnit(state, tamer) !== undefined ? tamer : undefined
+}
+
+/**
+ * Rules §10.5 step 5, after an attack roll by `attackerId` (hit or miss, any
+ * attack roll, counterattacks included): statuses that last until the
+ * holder's next attack roll end (Off-balance), and Command's advantage on it
+ * is spent (even when Tamer protection left it out, D-04; never by a
+ * counterattack, §14.2). Ticket 10 adds Hidden here. Pure: also used to
+ * preview Burst's later targets (D-04).
+ */
+export function spendAttackRoll(
+  state: BattleState,
+  attackerId: UnitId,
+  isCounterattack: boolean,
+): { state: BattleState; events: BattleEvent[] } {
+  const attacker = findUnit(state, attackerId)
+  if (attacker === undefined) return { state, events: [] }
+  const events: BattleEvent[] = []
+  let next = state
+  const ending = attacker.statuses.filter((s) => statusType(state, s.id).duration.kind === 'untilAttackRoll')
+  if (ending.length > 0) {
+    next = replaceUnit(next, { ...attacker, statuses: attacker.statuses.filter((s) => !ending.includes(s)) })
+    for (const status of ending) events.push({ type: 'statusEnded', unit: attacker.id, status: status.id })
+  }
+  const command = next.command
+  if (command !== null && commandSources(state, attacker, isCounterattack).length > 0) {
+    next = { ...next, command: { ...command, spent: true } }
+    events.push({ type: 'commandSpent', unit: attacker.id, tamer: command.tamer })
+  }
+  return { state: next, events }
 }
 
 /**

@@ -460,7 +460,10 @@ describe('Taunt and Taunted (rules §14.3, D-05)', () => {
     state = act(state, skill('B.m1', 'taunt', 'A.tamer')).state
     state = act(state, move('B.m1', 'f6')).state
     state = endTurn(state).state
-    expect(actionsOf(state, 'A.tamer')).toEqual([move('A.tamer', 'd4'), defend('A.tamer')])
+    const actions = actionsOf(state, 'A.tamer')
+    expect(actions.filter((a) => a.type !== 'useSkill')).toEqual([move('A.tamer', 'd4'), defend('A.tamer')])
+    // Skills that are not attacks stay open (ticket 11): Attune on the 3 tiles next to a1, First Aid on itself.
+    expect(new Set(actions.flatMap((a) => (a.type === 'useSkill' ? [a.skill] : [])))).toEqual(new Set(['attune', 'first_aid']))
     expect(code(applyAction(state, move('A.tamer', 'b1')))).toBe('taunted')
     // Defend first (not an attack), then the Move must still close in.
     state = act(state, defend('A.tamer')).state
@@ -498,7 +501,7 @@ describe('Taunt and Taunted (rules §14.3, D-05)', () => {
   })
 
   it('every legal action of a Taunted Unit is accepted', () => {
-    const state = endTurn(taunted({ tiles: NEXT_TO_BOTH, dice: { rolls: [5, 15, 3, 4, 5, 6] } }).state).state
+    const state = endTurn(taunted({ tiles: NEXT_TO_BOTH, dice: { rolls: [5, 8, 3, 4, 5, 6] } }).state).state
     for (const action of legalActions(state)) expect(applyAction(state, action).ok, JSON.stringify(action)).toBe(true)
   })
 })

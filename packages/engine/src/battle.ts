@@ -8,6 +8,7 @@ import {
   tileName,
   type Board,
   type Dice,
+  type Element,
   type ElementWheel,
   type Scenario,
   type Side,
@@ -15,8 +16,10 @@ import {
   type Species,
   type Stat,
   type StatusType,
+  type Terrain,
   type Tile,
 } from '@mt/shared'
+import { applyCommand, legalCommands, type CommandAction } from './command.ts'
 import {
   BASIC_ATTACK,
   checkActor,
@@ -55,6 +58,7 @@ import {
   ROUND_LIMIT,
   type BattleEndCause,
   type BattleState,
+  type CommandOption,
   type InitiativeRoll,
   type InspirationAnswer,
   type RerollableRoll,
@@ -71,6 +75,7 @@ import {
   startOfTurnDamage,
   type StatusBonus,
 } from './statuses.ts'
+import { countDownAttunedTiles, endCovers, type HealPreview, type TerrainPreview } from './tamerSkills.ts'
 import { tauntCheck } from './taunt.ts'
 import { activate, activationBlocker, NO_ACTIVATIONS, startTurn } from './turns.ts'
 
@@ -95,6 +100,8 @@ export type Action =
   | { readonly type: 'useInspiration'; readonly side: Side }
   /** The deciding side keeps the d20 it just saw and its Inspiration (rules §18). */
   | { readonly type: 'declineInspiration'; readonly side: Side }
+  /** Command (rules §16): the Tamer orders an allied Monster that has not played yet; uses no Action or Move. */
+  | CommandAction
   /** End the current Turn; the other side starts its Turn (rules §17.4). */
   | { readonly type: 'endTurn' }
 
@@ -173,9 +180,56 @@ export type BattleEvent =
       readonly statusModifiers?: readonly StatusBonus[]
       /** Full damage, even past the HP left (rules §10.3, D-11). */
       readonly amount: number
+      /**
+       * The target is under Cover (rules §15.4): the damage came off this
+       * Tamer's HP instead, and `hpBefore`/`hpAfter` are the Tamer's.
+       */
+      readonly coveredBy?: UnitId
+      /** HP of the Unit that lost it: the target, or `coveredBy`. */
       readonly hpBefore: number
       readonly hpAfter: number
     }
+  /** First Aid (rules §15.4): `amount` = max(0, dice + modifier), HP capped at maximum. Never counts against damage totals (§19.2). */
+  | {
+      readonly type: 'healed'
+      readonly source: UnitId
+      readonly target: UnitId
+      readonly skill: string
+      readonly dice: Dice
+      readonly rolls: readonly number[]
+      /** The user's mod of the heal's stat (SPI). */
+      readonly modifier: number
+      /** The heal rolled, at least 0 (D-26); HP stops at its maximum, so it may gain less. */
+      readonly amount: number
+      readonly hpBefore: number
+      readonly hpAfter: number
+    }
+  /** Cover (rules §15.4): damage `unit` takes comes off `by` (its Tamer) until the start of their side's next Turn. */
+  | { readonly type: 'coverApplied'; readonly unit: UnitId; readonly by: UnitId; readonly refreshed?: true }
+  /** Cover on `unit` ended at the start of its side's Turn (rules §17.4 step 2). */
+  | { readonly type: 'coverEnded'; readonly unit: UnitId; readonly by: UnitId }
+  /**
+   * Attune (rules §4.3, §15.4): `tile` is `to` until the end of the `turnsLeft`-th
+   * next Turn of `unit`'s side (D-20), then goes back to the Board's terrain.
+   */
+  | {
+      readonly type: 'terrainChanged'
+      readonly unit: UnitId
+      readonly skill: string
+      readonly tile: Tile
+      readonly from: Terrain
+      readonly to: Element
+      readonly turnsLeft: number
+    }
+  /** An attuned tile went back to the Board's terrain `to` at the end of a Turn (rules §17.4 end of Turn step 2). */
+  | { readonly type: 'terrainReverted'; readonly tile: Tile; readonly from: Element; readonly to: Terrain }
+  /** Command (rules §16): the Tamer `unit` ordered `target`. Uses no Action or Move; no dice. */
+  | { readonly type: 'commandIssued'; readonly unit: UnitId; readonly target: UnitId; readonly option: CommandOption }
+  /**
+   * `unit`'s attack roll spent Command's advantage (rules §10.5 step 5, §16.3),
+   * even when Tamer protection left it out of the roll (D-04).
+   */
+  | { readonly type: 'commandSpent'; readonly unit: UnitId; readonly tamer: UnitId }
   /** A Unit used Defend as its Action (rules §12); `statusApplied` (Guarded) follows. */
   | { readonly type: 'defended'; readonly unit: UnitId }
   /** A Unit used a loadout skill (rules §15); what it does follows. `targets`: the Units it lands on, in order. */
@@ -329,6 +383,14 @@ export type RejectionCode =
    * Move to a tile closest to the taunter and use an Action that is not an attack.
    */
   | 'taunted'
+  /** Only a Tamer issues a Command (rules §16.1). */
+  | 'not-a-tamer'
+  /** The side already issued its Command this Turn (rules §16.1). */
+  | 'command-used'
+  /** No Command on a side's first Turn (rules §16.1). */
+  | 'command-first-turn'
+  /** Command's target already started its activation this Turn (rules §16.1). */
+  | 'already-activated'
 
 export interface Rejection {
   readonly code: RejectionCode
@@ -436,6 +498,8 @@ export function createBattle(setup: BattleSetup): BattleState {
     scenarioId: scenario.id,
     boardId: board.id,
     terrain: board.terrain,
+    attuned: [],
+    command: null,
     phase: 'deployment',
     units: [],
     fallen: [],
@@ -530,6 +594,7 @@ export function legalActions(state: BattleState): Action[] {
       actions.push({ type: 'defend', unit: unit.id })
     }
   }
+  actions.push(...legalCommands(state))
   actions.push({ type: 'endTurn' })
   const taunted = tauntCheck(state)
   return actions.filter((action) => taunted(action) === null)
@@ -583,6 +648,8 @@ export function applyAction(state: BattleState, action: Action): ApplyResult {
       return checkedForTaunt(state, action, applyDefend(state, action.unit))
     case 'retreat':
       return applyRetreat(state, action)
+    case 'command':
+      return applyCommand(state, action)
     case 'endTurn':
       return applyEndTurn(state)
     default:
@@ -689,19 +756,28 @@ function applyEndTurn(state: BattleState): ApplyResult {
   }
   const ending = state.sideToAct
   const next = otherSide(ending)
+  // Rules §17.4 end of Turn: 1. statuses count down, 2. attuned tiles of the side count down and may go
+  // back, 3. Hidden (ticket 10), 4. Command's unused effect is gone.
   const counted = countDownStatuses(state, ending)
+  const attuned = countDownAttunedTiles(counted.state, ending)
   const rested: BattleState = {
-    ...counted.state,
-    units: counted.state.units.map((u) => (u.hasMoved || u.hasActed ? { ...u, hasMoved: false, hasActed: false } : u)),
+    ...attuned.state,
+    command: null,
+    units: attuned.state.units.map((u) => (u.hasMoved || u.hasActed ? { ...u, hasMoved: false, hasActed: false } : u)),
   }
-  const ended: BattleEvent[] = [{ type: 'turnEnded', side: ending, turn: state.turnNumber[ending] }, ...counted.events]
+  const ended: BattleEvent[] = [
+    { type: 'turnEnded', side: ending, turn: state.turnNumber[ending] },
+    ...counted.events,
+    ...attuned.events,
+  ]
   if (ending !== state.firstSide && state.round >= ROUND_LIMIT) {
     const over = turnLimit(rested)
     return { ok: true, state: over.state, events: [...ended, over.event] }
   }
   const started = startTurn(rested, next, state.firstSide)
   const upkeep = endOwnTurnStartStatuses(started, next)
-  const ticks = startOfTurnDamage(upkeep.state, next)
+  const uncovered = endCovers(upkeep.state, next)
+  const ticks = startOfTurnDamage(uncovered.state, next)
   return {
     ok: true,
     state: ticks.state,
@@ -709,6 +785,7 @@ function applyEndTurn(state: BattleState): ApplyResult {
       ...ended,
       { type: 'turnStarted', side: next, turn: started.turnNumber[next], round: started.round },
       ...upkeep.events,
+      ...uncovered.events,
       ...ticks.events,
     ],
   }
@@ -738,9 +815,10 @@ function previewOfAttack(state: BattleState, unit: UnitId, target: UnitId): Prev
 /**
  * What an action would do, without doing it: an attack's odds (Basic Attack
  * and attack skills), one attack's odds per target in order (Burst), a save
- * skill's odds, or who a skill without rolls affects. Defend, Move and End Turn have nothing to roll.
+ * skill's odds, who a skill without rolls affects, First Aid's heal range or
+ * Attune's terrain change. Defend, Move, Command and End Turn have nothing to roll.
  */
-export type ActionPreview = AttackPreview | SavePreview | EffectPreview | AreaPreview
+export type ActionPreview = AttackPreview | SavePreview | EffectPreview | AreaPreview | HealPreview | TerrainPreview
 
 export type PreviewResult =
   /** `preview` is null for a legal action with nothing to roll (Move, End Turn). */
@@ -752,7 +830,9 @@ export type PreviewResult =
  * and damage ranges, computed without rolling. Never changes the state and
  * never draws from the dice stream (rules §21.1). An illegal action is
  * rejected with the same reason applyAction would give. Inspiration is left
- * out: the odds are those of the roll as made, before any reroll.
+ * out: the odds are those of the roll as made, before any reroll. Command
+ * has nothing to roll (`null`); its advantage shows in the commanded
+ * Monster's attack previews afterwards (`rollModeSources`).
  */
 export function previewAction(state: BattleState, action: Action): PreviewResult {
   if (action.type === 'basicAttack' || action.type === 'useSkill') {
