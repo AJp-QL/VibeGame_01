@@ -11,7 +11,6 @@ import {
   applyAction,
   COMMAND_RANGE,
   distance,
-  legalActions,
   moveRangeNow,
   previewAction,
   type Action,
@@ -653,9 +652,4 @@ function debugKey(action: Action): string {
     default:
       return action.type
   }
-}
-
-/** Every legal action now (for planning destinations). */
-export function legalNow(st: BattleState): Action[] {
-  return legalActions(st)
 }
