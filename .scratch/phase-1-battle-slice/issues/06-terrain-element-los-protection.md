@@ -4,12 +4,12 @@
 
 **Blocked by:** 05 — Basic Attack ครบวง
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] element wheel: ป่า > น้ำ > ภูเขา > ทะเลทราย > ป่า, แสงกับมืดได้เปรียบกันและกัน, Tamer ไม่มีธาตุ
-- [ ] terrain ตรงธาตุให้ advantage, ธาตุแพ้ทางให้ disadvantage, Flying ไม่ได้รับผลจาก terrain, Aquatic นับช่องน้ำเป็นธาตุตัวเองและเดินบนน้ำ +1
-- [ ] advantage หลายแหล่งไม่ซ้อน และ advantage กับ disadvantage หักล้างกัน
-- [ ] line of sight ใช้อัลกอริทึมตาม rules ฉบับรวม Unit บนเส้นบังการโจมตีระยะ 2 ขึ้นไป ยกเว้นผู้โจมตีเป็น Flying
-- [ ] ศัตรูที่โจมตี Tamer ได้ disadvantage เมื่อมี Monster ฝ่ายเดียวกันยืนติด Tamer
-- [ ] Action ป้องกัน: Guard และ Ward +2 (Guarded) จนถึง Turn ถัดไปของตัวเอง
-- [ ] test ผ่าน interface ของ engine ครอบคลุมทุกข้อข้างบน
+- [x] element wheel: ป่า > น้ำ > ภูเขา > ทะเลทราย > ป่า, แสงกับมืดได้เปรียบกันและกัน, Tamer ไม่มีธาตุ
+- [x] terrain ตรงธาตุให้ advantage, ธาตุแพ้ทางให้ disadvantage, Flying ไม่ได้รับผลจาก terrain, Aquatic นับช่องน้ำเป็นธาตุตัวเองและเดินบนน้ำ +1
+- [x] advantage หลายแหล่งไม่ซ้อน และ advantage กับ disadvantage หักล้างกัน
+- [x] line of sight ใช้อัลกอริทึมตาม rules ฉบับรวม Unit บนเส้นบังการโจมตีระยะ 2 ขึ้นไป ยกเว้นผู้โจมตีเป็น Flying
+- [x] ศัตรูที่โจมตี Tamer ได้ disadvantage เมื่อมี Monster ฝ่ายเดียวกันยืนติด Tamer
+- [x] Action ป้องกัน: Guard และ Ward +2 (Guarded) จนถึง Turn ถัดไปของตัวเอง
+- [x] test ผ่าน interface ของ engine ครอบคลุมทุกข้อข้างบน
