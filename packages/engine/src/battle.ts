@@ -72,6 +72,7 @@ import {
   startOfTurnDamage,
   type StatusBonus,
 } from './statuses.ts'
+import { tauntCheck } from './taunt.ts'
 import { activate, activationBlocker, NO_ACTIVATIONS, startTurn } from './turns.ts'
 
 // ----------------------------------------------------------------- actions
@@ -240,6 +241,30 @@ export type BattleEvent =
   /** The Unit chose to stay instead of Hit and Run's step. */
   | { readonly type: 'retreatDeclined'; readonly unit: UnitId }
   /**
+   * Shield Bash pushed `unit` away from `by` (rules §6.4): not a Move, so Pin
+   * does not stop it and the target's Move is not used. No dice.
+   */
+  | { readonly type: 'unitPushed'; readonly unit: UnitId; readonly by: UnitId; readonly from: Tile; readonly to: Tile }
+  /**
+   * The push of `unit` did not happen (rules §6.4): `tile`, where it would go,
+   * is off the Board (`blockedBy: 'offBoard'`) or holds the Unit `blockedBy`.
+   */
+  | {
+      readonly type: 'pushBlocked'
+      readonly unit: UnitId
+      readonly by: UnitId
+      readonly tile: Tile
+      readonly blockedBy: 'offBoard' | UnitId
+    }
+  /**
+   * `unit`, Countering, strikes back at `target`, which has just attacked it
+   * from distance 1 (rules §10.5 step 6, §14.2): an ordinary physical attack
+   * roll and `dice` + POW mod (Pincer Guard: 2d8). Its `attackRolled` and
+   * `damageDealt` follow (skill "counterattack"), then Countering ends.
+   * Uses no Action; a counterattack never triggers another one.
+   */
+  | { readonly type: 'counterattack'; readonly unit: UnitId; readonly target: UnitId; readonly dice: Dice }
+  /**
    * `side` saw its own d20 (`roll`, the event just before) and still has
    * Inspiration: the action pauses until it answers (rules §18, D-10).
    * `side` may differ from the side to act (a save, initiative).
@@ -309,6 +334,12 @@ export type RejectionCode =
   | 'invalid-target'
   /** A skill for allies aimed at an enemy. */
   | 'not-an-ally'
+  /**
+   * The Unit is Taunted (rules §14.3, D-05): while it can attack its taunter
+   * this activation its Action must be such an attack; otherwise it may only
+   * Move to a tile closest to the taunter and use an Action that is not an attack.
+   */
+  | 'taunted'
 
 export interface Rejection {
   readonly code: RejectionCode
@@ -473,8 +504,9 @@ export function decidingSide(state: BattleState): Side {
  * Every legal action for the side that must act now (`decidingSide`).
  * Deployment: placements, then Confirm once all of the side's Units are
  * placed. Play: Moves, then Basic Attacks, then skills, then Defends, End
- * Turn last. While a decision is pending, only its answers: Hit and Run's
- * steps, or use then decline Inspiration. None once the Battle is over.
+ * Turn last, leaving out what Taunted forbids (rules §14.3). While a
+ * decision is pending, only its answers: Hit and Run's steps, or use then
+ * decline Inspiration. None once the Battle is over.
  */
 export function legalActions(state: BattleState): Action[] {
   if (state.outcome !== null) return []
@@ -510,7 +542,8 @@ export function legalActions(state: BattleState): Action[] {
     }
   }
   actions.push({ type: 'endTurn' })
-  return actions
+  const taunted = tauntCheck(state)
+  return actions.filter((action) => taunted(action) === null)
 }
 
 /**
@@ -548,15 +581,17 @@ export function applyAction(state: BattleState, action: Action): ApplyResult {
   const resolution = resolutionOf(state, action)
   if (resolution !== null) {
     if (isRejection(resolution)) return { ok: false, state, rejection: resolution }
+    const taunted = tauntCheck(state)(action)
+    if (taunted !== null) return { ok: false, state, rejection: taunted }
     return runResolution(state, action, resolution)
   }
   switch (action.type) {
     case 'deploy':
       return applyDeploy(state, action.unit, action.to)
     case 'move':
-      return applyMove(state, action.unit, action.to)
+      return checkedForTaunt(state, action, applyMove(state, action.unit, action.to))
     case 'defend':
-      return applyDefend(state, action.unit)
+      return checkedForTaunt(state, action, applyDefend(state, action.unit))
     case 'retreat':
       return applyRetreat(state, action)
     case 'endTurn':
@@ -600,6 +635,13 @@ function answerInspiration(state: BattleState, side: Side, answer: InspirationAn
   const resolution = resolutionOf(resume.state, resume.action)
   if (resolution === null || isRejection(resolution)) throw new Error('A paused action can no longer be resolved')
   return runResolution(resume.state, resume.action, resolution, [...resume.answers, answer], resume.emitted)
+}
+
+/** An otherwise legal Move or Defend that Taunted forbids is rejected (rules §14.3). */
+function checkedForTaunt(state: BattleState, action: Action, result: ApplyResult): ApplyResult {
+  if (!result.ok) return result
+  const taunted = tauntCheck(state)(action)
+  return taunted === null ? result : { ok: false, state, rejection: taunted }
 }
 
 function reject(state: BattleState, code: RejectionCode, message: string): ApplyResult {
@@ -698,6 +740,12 @@ function turnLimit(state: BattleState): { state: BattleState; event: BattleEvent
 
 // ----------------------------------------------------------------- preview
 
+function previewOfAttack(state: BattleState, unit: UnitId, target: UnitId): PreviewResult {
+  const plan = checkAttack(state, unit, BASIC_ATTACK, target)
+  if (isRejection(plan)) return { ok: false, rejection: plan }
+  return { ok: true, preview: previewAttack(state, plan) }
+}
+
 /**
  * What an action would do, without doing it: an attack's odds (Basic Attack
  * and attack skills), one attack's odds per target in order (Burst), a save
@@ -718,12 +766,13 @@ export type PreviewResult =
  * out: the odds are those of the roll as made, before any reroll.
  */
 export function previewAction(state: BattleState, action: Action): PreviewResult {
-  if (action.type === 'basicAttack') {
-    const plan = checkAttack(state, action.unit, BASIC_ATTACK, action.target)
-    if (isRejection(plan)) return { ok: false, rejection: plan }
-    return { ok: true, preview: previewAttack(state, plan) }
+  if (action.type === 'basicAttack' || action.type === 'useSkill') {
+    const preview =
+      action.type === 'useSkill' ? previewSkill(state, action) : previewOfAttack(state, action.unit, action.target)
+    if (!preview.ok) return preview
+    const taunted = tauntCheck(state)(action)
+    return taunted === null ? preview : { ok: false, rejection: taunted }
   }
-  if (action.type === 'useSkill') return previewSkill(state, action)
   // Nothing to roll: legal exactly when applyAction accepts it (pure, so nothing changes).
   const result = applyAction(state, action)
   return result.ok ? { ok: true, preview: null } : { ok: false, rejection: result.rejection }

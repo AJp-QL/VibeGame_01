@@ -179,6 +179,8 @@ export const th = {
 
   boardMiss: 'พลาด',
   boardCritical: 'critical!',
+  boardCounter: 'โจมตีกลับ!',
+  boardPushBlocked: 'ผลักไม่ได้',
 
   logTitle: 'บันทึก',
   logEmpty: 'ยังไม่มีเหตุการณ์',
@@ -233,6 +235,11 @@ export const th = {
     `${status}: ${unit} เสีย ${amount} HP (${dice}: ${rolls.join(' + ')}) เหลือ HP ${hp}/${maxHp}`,
   logRetreated: (unit: string, from: string, to: string) => `${unit} ถอยจาก ${from} ไป ${to} (ไม่ใช่การเดิน ยังเดินต่อได้)`,
   logRetreatDeclined: (unit: string) => `${unit} เลือกไม่ถอย`,
+  logPushed: (unit: string, by: string, from: string, to: string) => `${by} ผลัก ${unit} จาก ${from} ไป ${to}`,
+  logPushBlocked: (unit: string, tile: string, blocker: string | null) =>
+    `${unit} ไม่ถูกผลัก: ${blocker === null ? 'ช่องที่จะถูกผลักไปอยู่นอก Board' : `${tile} มี ${blocker} ยืนอยู่`}`,
+  logCounterattack: (unit: string, target: string, dice: string) => `${unit} โจมตีกลับ (Counter) ใส่ ${target} ด้วย ${dice}`,
+  counterattackName: 'การโจมตีกลับ',
 
   // Skills and statuses (rules §13–§15): names come from data, everything else from here.
   skillsTitle: 'Skill',
@@ -285,6 +292,8 @@ export const th = {
   logRerolled: 'ทอยใหม่',
   confirmSkill: 'ยืนยันใช้ skill',
   previewIfHit: 'ถ้าโดน',
+  previewCounterattack: (unit: string, percent: string, min: number, max: number) =>
+    `${unit} ติด Countering จะโจมตีกลับ (โดนหรือพลาดก็ตาม): โอกาสโดน ${percent}, damage ${min}–${max}`,
   previewSave: (status: string, percent: string, stat: string, dc: number, modifier: number) =>
     `${status}: โอกาสเป้าไม่ผ่าน save ${percent} (d20 ${signed(modifier)} ${stat} ต้องได้อย่างน้อย ${dc})`,
   previewNoSave: (status: string) => `${status}: ติดทันที ไม่มี save`,
@@ -363,6 +372,7 @@ export const th = {
     'on-cooldown': 'skill นี้ยังติด cooldown',
     'invalid-target': 'skill นี้เลือกเป้าแบบนี้ไม่ได้',
     'not-an-ally': 'skill นี้ใช้ได้กับพวกเดียวกันเท่านั้น',
+    taunted: 'ติด Taunted: ถ้าโจมตีผู้ taunt ได้ Action ต้องเป็นการโจมตีผู้ taunt ถ้าไม่ได้ ต้องเดินเข้าใกล้ที่สุดและห้ามโจมตี',
   } satisfies Record<RejectionCode, string>,
 
   battleMenu: {

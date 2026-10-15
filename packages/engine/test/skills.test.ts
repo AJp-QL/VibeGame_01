@@ -65,9 +65,10 @@ describe('tiers and cooldowns (rules §13, D-16)', () => {
       { skill: 'pack_howl', tier: 'major', cooldown: 0, spent: false, implemented: true },
     ])
     expect(unitSkills(state, 'B.m1').map((s) => [s.skill, s.tier, s.implemented])).toEqual([
-      ['taunt', 'major', false],
-      ['shield_bash', 'minor', false],
-      ['counter', 'minor', false],
+      ['taunt', 'major', true],
+      ['shield_bash', 'minor', true],
+      ['counter', 'minor', true],
+      // Passive: always on, never used (rules §13.1).
       ['pincer_guard', 'passive', false],
     ])
   })
@@ -119,8 +120,10 @@ describe('tiers and cooldowns (rules §13, D-16)', () => {
   it('Passive skills and skills whose ticket has not landed are never offered', () => {
     const state = battle({ firstSide: 'B' })
     expect(rejection(useSkill(state, 'B.m1', 'pincer_guard'))).toBe('skill-not-available')
-    expect(rejection(useSkill(state, 'B.m1', 'taunt', 'A.m1'))).toBe('skill-not-available')
-    expect(skillUses(state, 'B.m1')).toEqual([])
+    // Quillfox's skills come with ticket 10.
+    expect(rejection(useSkill(state, 'B.m2', 'long_shot', 'A.m1'))).toBe('skill-not-available')
+    expect(skillUses(state, 'B.m1').map((a) => a.skill)).not.toContain('pincer_guard')
+    expect(skillUses(state, 'B.m2')).toEqual([])
   })
 })
 

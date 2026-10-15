@@ -32,7 +32,7 @@ export {
   type Rejection,
   type RejectionCode,
 } from './battle.ts'
-export { BASIC_ATTACK, DEFEND, type AttackPreview, type Chance, type DamageRange } from './combat.ts'
+export { BASIC_ATTACK, COUNTERATTACK, DEFEND, type AttackPreview, type Chance, type DamageRange } from './combat.ts'
 export {
   MAJOR_COOLDOWN_TURNS,
   type AreaPreview,
@@ -67,6 +67,7 @@ export type {
   RetreatDecision,
   StatusId,
   TamerUnit,
+  TauntDuty,
   UnitId,
   UnitState,
   UnitStatus,

@@ -51,6 +51,9 @@ const RESULT_AT_MS = 2 * LUNGE_MS
 const FALL_AT_MS = RESULT_AT_MS + 350
 const FALL_MS = 300
 const FLOAT_MS = 800
+/** A counterattack (and whatever follows it, e.g. Shield Bash's push) starts once the attack it answers has shown its result. */
+const FOLLOW_UP_MS = RESULT_AT_MS + 250
+const PUSH_MS = 160
 /** Blink: fade out, appear on the new tile, fade in. */
 const TELEPORT_FADE_MS = 140
 
@@ -275,6 +278,10 @@ export class BattleScene extends Phaser.Scene {
   /** Play the events of the latest action, in order. */
   private animateEvents(snapshot: BattleSnapshot): void {
     let critical = false
+    // Events after an attack's result (counterattack, push) wait for it to show.
+    let offset = 0
+    let attacked = false
+    const later = (ms: number, run: () => void) => this.time.delayedCall(offset + ms, run)
     for (const event of snapshot.events) {
       switch (event.type) {
         case 'unitMoved':
@@ -282,20 +289,33 @@ export class BattleScene extends Phaser.Scene {
           break
         case 'attackRolled':
           critical = event.critical
-          this.lunge(event.attacker, event.target)
-          if (!event.hit) {
-            this.time.delayedCall(RESULT_AT_MS, () => this.floatText(event.target, this.labels.miss, '#d8d8d8'))
-          }
+          attacked = true
+          later(0, () => this.lunge(event.attacker, event.target))
+          if (!event.hit) later(RESULT_AT_MS, () => this.floatText(event.target, this.labels.miss, '#d8d8d8'))
           break
         case 'damageDealt': {
           const text = critical ? `-${event.amount} ${this.labels.critical}` : `-${event.amount}`
           const colour = critical ? '#ffe14d' : '#ff6b5e'
-          this.time.delayedCall(RESULT_AT_MS, () => {
+          later(RESULT_AT_MS, () => {
             this.flash(event.target)
             this.floatText(event.target, text, colour)
           })
           break
         }
+        case 'counterattack':
+          // Countering strikes back once the attack has landed or missed.
+          offset += FOLLOW_UP_MS
+          later(0, () => this.floatText(event.unit, this.labels.counter, '#7fd4ff'))
+          break
+        case 'unitPushed':
+          // Shield Bash: the push comes after the hit (and any counterattack).
+          if (attacked) offset += FOLLOW_UP_MS
+          this.slide(event.unit, event.to, offset)
+          break
+        case 'pushBlocked':
+          if (attacked) offset += FOLLOW_UP_MS
+          later(0, () => this.floatText(event.unit, this.labels.pushBlocked, '#d8d8d8'))
+          break
         case 'unitTeleported':
           this.teleport(event.unit, event.to)
           break
@@ -309,7 +329,7 @@ export class BattleScene extends Phaser.Scene {
           this.floatText(event.unit, `-${event.amount}`, '#ff6b5e')
           break
         case 'unitDown':
-          this.fall(event.unit)
+          this.fall(event.unit, offset)
           break
         default:
           break
@@ -333,6 +353,27 @@ export class BattleScene extends Phaser.Scene {
       this.tweens.add({ targets: view.container, x: step.x, y: step.y, duration: STEP_MS, onComplete: () => next(index + 1) })
     }
     next(0)
+  }
+
+  /** Pushed (Shield Bash): one quick slide to the new tile after `delay` ms. Not a walk: no steps. */
+  private slide(unit: UnitId, to: Tile, delay: number): void {
+    const view = this.unitViews.get(unit)
+    if (view === undefined) return
+    this.animating.add(unit)
+    const target = tileCentre(to)
+    this.time.delayedCall(delay, () => {
+      this.tweens.add({
+        targets: view.container,
+        x: target.x,
+        y: target.y,
+        duration: PUSH_MS,
+        ease: 'Quad.easeOut',
+        onComplete: () => {
+          this.animating.delete(unit)
+          this.render()
+        },
+      })
+    })
   }
 
   /** Blink: the Unit fades out where it was and fades in on its new tile; nothing in between. */
@@ -389,11 +430,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** A Unit that went down blinks out and leaves the Board. */
-  private fall(unit: UnitId): void {
+  private fall(unit: UnitId, delay = 0): void {
     const view = this.unitViews.get(unit)
     if (view === undefined) return
     this.animating.add(unit)
-    this.time.delayedCall(FALL_AT_MS, () => {
+    this.time.delayedCall(delay + FALL_AT_MS, () => {
       this.tweens.add({
         targets: view.container,
         alpha: 0,

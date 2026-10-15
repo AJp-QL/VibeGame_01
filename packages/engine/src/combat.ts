@@ -10,7 +10,8 @@
  * `checkEnemyTarget`, roll mode sources (Marked, Off-balance, Command) in
  * `rollModeSources`, defence bonuses in `defenceOf`, damage adjustments
  * (Weakened, `damageDealtModifiers`) in `previewAttack`, Cover where `loseHp` is called in
- * `attackOnce`, and Counter after the attack in `attackOnce`.
+ * `attackOnce`, and Counter after the attack in `attackOnce` (ticket 08:
+ * `counterattackAfter`).
  */
 import type { Dice, Skill } from '@mt/shared'
 import type { Rejection } from './battle.ts'
@@ -21,13 +22,14 @@ import { unitsOnLine } from './lineOfSight.ts'
 import { distance } from './movement.ts'
 import { emit, rollD20, type Resolution } from './resolution.ts'
 import { combineRollMode, rollModeSources, type RollMode, type RollModeSource } from './rollMode.ts'
-import { findUnit, type BattleState, type PendingDecision, type UnitId, type UnitState } from './state.ts'
+import { findUnit, replaceUnit, type BattleState, type PendingDecision, type UnitId, type UnitState } from './state.ts'
 import {
   attackRollBonuses,
   damageDealtModifiers,
   defenceBonus,
   giveSkillStatuses,
   statusOdds,
+  statusType,
   type Chance,
   type StatusBonus,
   type StatusOdds,
@@ -36,6 +38,11 @@ import { activate, activationBlocker } from './turns.ts'
 
 export const BASIC_ATTACK = 'basic_attack'
 export const DEFEND = 'defend'
+/**
+ * The `skill` of a counterattack's `attackRolled` and `damageDealt` events
+ * (rules §14.2). Not a skill in data: Countering (or Pincer Guard) gives its dice.
+ */
+export const COUNTERATTACK = 'counterattack'
 
 // ------------------------------------------------------------- targeting
 
@@ -239,6 +246,11 @@ export interface AttackPreview {
   readonly criticalDamage: DamageRange | null
   /** Statuses a hit gives (if the target is still up), each with the chance the target fails its save. */
   readonly statuses: readonly StatusOdds[]
+  /**
+   * Present when the target is Countering at distance 1 (rules §14.2): the
+   * counterattack that follows, hit or miss, as long as both are still up.
+   */
+  readonly counterattack?: AttackPreview
 }
 
 /** Count the d20 outcomes (1 die, or every ordered pair of 2) whose kept face passes `test`. */
@@ -255,7 +267,8 @@ function d20Chance(mode: RollMode, test: (face: number) => boolean): Chance {
   return { numerator: count, denominator: 400 }
 }
 
-export function previewAttack(state: BattleState, plan: AttackPlan): AttackPreview {
+/** `isCounterattack`: this attack is itself a counterattack, which never triggers another (rules §14.2). */
+export function previewAttack(state: BattleState, plan: AttackPlan, isCounterattack = false): AttackPreview {
   const { attacker, target, skill } = plan
   const sources = rollModeSources(state, attacker, target)
   const mode = combineRollMode(sources)
@@ -284,7 +297,68 @@ export function previewAttack(state: BattleState, plan: AttackPlan): AttackPrevi
     damage: dice === null ? null : damageRange(dice, modifier, statusModifiers),
     criticalDamage: dice === null ? null : damageRange({ count: dice.count * 2, sides: dice.sides }, modifier, statusModifiers),
     statuses: statusOdds(attacker, target, skill),
+    ...counterattackPreview(state, attacker, target, atDistance, isCounterattack),
   }
+}
+
+function counterattackPreview(
+  state: BattleState,
+  attacker: UnitState,
+  target: UnitState,
+  atDistance: number,
+  isCounterattack: boolean,
+): { counterattack?: AttackPreview } {
+  const countering = isCounterattack || atDistance !== 1 ? null : counteringOf(state, target)
+  if (countering === null) return {}
+  return { counterattack: previewAttack(state, { attacker: target, target: attacker, skill: countering.skill }, true) }
+}
+
+// ----------------------------------------------------------- counterattack
+
+/**
+ * A Unit's Countering (rules §14.2), or `null`: the status, and the attack it
+ * makes: physical, distance 1, the status's dice (1d8) unless a Passive in
+ * the Unit's loadout replaces them (Pincer Guard: 2d8, rules §15.1).
+ */
+export function counteringOf(state: BattleState, unit: UnitState): { status: string; skill: Skill } | null {
+  for (const status of unit.statuses) {
+    const dice = statusType(state, status.id).effects.counterattack
+    if (dice === undefined) continue
+    const passive = unit.skills
+      .map((id) => state.skills[id])
+      .find((s) => s?.tier === 'passive' && s.effects?.counterattackDamage !== undefined)
+    const damage = passive?.effects?.counterattackDamage ?? dice
+    return {
+      status: status.id,
+      skill: { id: COUNTERATTACK, name: 'Counterattack', tier: 'minor', target: 'enemy', range: 1, attack: 'physical', damage },
+    }
+  }
+  return null
+}
+
+/**
+ * Rules §10.5 step 6: after `attackerId`'s attack roll against `targetId`
+ * (hit or miss, D-23), if the target is Countering, the attacker is an enemy
+ * at distance 1, both are still up and the Battle goes on, the target
+ * counterattacks at once (its side may reroll that attack roll with
+ * Inspiration, rules §18), then Countering ends. Uses no Action.
+ */
+function* counterattackAfter(before: BattleState, attackerId: UnitId, targetId: UnitId): Resolution<BattleState> {
+  if (before.outcome !== null) return before
+  const attacker = findUnit(before, attackerId)
+  const target = findUnit(before, targetId)
+  if (attacker === undefined || target === undefined || attacker.side === target.side) return before
+  if (distance(attacker.tile, target.tile) !== 1) return before
+  const countering = counteringOf(before, target)
+  if (countering === null) return before
+  const dice = countering.skill.damage ?? { count: 1, sides: 8 }
+  yield* emit({ type: 'counterattack', unit: target.id, target: attacker.id, dice })
+  const state = (yield* attackOnce(before, target.id, attacker.id, countering.skill, { counterattack: true })).state
+  // Countering lasts for one counterattack (rules §14.2); nothing more happens once the Battle is over.
+  const holder = findUnit(state, target.id)
+  if (state.outcome !== null || holder === undefined) return state
+  yield* emit({ type: 'statusEnded', unit: holder.id, status: countering.status })
+  return replaceUnit(state, { ...holder, statuses: holder.statuses.filter((s) => s.id !== countering.status) })
 }
 
 // ---------------------------------------------------------------- resolve
@@ -294,19 +368,22 @@ export function previewAttack(state: BattleState, plan: AttackPlan): AttackPrevi
  * attack roll (the attacker's side may reroll it with Inspiration) → on a
  * hit, damage dice (doubled on a critical) + modifier → HP goes down (a Unit
  * at 0 leaves the Board and the Battle may end) → if the target is still up,
- * the skill's statuses (with their saves). Does not book the Action or
- * activation: the caller does.
+ * the skill's statuses (with their saves) → the target's counterattack if
+ * it is Countering (step 6; never for a counterattack). Does not book the
+ * Action or activation: the caller does. `hit` is this attack's own result.
  */
 export function* attackOnce(
   before: BattleState,
   attackerId: UnitId,
   targetId: UnitId,
   skill: Skill,
+  options: { readonly counterattack?: boolean } = {},
 ): Resolution<{ state: BattleState; hit: boolean }> {
   const attacker = findUnit(before, attackerId)
   const target = findUnit(before, targetId)
   if (attacker === undefined || target === undefined) throw new Error(`Attack between Units not on the Board`)
-  const preview = previewAttack(before, { attacker, target, skill })
+  const isCounterattack = options.counterattack === true
+  const preview = previewAttack(before, { attacker, target, skill }, isCounterattack)
 
   const rolled = yield* rollD20(before, attacker.side, preview.rollMode === 'normal' ? 1 : 2, (rolls) => {
     const face = keptFace(preview.rollMode, rolls[0] ?? 0, rolls[1] ?? 0)
@@ -328,9 +405,7 @@ export function* attackOnce(
   })
   let state = rolled.state
   const { hit, critical } = rolled.roll
-  if (!hit) return { state, hit }
-
-  const range = critical ? preview.criticalDamage : preview.damage
+  const range = !hit ? null : critical ? preview.criticalDamage : preview.damage
   if (range !== null) {
     const damage = rollDice(state.dice, range.dice.count, range.dice.sides)
     const sum = damage.rolls.reduce((total, roll) => total + roll, 0)
@@ -356,9 +431,11 @@ export function* attackOnce(
   }
 
   // Rules §14.1: statuses stick only if the target is still up after the damage.
-  if (state.outcome === null && findUnit(state, target.id) !== undefined) {
+  if (hit && state.outcome === null && findUnit(state, target.id) !== undefined) {
     state = yield* giveSkillStatuses(state, attacker, target.id, skill)
   }
+  // Rules §10.5 step 5 (Off-balance, Hidden, Command: tickets 10 and 11) goes here, before the counterattack.
+  if (!isCounterattack) state = yield* counterattackAfter(state, attacker.id, target.id)
   return { state, hit }
 }
 

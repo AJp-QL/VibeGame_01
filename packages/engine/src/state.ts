@@ -170,6 +170,20 @@ export interface Activations {
   readonly started: readonly UnitId[]
   /** How many Units may start an activation this Turn: 2 on the first Turn of the side that starts, otherwise 3. */
   readonly limit: number
+  /** Set when the Unit playing now started its activation Taunted (rules §14.3): which case binds it. */
+  readonly tauntDuty?: TauntDuty
+}
+
+/**
+ * What Taunted asks of a Unit in its activation (rules §14.3, D-05), decided
+ * when the activation starts. `mustAttack`: it can attack `taunter` this
+ * activation, so its Action must be such an attack. Otherwise its Move must
+ * end closest to the taunter and its Action may not be an attack.
+ */
+export interface TauntDuty {
+  readonly unit: UnitId
+  readonly taunter: UnitId
+  readonly mustAttack: boolean
 }
 
 export interface BattleState {
