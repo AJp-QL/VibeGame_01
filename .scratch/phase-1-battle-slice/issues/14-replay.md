@@ -4,9 +4,9 @@
 
 **Blocked by:** 05 — Basic Attack ครบวง
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] รูปแบบไฟล์ Replay นิยามใน shared และตรวจ schema ตอน import
-- [ ] เล่นซ้ำจาก Replay ได้ state สุดท้ายเดียวกับเกมจริงทุกครั้ง
-- [ ] hash ของ data คำนวณจากเนื้อหาที่ normalize แล้ว ถ้า hash หรือเวอร์ชัน engine ไม่ตรง ระบบแจ้งว่าเวอร์ชันไม่ตรงและไม่พยายามแปลง
-- [ ] test ผ่าน interface ของ engine: หลาย Battle หลาย Dice Seed เล่นซ้ำได้ผลเดิม และ Replay ที่ hash ไม่ตรงถูกปฏิเสธ
+- [x] รูปแบบไฟล์ Replay นิยามใน shared และตรวจ schema ตอน import
+- [x] เล่นซ้ำจาก Replay ได้ state สุดท้ายเดียวกับเกมจริงทุกครั้ง
+- [x] hash ของ data คำนวณจากเนื้อหาที่ normalize แล้ว ถ้า hash หรือเวอร์ชัน engine ไม่ตรง ระบบแจ้งว่าเวอร์ชันไม่ตรงและไม่พยายามแปลง
+- [x] test ผ่าน interface ของ engine: หลาย Battle หลาย Dice Seed เล่นซ้ำได้ผลเดิม และ Replay ที่ hash ไม่ตรงถูกปฏิเสธ
