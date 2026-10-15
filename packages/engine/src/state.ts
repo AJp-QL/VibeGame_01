@@ -21,7 +21,24 @@ interface UnitBase {
   readonly hasMoved: boolean
   /** Already used its Action this Turn (rules §17.4). */
   readonly hasActed: boolean
+  /** Statuses on the Unit now (rules §14), at most one of each. Empty for a Unit that fell. */
+  readonly statuses: readonly UnitStatus[]
 }
+
+/**
+ * Guarded (rules §12, §14.2): Guard and Ward + `bonus` until the start of the
+ * next Turn of the Unit's side. Several sources do not add up; the higher
+ * bonus is kept (phase 1 has one source: Defend, +2).
+ */
+export interface GuardedStatus {
+  readonly id: 'guarded'
+  readonly bonus: number
+}
+
+/** A status on a Unit. Only Guarded so far; the status framework (ticket 07) adds the rest. */
+export type UnitStatus = GuardedStatus
+
+export type StatusId = UnitStatus['id']
 
 export interface TamerUnit extends UnitBase {
   readonly kind: 'tamer'
@@ -143,4 +160,9 @@ export function findAnyUnit(state: BattleState, id: UnitId): UnitState | undefin
 
 export function terrainAt(state: BattleState, tile: Tile): Terrain | undefined {
   return state.terrain[tile.y]?.[tile.x]
+}
+
+/** Guard and Ward bonus from Guarded, 0 when the Unit is not Guarded (rules §10.2). */
+export function guardedBonus(unit: UnitState): number {
+  return unit.statuses.reduce((bonus, status) => (status.id === 'guarded' ? Math.max(bonus, status.bonus) : bonus), 0)
 }

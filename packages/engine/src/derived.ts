@@ -24,7 +24,7 @@ const MIN_BASE_MOVE = 2
 /** The parts of a Unit its derived values come from (everything but where it is and what it did). */
 export type UnitData = UnitState extends infer U
   ? U extends UnitState
-    ? Omit<U, 'tile' | 'hp' | 'hasMoved' | 'hasActed'>
+    ? Omit<U, 'tile' | 'hp' | 'hasMoved' | 'hasActed' | 'statuses'>
     : never
   : never
 

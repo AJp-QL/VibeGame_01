@@ -4,18 +4,28 @@
  * shows. Integer arithmetic only; dice come from the Battle's stream in the
  * order of rules §21.4.
  *
- * Not yet here (ticket 06 and later): line of sight, Hidden, Taunted,
- * advantage/disadvantage sources (element, terrain, Marked, Off-balance,
- * Command, Tamer protection), Weakened, Cover, Counter, Inspiration. Each has
- * its slot below: targeting in `checkAttack`, roll mode in `attackRollMode`,
- * damage adjustments in `damageModifier`.
+ * Line of sight (§7), advantage/disadvantage from element, terrain and
+ * Tamer protection (§4, §5, §9, in rollMode.ts) and Guarded (§12) are here.
+ * Not yet (ticket 07 and later): Hidden, Taunted, Marked, Off-balance,
+ * Command, Weakened, Cover, Counter, Inspiration. Each has its slot below:
+ * targeting in `checkAttack`, roll mode sources in `rollModeSources`,
+ * defence bonuses in `defenceOf`, damage adjustments in `damageModifier`.
  */
 import type { Dice, Side, Skill } from '@mt/shared'
 import type { BattleEvent, Rejection } from './battle.ts'
 import { derive } from './derived.ts'
 import { rollDie, type DiceStream } from './dice.ts'
+import { unitsOnLine } from './lineOfSight.ts'
 import { distance } from './movement.ts'
-import { findUnit, type BattleOutcome, type BattleState, type UnitId, type UnitState } from './state.ts'
+import { combineRollMode, rollModeSources, type RollMode, type RollModeSource } from './rollMode.ts'
+import {
+  findUnit,
+  guardedBonus,
+  type BattleOutcome,
+  type BattleState,
+  type UnitId,
+  type UnitState,
+} from './state.ts'
 import { activate, activationBlocker } from './turns.ts'
 
 export const BASIC_ATTACK = 'basic_attack'
@@ -31,7 +41,8 @@ export interface AttackPlan {
 /**
  * Whether `attackerId` may use `skillId` on `targetId` now (rules §8.1, §17.4):
  * in play, the attacker's side to act, its activation open (or able to start)
- * and its Action unused, the target an enemy on the Board within range.
+ * and its Action unused, the target an enemy on the Board within range and,
+ * at distance 2 or more, in line of sight unless the attacker is Flying (§7).
  * Returns the plan, or why not. Shared by legalActions, applyAction and
  * previewAction so all three always agree.
  */
@@ -65,6 +76,18 @@ export function checkAttack(
   if (d < 1 || d > skill.range) {
     return { code: 'out-of-range', message: `${targetId} is ${d} tiles away; ${skill.name} reaches ${skill.range}` }
   }
+  // Rules §7.1: checked from distance 2; a Flying attacker sees over Units (a Flying target can still be blocked).
+  if (d >= 2 && !isFlying(attacker)) {
+    const blockers = unitsOnLine(state, attacker.tile, target.tile)
+    if (blockers.length > 0) {
+      const ids = blockers.map((u) => u.id)
+      return {
+        code: 'no-line-of-sight',
+        message: `${ids.join(', ')} ${ids.length === 1 ? 'stands' : 'stand'} between ${attackerId} and ${targetId}`,
+        blockedBy: ids,
+      }
+    }
+  }
   return { attacker, target, skill }
 }
 
@@ -72,18 +95,11 @@ export function isRejection(value: AttackPlan | Rejection): value is Rejection {
   return 'code' in value
 }
 
-// ------------------------------------------------------------ attack roll
-
-/** How the d20 of an attack roll is rolled (rules §5.2). */
-export type RollMode = 'normal' | 'advantage' | 'disadvantage'
-
-/**
- * Roll mode for this attacker against this target (rules §5). No source of
- * advantage or disadvantage exists yet (ticket 06), so every roll is normal.
- */
-export function attackRollMode(_state: BattleState, _attacker: UnitState, _target: UnitState): RollMode {
-  return 'normal'
+function isFlying(unit: UnitState): boolean {
+  return unit.kind === 'monster' && unit.movement === 'flying'
 }
+
+// ------------------------------------------------------------ attack roll
 
 /** The d20 face that counts: the only one, or the higher/lower of two (rules §5.2). */
 function keptFace(mode: RollMode, first: number, second: number): number {
@@ -99,10 +115,13 @@ function isHit(face: number, attackBonus: number, defence: number): boolean {
   return face + attackBonus >= defence
 }
 
-/** Guard for physical attacks, Ward for elemental ones (rules §10.1). */
-function defenceOf(skill: Skill, target: UnitState): { kind: 'guard' | 'ward'; value: number } {
+/** Guard for physical attacks, Ward for elemental ones (rules §10.1), plus Guarded (§10.2, §12). */
+function defenceOf(skill: Skill, target: UnitState): { kind: 'guard' | 'ward'; value: number; bonus: number } {
   const values = derive(target)
-  return skill.attack === 'physical' ? { kind: 'guard', value: values.guard } : { kind: 'ward', value: values.ward }
+  const bonus = guardedBonus(target)
+  return skill.attack === 'physical'
+    ? { kind: 'guard', value: values.guard + bonus, bonus }
+    : { kind: 'ward', value: values.ward + bonus, bonus }
 }
 
 // ----------------------------------------------------------------- damage
@@ -157,10 +176,16 @@ export interface AttackPreview {
   readonly attacker: UnitId
   readonly target: UnitId
   readonly distance: number
+  /** Net effect of `rollModeSources` after cancelling (rules §5.2). */
   readonly rollMode: RollMode
+  /** Every source of advantage or disadvantage on this roll, before cancelling (rules §5.1). */
+  readonly rollModeSources: readonly RollModeSource[]
   readonly attackBonus: number
+  /** Guard or Ward of the target, Guarded bonus included. */
   readonly defence: number
   readonly defenceKind: 'guard' | 'ward'
+  /** The part of `defence` that comes from Guarded (rules §12); 0 when not Guarded. */
+  readonly guardedBonus: number
   /** Chance the attack hits, criticals included: over 20 faces, or 400 pairs with advantage/disadvantage. */
   readonly hitChance: Chance
   /** Chance of a natural 20 on the d20 that counts. */
@@ -187,7 +212,8 @@ function d20Chance(mode: RollMode, test: (face: number) => boolean): Chance {
 
 export function previewAttack(state: BattleState, plan: AttackPlan): AttackPreview {
   const { attacker, target, skill } = plan
-  const mode = attackRollMode(state, attacker, target)
+  const sources = rollModeSources(state, attacker, target)
+  const mode = combineRollMode(sources)
   const attackBonus = derive(attacker).attackBonus
   const defence = defenceOf(skill, target)
   const atDistance = distance(attacker.tile, target.tile)
@@ -200,9 +226,11 @@ export function previewAttack(state: BattleState, plan: AttackPlan): AttackPrevi
     target: target.id,
     distance: atDistance,
     rollMode: mode,
+    rollModeSources: sources,
     attackBonus,
     defence: defence.value,
     defenceKind: defence.kind,
+    guardedBonus: defence.bonus,
     hitChance: d20Chance(mode, (face) => isHit(face, attackBonus, defence.value)),
     criticalChance: d20Chance(mode, (face) => face === 20),
     damage: damageRange(dice, modifier),
@@ -296,8 +324,8 @@ export function resolveAttack(before: BattleState, plan: AttackPlan): { state: B
     if (hpAfter > 0) {
       units = units.map((u) => (u.id === target.id ? { ...u, hp: hpAfter } : u))
     } else {
-      // Rules §10.4: HP set to 0, off the Board at once; then check §19.1.
-      const down = { ...target, hp: 0 }
+      // Rules §10.4: HP set to 0, off the Board at once, every status gone; then check §19.1.
+      const down = { ...target, hp: 0, statuses: [] }
       units = units.filter((u) => u.id !== target.id)
       fallen = [...fallen, down]
       events.push({ type: 'unitDown', unit: target.id, tile: target.tile })

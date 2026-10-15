@@ -9,10 +9,12 @@
  *   applyAction(state, action)    → { ok, state, events } | { ok: false, state, rejection }
  *   derivedValues(state, unitId)  → values computed from the Unit's data
  *   unitsVisibleTo(state, side)   → the Units a side may see (deployment is hidden)
+ *   lineOfSightTiles(from, to)    → the tiles a line of sight passes (rules §7.3), for tests, AI and UI
  */
 export {
   applyAction,
   createBattle,
+  DEFEND_GUARDED_BONUS,
   derivedValues,
   legalActions,
   previewAction,
@@ -25,13 +27,9 @@ export {
   type Rejection,
   type RejectionCode,
 } from './battle.ts'
-export {
-  BASIC_ATTACK,
-  type AttackPreview,
-  type Chance,
-  type DamageRange,
-  type RollMode,
-} from './combat.ts'
+export { BASIC_ATTACK, type AttackPreview, type Chance, type DamageRange } from './combat.ts'
+export { lineOfSightTiles } from './lineOfSight.ts'
+export { elementBeats, type RollEffect, type RollMode, type RollModeSource } from './rollMode.ts'
 export type { DerivedValues } from './derived.ts'
 export { isInStartZone, START_ZONE_ROWS, unitsVisibleTo } from './deployment.ts'
 export { distance } from './movement.ts'
@@ -42,12 +40,15 @@ export type {
   BattlePhase,
   BattleState,
   Deployment,
+  GuardedStatus,
   Initiative,
   InitiativeRoll,
   MonsterUnit,
+  StatusId,
   TamerUnit,
   UnitId,
   UnitState,
+  UnitStatus,
   UnitTemplate,
 } from './state.ts'
 

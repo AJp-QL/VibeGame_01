@@ -167,7 +167,8 @@ describe('BattleSession: a Turn (tap Unit → see reachable tiles → tap tile)'
     session.input({ type: 'tapTile', tile: tileFromName('e3') })
     session.input({ type: 'tapUnit', unit: 'A.tamer' })
     expect(session.getSnapshot()).toMatchObject({ selectedUnit: 'A.tamer', reachable: [] })
-    expect(session.getSnapshot().canAct).toEqual([])
+    // Only Wispling, the Unit playing now, can still do something: its Action (Defend).
+    expect(session.getSnapshot().canAct).toEqual(['A.m2'])
   })
 
   it('End Turn warns about Units that did nothing (idleUnits), then hands the Turn over', () => {
@@ -192,8 +193,9 @@ describe('BattleSession: a Turn (tap Unit → see reachable tiles → tap tile)'
 })
 
 describe('BattleSession: attack flow (select → Attack → target → preview → confirm or cancel)', () => {
-  // Fangrel (A.m1) on d4 next to Tidewall (B.m1) on d5.
-  const NEAR: Tiles = { A: ['a1', 'd4', 'g1'], B: ['a7', 'd5', 'g7'] }
+  // Fangrel (A.m1) on d6 next to Tamer B on d7, with no Monster of team B next to that Tamer:
+  // a normal roll, Fangrel +2 against Guard 11.
+  const NEAR: Tiles = { A: ['a1', 'd6', 'g1'], B: ['d7', 'a5', 'g7'] }
 
   it('Attack lights up exactly the targets the engine allows, and Moves go dark', () => {
     const session = playingSession(NEAR)
@@ -203,7 +205,7 @@ describe('BattleSession: attack flow (select → Attack → target → preview �
     const snapshot = session.getSnapshot()
     expect(snapshot.mode).toBe('attack')
     expect(snapshot.reachable).toEqual([])
-    expect(snapshot.targets.map(tileName)).toEqual(['d5'])
+    expect(snapshot.targets.map(tileName)).toEqual(['d7'])
   })
 
   it('a Unit with no enemy in range cannot enter attack mode', () => {
@@ -217,10 +219,10 @@ describe('BattleSession: attack flow (select → Attack → target → preview �
     const session = playingSession(NEAR)
     session.input({ type: 'tapUnit', unit: 'A.m1' })
     session.chooseAttack()
-    session.input({ type: 'tapUnit', unit: 'B.m1' })
+    session.input({ type: 'tapUnit', unit: 'B.tamer' })
     const snapshot = session.getSnapshot()
-    const expected = previewAction(snapshot.state, { type: 'basicAttack', unit: 'A.m1', target: 'B.m1' })
-    expect(snapshot.pendingTarget).toBe('B.m1')
+    const expected = previewAction(snapshot.state, { type: 'basicAttack', unit: 'A.m1', target: 'B.tamer' })
+    expect(snapshot.pendingTarget).toBe('B.tamer')
     expect(expected.ok && snapshot.preview).toEqual(expected.ok && expected.preview)
     expect(snapshot.preview).toMatchObject({ hitChance: { numerator: 12, denominator: 20 } })
 
@@ -236,12 +238,12 @@ describe('BattleSession: attack flow (select → Attack → target → preview �
     const session = playingSession(NEAR, { rolls: [9, 5] })
     session.input({ type: 'tapUnit', unit: 'A.m1' })
     session.chooseAttack()
-    session.input({ type: 'tapUnit', unit: 'B.m1' })
+    session.input({ type: 'tapUnit', unit: 'B.tamer' })
     session.confirmAttack()
     const snapshot = session.getSnapshot()
     expect(snapshot.revision).toBe(1)
     expect(snapshot.log.map((e) => e.type)).toEqual(['attackRolled', 'damageDealt'])
-    expect(snapshot.state.units.find((u) => u.id === 'B.m1')?.hp).toBe(24)
+    expect(snapshot.state.units.find((u) => u.id === 'B.tamer')?.hp).toBe(18)
     expect(snapshot).toMatchObject({ selectedUnit: null, pendingTarget: null, preview: null, mode: 'move' })
   })
 

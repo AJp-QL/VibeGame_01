@@ -6,7 +6,7 @@
  * English UI is out of scope).
  */
 import type { Element, Side } from '@mt/shared'
-import type { BattleEndCause, RejectionCode } from '@mt/engine'
+import type { BattleEndCause, RejectionCode, StatusId } from '@mt/engine'
 
 /** "+2", "0", "−1" (true minus sign). */
 const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0')
@@ -133,6 +133,11 @@ export const th = {
   logDamage: (target: string, amount: number, dice: string, rolls: readonly number[], modifier: number, hp: number, maxHp: number) =>
     `${target} เสีย ${amount} HP (${dice}: ${rolls.join(' + ')}${modifier === 0 ? '' : ` ${signed(modifier)}`}) เหลือ HP ${hp}/${maxHp}`,
   logUnitDown: (unit: string) => `${unit} ล้มและออกจาก Board`,
+  logDefended: (unit: string) => `${unit} ใช้ Defend`,
+  logGuarded: (unit: string, bonus: number) =>
+    `${unit} ติด Guarded: Guard และ Ward +${bonus} จนถึงเริ่ม Turn ถัดไปของทีมตัวเอง`,
+  logStatusEnded: (unit: string, status: string) => `${status} ของ ${unit} หมดแล้ว`,
+  status: { guarded: 'Guarded' } satisfies Record<StatusId, string>,
   logBattleEnded: (winner: Side, round: number) => `Battle จบใน Round ${round}: ทีม ${winner} ชนะ`,
 
   cause: {
@@ -160,6 +165,7 @@ export const th = {
     'unknown-skill': 'ไม่พบ skill นี้',
     'not-an-enemy': 'โจมตีได้เฉพาะ Unit ของอีกทีม',
     'out-of-range': 'เป้าอยู่นอกระยะ',
+    'no-line-of-sight': 'มี Unit ขวางแนวเล็ง (line of sight) จึงโจมตีเป้านี้ไม่ได้',
   } satisfies Record<RejectionCode, string>,
 
   dataErrorTitle: 'ข้อมูลเกมไม่ผ่านการตรวจ',

@@ -5,6 +5,7 @@ import {
   loadGameData,
   SIDES,
   tileFromName,
+  type Element,
   type Scenario,
   type ScenarioTeam,
   type Side,
@@ -44,21 +45,27 @@ export interface BattleOptions {
   readonly firstSide?: Side
   /** Stat changes by Unit id ("A.tamer", "B.m2", …), on top of the Scenario's. */
   readonly stats?: Readonly<Record<string, Partial<Stats>>>
+  /** Monster elements by Unit id ("A.m1", …), instead of the Scenario's. */
+  readonly elements?: Readonly<Record<string, Element>>
   /** Skill data changes by skill id, on top of data/skills (e.g. a longer range). */
   readonly skills?: Readonly<Record<string, Partial<Skill>>>
   readonly dice?: DiceSource
 }
 
-function withStats(team: ScenarioTeam, side: Side, stats: BattleOptions['stats']): ScenarioTeam {
+function withEdits(team: ScenarioTeam, side: Side, options: BattleOptions): ScenarioTeam {
   const edit = <T extends { readonly stats: Stats }>(record: T, id: string): T => ({
     ...record,
-    stats: { ...record.stats, ...stats?.[id] },
+    stats: { ...record.stats, ...options.stats?.[id] },
   })
   const [m1, m2] = team.monsters
+  const monster = (record: typeof m1, id: string) => {
+    const element = options.elements?.[id]
+    return edit(element === undefined ? record : { ...record, element }, id)
+  }
   return {
     ...team,
     tamer: edit(team.tamer, `${side}.tamer`),
-    monsters: [edit(m1, `${side}.m1`), edit(m2, `${side}.m2`)],
+    monsters: [monster(m1, `${side}.m1`), monster(m2, `${side}.m2`)],
   }
 }
 
@@ -67,7 +74,7 @@ function setup(dice: DiceSource | undefined, options: BattleOptions = {}) {
   return {
     scenario: {
       ...base,
-      teams: { A: withStats(base.teams.A, 'A', options.stats), B: withStats(base.teams.B, 'B', options.stats) },
+      teams: { A: withEdits(base.teams.A, 'A', options), B: withEdits(base.teams.B, 'B', options) },
     },
     board: gameData.boards.crossroads!,
     species: gameData.species,
@@ -92,6 +99,18 @@ export function scenario1Battle(options: BattleOptions = {}): BattleState {
     ...setup(options.dice, options),
     preset: { tiles: { A: tiles('A'), B: tiles('B') }, firstSide: options.firstSide ?? 'A' },
   })
+}
+
+/**
+ * Every Monster forest: the same element is neutral (rules §4.1), so element
+ * gives no advantage or disadvantage. For tests about something else; keep
+ * their Monsters off forest tiles (terrain match, rules §4.3).
+ */
+export const NEUTRAL_ELEMENTS: Readonly<Record<string, Element>> = {
+  'A.m1': 'forest',
+  'A.m2': 'forest',
+  'B.m1': 'forest',
+  'B.m2': 'forest',
 }
 
 /** A Scenario 1 Battle on Crossroads at the start of deployment. */

@@ -26,5 +26,9 @@ rules engine แบบ deterministic ที่ใช้ร่วมกันท�
   - Move (สูตรระยะเดิน, 8 ทิศ, Unit บัง, Flying, Aquatic)
 - `createBattle({ ..., preset })` ข้าม deployment และ initiative แล้ววาง Unit ที่ช่องใดก็ได้ ใช้ใน test, เครื่องมือ และ puzzle เท่านั้น
 - ค่าที่ได้จากสูตรครบ (HP, Guard, Ward, proficiency, attack bonus, damage mod) และ Basic Attack (ticket 05): attack roll, critical, ทอย 1 พลาด, damage ตามระยะ, Unit ล้มออกจาก Board, ชนะเมื่อ Tamer ล้มหรือ Monster หมด, preview เป็นเศษส่วนจริงโดยไม่ทอย
-- กติกาการโจมตีอยู่ใน `src/combat.ts` โดยมีช่องรอสำหรับ line of sight, Hidden, advantage/disadvantage (ticket 06) และ status (ticket 07)
+- กติกาการโจมตีอยู่ใน `src/combat.ts` โดยมีช่องรอสำหรับ Hidden, Taunted และ status อื่น (ticket 07 ขึ้นไป)
+- ticket 06:
+  - line of sight (rules §7, `src/lineOfSight.ts`): Bresenham จากผู้โจมตีไปเป้า (D-01) Unit บนเส้นบังการโจมตีระยะ 2 ขึ้นไป ยกเว้นผู้โจมตีเป็น Flying ถูกบังแล้วถูกปฏิเสธด้วย `no-line-of-sight` พร้อม `blockedBy` และ `lineOfSightTiles(from, to)` export ไว้ให้ test, AI และ UI
+  - advantage/disadvantage (rules §4, §5, §9, `src/rollMode.ts`): element wheel (แสงกับมืดหักล้างกันตาม D-08), terrain ใต้ผู้โจมตี (Tamer และ Flying ไม่ได้รับผล, Aquatic นับน้ำเป็นธาตุตัวเอง), การป้องกัน Tamer (`cancellableByCommand: false` ให้ ticket 11) preview มี `rollModeSources` ทุกแหล่งก่อนหักล้าง และ `rollMode` คือผลสุทธิ
+  - Defend (rules §12): action `defend` ใช้ Action ของ Unit ผ่านกฎ activation ได้ Guarded (`statuses`, Guard และ Ward +2) หลุดตอนเริ่ม Turn ถัดไปของฝั่งตัวเอง (event `defended`, `statusApplied`, `statusEnded`) ค่า +2 ยังอยู่ในโค้ด (`DEFEND_GUARDED_BONUS`) จนกว่า status จะย้ายไป data (ticket 07)
 - test อยู่ใน `test/` ผ่าน interface สาธารณะเท่านั้น และมี test ตรวจว่า engine import แค่ shared และไม่ใช้เวลาจริง, ตัวสุ่ม, network หรือ DOM

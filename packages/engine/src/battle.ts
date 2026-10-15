@@ -21,23 +21,25 @@ import {
   previewAttack,
   resolveAttack,
   type AttackPreview,
-  type RollMode,
 } from './combat.ts'
 import { applyConfirmDeployment, applyDeploy, deploymentActions, placeUnit } from './deployment.ts'
 import { diceStream, type DiceSource } from './dice.ts'
 import { derive, type DerivedValues } from './derived.ts'
 import { pathTo, reachableTiles } from './movement.ts'
+import type { RollMode } from './rollMode.ts'
 import {
   findAnyUnit,
   findUnit,
   type BattleEndCause,
   type BattleState,
   type InitiativeRoll,
+  type StatusId,
   type UnitId,
   type UnitState,
+  type UnitStatus,
   type UnitTemplate,
 } from './state.ts'
-import { activate, activationBlocker, NO_ACTIVATIONS, startTurn } from './turns.ts'
+import { activate, activationBlocker, endStartOfTurnStatuses, NO_ACTIVATIONS, startTurn } from './turns.ts'
 
 // ----------------------------------------------------------------- actions
 
@@ -50,6 +52,8 @@ export type Action =
   | { readonly type: 'move'; readonly unit: UnitId; readonly to: Tile }
   /** Basic Attack (rules §15.1): the Unit's Action, against one enemy in range. */
   | { readonly type: 'basicAttack'; readonly unit: UnitId; readonly target: UnitId }
+  /** Defend (rules §12): the Unit's Action; it becomes Guarded (Guard and Ward +2) until its side's next Turn. */
+  | { readonly type: 'defend'; readonly unit: UnitId }
   /** End the current Turn; the other side starts its Turn (rules §17.4). */
   | { readonly type: 'endTurn' }
 
@@ -117,6 +121,12 @@ export type BattleEvent =
       readonly hpBefore: number
       readonly hpAfter: number
     }
+  /** A Unit used Defend as its Action (rules §12); `statusApplied` (Guarded) follows. */
+  | { readonly type: 'defended'; readonly unit: UnitId }
+  /** A Unit gained a status, or had it reset (rules §14.1). */
+  | { readonly type: 'statusApplied'; readonly unit: UnitId; readonly status: UnitStatus }
+  /** A status left a Unit, e.g. Guarded at the start of its side's next Turn (rules §14.1, §17.4). */
+  | { readonly type: 'statusEnded'; readonly unit: UnitId; readonly status: StatusId }
   /** A Unit reached 0 HP and left the Board (rules §10.4). */
   | { readonly type: 'unitDown'; readonly unit: UnitId; readonly tile: Tile }
   /** The Battle is over (rules §19.1); nothing more can happen. */
@@ -147,11 +157,15 @@ export type RejectionCode =
   | 'unknown-skill'
   | 'not-an-enemy'
   | 'out-of-range'
+  /** Units stand on the line from the attacker to a target 2 or more tiles away (rules §7). */
+  | 'no-line-of-sight'
 
 export interface Rejection {
   readonly code: RejectionCode
   /** Developer-facing explanation (English); the UI shows its own text per code. */
   readonly message: string
+  /** With `no-line-of-sight`: the Units on the line, in the order the line meets them. */
+  readonly blockedBy?: readonly UnitId[]
 }
 
 export type ApplyResult =
@@ -208,6 +222,7 @@ export function createBattle(setup: BattleSetup): BattleState {
       hp: 0,
       hasMoved: false,
       hasActed: false,
+      statuses: [],
     })
     team.monsters.forEach((monster, index) => {
       const speciesData = species[monster.species]
@@ -227,6 +242,7 @@ export function createBattle(setup: BattleSetup): BattleState {
         hp: 0,
         hasMoved: false,
         hasActed: false,
+        statuses: [],
       })
     })
   }
@@ -280,7 +296,7 @@ function startFromPreset(
 /**
  * Every legal action for the side to act. Deployment: placements, then
  * Confirm once all of the side's Units are placed. Play: Moves, then Basic
- * Attacks, End Turn last. None once the Battle is over.
+ * Attacks, then Defends, End Turn last. None once the Battle is over.
  */
 export function legalActions(state: BattleState): Action[] {
   if (state.outcome !== null) return []
@@ -300,6 +316,9 @@ export function legalActions(state: BattleState): Action[] {
         actions.push({ type: 'basicAttack', unit: unit.id, target: target.id })
       }
     }
+  }
+  for (const unit of state.units) {
+    if (actionBlocker(state, unit.id) === null) actions.push({ type: 'defend', unit: unit.id })
   }
   actions.push({ type: 'endTurn' })
   return actions
@@ -330,6 +349,8 @@ export function applyAction(state: BattleState, action: Action): ApplyResult {
       return applyMove(state, action.unit, action.to)
     case 'basicAttack':
       return applyBasicAttack(state, action.unit, action.target)
+    case 'defend':
+      return applyDefend(state, action.unit)
     case 'endTurn':
       return applyEndTurn(state)
     default:
@@ -374,6 +395,53 @@ function applyBasicAttack(state: BattleState, unitId: UnitId, targetId: UnitId):
   return { ok: true, ...resolveAttack(state, plan) }
 }
 
+/**
+ * Why `unitId` cannot use its Action now, whatever the Action is, or `null`:
+ * in play, its side to act, its activation open or able to start, its
+ * Action unused (rules §17.4).
+ */
+function actionBlocker(state: BattleState, unitId: UnitId): Rejection | null {
+  if (state.phase !== 'play') return { code: 'wrong-phase', message: 'No Action during deployment' }
+  const unit = findUnit(state, unitId)
+  if (unit === undefined) return { code: 'unknown-unit', message: `No Unit "${unitId}" on the Board` }
+  if (unit.side !== state.sideToAct) {
+    return { code: 'not-your-turn', message: `${unitId} belongs to side ${unit.side}; side ${state.sideToAct} is to act` }
+  }
+  const blocker = activationBlocker(state, unit)
+  if (blocker !== null) return blocker
+  if (unit.hasActed) return { code: 'already-acted', message: `${unitId} already used its Action this Turn` }
+  return null
+}
+
+/** Defend gives Guarded +2 (rules §12). Kept in code until statuses move to data (ticket 07). */
+export const DEFEND_GUARDED_BONUS = 2
+
+/**
+ * Defend (rules §12): uses the Unit's Action and makes it Guarded, Guard and
+ * Ward +2, until the start of its side's next Turn. Guarded from several
+ * sources keeps the higher bonus.
+ */
+function applyDefend(state: BattleState, unitId: UnitId): ApplyResult {
+  const blocker = actionBlocker(state, unitId)
+  if (blocker !== null) return { ok: false, state, rejection: blocker }
+  const active = activate(state, unitId)
+  let status: UnitStatus = { id: 'guarded', bonus: DEFEND_GUARDED_BONUS }
+  const units = active.units.map((u) => {
+    if (u.id !== unitId) return u
+    const kept = u.statuses.find((s) => s.id === 'guarded')
+    if (kept !== undefined && kept.bonus > status.bonus) status = kept
+    return { ...u, hasActed: true, statuses: [...u.statuses.filter((s) => s.id !== 'guarded'), status] }
+  })
+  return {
+    ok: true,
+    state: { ...active, units },
+    events: [
+      { type: 'defended', unit: unitId },
+      { type: 'statusApplied', unit: unitId, status },
+    ],
+  }
+}
+
 function applyEndTurn(state: BattleState): ApplyResult {
   if (state.phase !== 'play' || state.firstSide === null) {
     return reject(state, 'wrong-phase', 'No Turn to end during deployment')
@@ -385,19 +453,21 @@ function applyEndTurn(state: BattleState): ApplyResult {
     units: state.units.map((u) => (u.hasMoved || u.hasActed ? { ...u, hasMoved: false, hasActed: false } : u)),
   }
   const started = startTurn(rested, next, state.firstSide)
+  const upkeep = endStartOfTurnStatuses(started, next)
   return {
     ok: true,
-    state: started,
+    state: upkeep.state,
     events: [
       { type: 'turnEnded', side: ending, turn: state.turnNumber[ending] },
       { type: 'turnStarted', side: next, turn: started.turnNumber[next], round: started.round },
+      ...upkeep.events,
     ],
   }
 }
 
 // ----------------------------------------------------------------- preview
 
-/** What an action would do, without doing it. Only attacks have odds to show so far. */
+/** What an action would do, without doing it. Only attacks have odds to show so far (Defend has nothing to roll). */
 export type ActionPreview = AttackPreview
 
 export type PreviewResult =

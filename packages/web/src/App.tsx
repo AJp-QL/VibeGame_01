@@ -449,6 +449,12 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
       ]
     case 'unitDown':
       return [th.logUnitDown(name(event.unit))]
+    case 'defended':
+      return [th.logDefended(name(event.unit))]
+    case 'statusApplied':
+      return [th.logGuarded(name(event.unit), event.status.bonus)]
+    case 'statusEnded':
+      return [th.logStatusEnded(name(event.unit), th.status[event.status])]
     case 'battleEnded':
       return [`${th.logBattleEnded(event.winner, event.round)} (${th.cause[event.cause](otherSide(event.winner))})`]
     case 'turnEnded':

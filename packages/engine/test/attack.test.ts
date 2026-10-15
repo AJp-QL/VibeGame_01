@@ -11,14 +11,16 @@ import {
   type BattleState,
   type UnitId,
 } from '../src/index.ts'
-import { scenario1Battle, scenario1Deployment, type BattleOptions } from './fixtures.ts'
+import { NEUTRAL_ELEMENTS, scenario1Battle, scenario1Deployment, type BattleOptions } from './fixtures.ts'
 
 // Board for most tests: Fangrel (A.m1, d4) next to Tidewall (B.m1, d5);
 // everyone else far apart. Every Scenario 1 Guard is 11 (rules §20.2).
+// Monsters share one element and stand on terrain without effect, so every
+// roll here is normal; element, terrain and Tamer protection have their own tests.
 const TILES = { A: ['a1', 'd4', 'g1'], B: ['a7', 'd5', 'g7'] } as const
 
 function battle(options: BattleOptions = {}): BattleState {
-  return scenario1Battle({ tiles: TILES, ...options })
+  return scenario1Battle({ tiles: TILES, elements: NEUTRAL_ELEMENTS, ...options })
 }
 
 function attack(state: BattleState, unit: UnitId, target: UnitId): ApplyResult {
