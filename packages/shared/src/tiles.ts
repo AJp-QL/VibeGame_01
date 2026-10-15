@@ -34,6 +34,14 @@ export function tileName(tile: Tile): string {
   return `${COLUMNS.charAt(tile.x)}${tile.y + 1}`
 }
 
+/**
+ * The tile a tile lands on when the Board turns 180 degrees, e.g. a1 ↔ g7,
+ * c2 ↔ e6, d4 ↔ d4. Every Board must look the same after the turn (rules §2.1).
+ */
+export function rotate180(tile: Tile): Tile {
+  return { x: BOARD_SIZE - 1 - tile.x, y: BOARD_SIZE - 1 - tile.y }
+}
+
 export function sameTile(a: Tile, b: Tile): boolean {
   return a.x === b.x && a.y === b.y
 }

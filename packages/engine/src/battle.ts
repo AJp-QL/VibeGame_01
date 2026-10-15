@@ -185,14 +185,13 @@ export interface BattleSetup {
  * Create a Battle from a Scenario, Board and dice source. The Battle starts
  * in deployment with team A placing (rules §17.1), unless `preset` puts the
  * Units on the Board directly. Throws on setup that does not fit together
- * (wrong Board, unknown species, bad Dice Seed, bad preset tiles): that is a
+ * (unknown species, bad Dice Seed, bad preset tiles): that is a
  * data or programming error, not an illegal action.
  */
 export function createBattle(setup: BattleSetup): BattleState {
+  // Any Board goes with any Scenario: `scenario.board` is only the default the
+  // menu offers (spec user story 8).
   const { scenario, board, species, skills } = setup
-  if (scenario.board !== board.id) {
-    throw new Error(`Scenario "${scenario.id}" uses Board "${scenario.board}", got "${board.id}"`)
-  }
   if (skills[BASIC_ATTACK] === undefined) throw new Error(`Skills must include "${BASIC_ATTACK}"`)
 
   const templates: UnitTemplate[] = []

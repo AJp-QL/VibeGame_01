@@ -7,6 +7,7 @@
  */
 import type { Element, Side } from '@mt/shared'
 import type { BattleEndCause, RejectionCode } from '@mt/engine'
+import type { Mode } from './battleChoice.ts'
 
 /** "+2", "0", "−1" (true minus sign). */
 const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0')
@@ -45,7 +46,36 @@ export const th = {
   attack: 'โจมตี',
   confirmAttack: 'ยืนยันโจมตี',
   cancel: 'ยกเลิก',
-  restart: 'เริ่ม Battle ใหม่',
+  playAgain: 'เล่นอีกครั้ง (ตั้งค่าเดิม)',
+  backToMenu: 'กลับไปเมนู',
+
+  menu: {
+    title: 'ตั้งค่า Battle',
+    scenarioTitle: 'Scenario',
+    boardTitle: 'Board',
+    modeTitle: 'โหมด',
+    sideTitle: 'ทีมที่เล่น',
+    /** Stage names by Scenario id; other Scenarios show their data name only. */
+    stage: { scenario_1: 'ต้นเกม', scenario_2: 'กลางเกม' } as Readonly<Record<string, string>>,
+    scenarioLabel: (name: string, stage: string | undefined) => (stage ? `${name}: ${stage}` : name),
+    scenarioDetails: (level: number, star: number) => `Tamer Level ${level} · Monster ${star} Star`,
+    /** One-line Board descriptions by Board id (data/boards/README.md has the full design notes). */
+    boardBlurb: {
+      crossroads: 'ทางแยกกลาง Board: แสงและมืดเรียงกลางแนวตั้ง ธาตุอื่นกระจายรอบสี่มุม',
+      shallows: 'แม่น้ำตื้นพาดทแยงจากมุมถึงมุมผ่านกลาง Board ป่าอยู่สองข้างแม่น้ำ',
+    } as Readonly<Record<string, string>>,
+    boardPreview: (name: string) => `แผนที่ Board ${name}`,
+    mode: {
+      hotseat: 'Hotseat',
+      ai: 'เล่นกับ AI',
+    } satisfies Record<Mode, string>,
+    modeNote: {
+      hotseat: 'สองคนผลัดกันเล่นบนเครื่องเดียว',
+      ai: 'เร็ว ๆ นี้ ยังเล่นไม่ได้',
+    } satisfies Record<Mode, string>,
+    side: (side: Side) => `ทีม ${side}`,
+    start: 'เริ่ม Battle',
+  },
 
   deploymentStatus: (side: Side) => `Deployment: ทีม ${side} วาง Unit`,
   deploymentHint: (side: Side) =>

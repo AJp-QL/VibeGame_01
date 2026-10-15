@@ -372,3 +372,110 @@ body {
   padding-left: 28px;
   max-height: 14em;
 }
+
+/* ---- ticket 13: menu ---- */
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.menu > h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.choices {
+  margin: 0;
+  border: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.choices legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 0;
+  font-weight: 600;
+}
+
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #2c2f38;
+  cursor: pointer;
+}
+
+.choice > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.choice input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+  cursor: inherit;
+}
+
+.choice:has(input:checked) {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.choice.unavailable {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.board-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.board-choice > div:first-child {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 7 × 16 px tiles + 1 px gaps: beside the options, or below them at 360 px. */
+.mini-board {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(7, 16px);
+  grid-auto-rows: 16px;
+  gap: 1px;
+  padding: 1px;
+  background: #1e1e1e;
+}
+
+.side-choices {
+  display: flex;
+  gap: 8px;
+}
+
+.side-choices .choice {
+  flex: 1;
+  border-left: 4px solid currentColor;
+}
+
+.side-choices .side-A {
+  border-left-color: var(--side-a);
+}
+
+.side-choices .side-B {
+  border-left-color: var(--side-b);
+}

@@ -7,7 +7,7 @@
  * the engine (rules §3.2) and never stored.
  */
 import * as z from 'zod'
-import { BOARD_SIZE } from './tiles.ts'
+import { BOARD_SIZE, rotate180, tileName } from './tiles.ts'
 
 // ---------------------------------------------------------------- elements
 
@@ -52,12 +52,38 @@ const boardRow = z
     `a row is ${BOARD_SIZE} symbols from . F W M D L K`,
   )
 
+/**
+ * A Board must look the same when turned 180 degrees (rules §2.1), so both
+ * sides get the same layout: tile (x, y) and (6 − x, 6 − y) share a terrain.
+ * Each mismatched pair is reported once, at the row of its first tile.
+ */
+function checkRotationalSymmetry(rows: readonly string[], ctx: z.RefinementCtx): void {
+  for (let y = 0; y < BOARD_SIZE; y++) {
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      const tile = { x, y }
+      const turned = rotate180(tile)
+      // Visit each pair once, from the tile that comes first in reading order.
+      if (turned.y * BOARD_SIZE + turned.x <= y * BOARD_SIZE + x) continue
+      const symbol = rows[y]?.charAt(x)
+      const turnedSymbol = rows[turned.y]?.charAt(turned.x)
+      if (symbol !== turnedSymbol) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['rows', y],
+          message: `not the same after a 180° turn: ${tileName(tile)} is "${symbol}" but ${tileName(turned)} is "${turnedSymbol}"`,
+        })
+      }
+    }
+  }
+}
+
 export const BoardSchema: z.ZodType<Board> = z
   .strictObject({
     id: ID,
     name: z.string().min(1),
     rows: z.array(boardRow).length(BOARD_SIZE),
   })
+  .superRefine(({ rows }, ctx) => checkRotationalSymmetry(rows, ctx))
   .transform(({ id, name, rows }) => ({
     id,
     name,
@@ -211,7 +237,10 @@ export interface ScenarioTeam {
 export interface Scenario {
   readonly id: string
   readonly name: string
-  /** Board id in data/boards. */
+  /**
+   * Default Board id in data/boards: the menu starts on it, but a Battle of
+   * this Scenario may be played on any Board (spec user story 8).
+   */
   readonly board: string
   readonly teams: Readonly<Record<Side, ScenarioTeam>>
 }
