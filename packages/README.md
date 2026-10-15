@@ -18,5 +18,5 @@
 - stack และเวอร์ชันตาม docs/research/phase-1-stack.md (TypeScript, pnpm, Vite, Vitest, React, Phaser)
 
 ## สถานะ
-- pnpm workspace + TypeScript project references (`tsc -b`) ตั้งแล้วใน ticket 03: มี shared, engine, battle, web; ai และ server ยังว่าง
+- pnpm workspace + TypeScript project references (`tsc -b`) ตั้งแล้วใน ticket 03: มี shared, engine, battle, web; ai มาใน ticket 15 (ขึ้นกับ engine + shared, web ใช้); server ยังว่าง
 - แต่ละ package export `src/index.ts` ตรงๆ (ไม่มี build step) และ import ข้ามได้แค่ package ที่ประกาศใน `dependencies` (import ผิดทิศ `tsc -b` และ Vitest จะ fail)
