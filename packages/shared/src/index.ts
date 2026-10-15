@@ -2,6 +2,7 @@ export {
   BOARD_SIZE,
   isOnBoard,
   isTileName,
+  rotate180,
   sameTile,
   tileFromName,
   tileName,

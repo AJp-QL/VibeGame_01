@@ -16,5 +16,5 @@
 - ลำดับ: docs/rules -> data/ -> packages/engine
 
 ## สถานะ
-- มี boards/crossroads, species 4 ตัว (เฉพาะข้อมูลที่การเดินใช้) และ scenarios/scenario_1
-- skills, statuses, traits, campaigns ยังว่าง
+- มี boards/crossroads และ boards/shallows, species 4 ตัว (เฉพาะข้อมูลที่การเดินใช้), scenarios/scenario_1 และ scenario_2, skills/basic_attack
+- statuses, traits, campaigns ยังว่าง

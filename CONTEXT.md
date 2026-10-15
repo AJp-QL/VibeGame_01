@@ -48,7 +48,7 @@ _Avoid_: เทิร์น (เมื่อหมายถึงทั้งส
 _Avoid_: Command action
 
 **Scenario**:
-Battle ที่กำหนดทีม stat และ Board ไว้ล่วงหน้า ใช้ใน playtest และ simulation เช่น Scenario 1 (ต้นเกม) และ Scenario 2 (กลางเกม)
+ชุดทีมที่กำหนดไว้ล่วงหน้า (Tamer และ Monster พร้อม stat และ skill) ใช้ใน playtest และ simulation เช่น Scenario 1 (ต้นเกม) และ Scenario 2 (กลางเกม) Board เลือกแยกจาก Scenario ได้ Scenario มีแค่ Board ตั้งต้น
 
 **Hotseat**:
 โหมดที่คน 2 คนเล่นคนละฝั่งบนเครื่องเดียว

@@ -42,6 +42,43 @@ describe('data/ passes its schemas', () => {
     expect(terrainAt('e7')).toBe('forest')
   })
 
+  it('has every Board in data/ look the same after a 180° turn (rules §2.1)', () => {
+    const boards = Object.values(data.boards)
+    expect(boards.map((b) => b.id).sort()).toEqual(['crossroads', 'shallows'])
+    for (const board of boards) {
+      const mismatched: string[] = []
+      for (let y = 0; y < 7; y++) {
+        for (let x = 0; x < 7; x++) {
+          if (board.terrain[y]?.[x] !== board.terrain[6 - y]?.[6 - x]) mismatched.push(`${board.id} ${x},${y}`)
+        }
+      }
+      expect(mismatched).toEqual([])
+    }
+  })
+
+  it('has the Shallows Board: all six elements, a water diagonal, and a layout unlike Crossroads', () => {
+    const shallows = data.boards.shallows!
+    const crossroads = data.boards.crossroads!
+    const used = new Set(shallows.terrain.flat())
+    expect([...used].sort()).toEqual(['dark', 'desert', 'forest', 'light', 'mountain', 'normal', 'water'])
+    // The river runs g1 → a7 through the centre.
+    for (const name of ['g1', 'f2', 'e3', 'd4', 'c5', 'b6', 'a7']) {
+      const { x, y } = tileFromName(name)
+      expect(shallows.terrain[y]?.[x], name).toBe('water')
+    }
+    // Clearly different from Crossroads: most element tiles sit somewhere else.
+    let sameElementTiles = 0
+    shallows.terrain.forEach((row, y) =>
+      row.forEach((terrain, x) => {
+        if (terrain !== 'normal' && crossroads.terrain[y]?.[x] === terrain) sameElementTiles++
+      }),
+    )
+    expect(sameElementTiles).toBeLessThanOrEqual(2)
+    // Both start zones (rows 1–2 and 6–7) hold the same terrain, turned.
+    const zone = (rows: number[]) => rows.flatMap((y) => shallows.terrain[y] ?? []).sort()
+    expect(zone([0, 1])).toEqual(zone([5, 6]))
+  })
+
   it('has the four phase 1 species with their movement type and build', () => {
     expect(data.species.fangrel).toMatchObject({ build: 'light', movement: 'ground' })
     expect(data.species.tidewall).toMatchObject({ build: 'heavy', movement: 'aquatic', guardBonus: 2 })
@@ -62,6 +99,31 @@ describe('data/ passes its schemas', () => {
       ['quillfox', 'water', 1],
     ])
   })
+
+  it('stores Scenario 2 (mid game) as Monster records: Tamer Level 6, Monsters 4 Star (rules §20.1)', () => {
+    const scenario = data.scenarios.scenario_2
+    expect(scenario?.board).toBe('crossroads')
+    for (const side of ['A', 'B'] as const) {
+      expect(scenario?.teams[side].tamer.level).toBe(6)
+      expect(scenario?.teams[side].tamer.skills).toEqual(scenario1Team(side).tamer.skills)
+    }
+    expect(scenario?.teams.A.monsters.map((m) => [m.species, m.element, m.star])).toEqual([
+      ['fangrel', 'forest', 4],
+      ['wispling', 'mountain', 4],
+    ])
+    expect(scenario?.teams.B.monsters.map((m) => [m.species, m.element, m.star])).toEqual([
+      ['tidewall', 'desert', 4],
+      ['quillfox', 'water', 4],
+    ])
+    // Same loadouts as Scenario 1; the Prototype kit values (D-25), not sim v4's.
+    expect(scenario?.teams.B.monsters.map((m) => m.skills)).toEqual(scenario1Team('B').monsters.map((m) => m.skills))
+    expect(scenario?.teams.B.monsters[0].stats.pow).toBe(20)
+    expect(scenario?.teams.B.monsters[1].stats.spi).toBe(16)
+  })
+
+  function scenario1Team(side: 'A' | 'B') {
+    return data.scenarios.scenario_1!.teams[side]
+  }
 })
 
 describe('malformed data is rejected', () => {
@@ -104,6 +166,19 @@ describe('malformed data is rejected', () => {
     board.rows[3] = '.F.X.F.'
     const paths = issuesOf(withFile('boards/crossroads.json', board)).map((i) => i.path)
     expect(paths).toEqual(expect.arrayContaining(['rows.0', 'rows.3']))
+  })
+
+  it('rejects a Board that does not look the same after a 180° turn (rules §2.1)', () => {
+    const board = structuredClone(realFiles['boards/shallows.json']) as { rows: string[] }
+    board.rows[1] = '.F..DWM' // g2 is now mountain, but its turned tile a6 is normal
+    const issues = issuesOf(withFile('boards/shallows.json', board))
+    expect(issues).toEqual([
+      {
+        file: 'boards/shallows.json',
+        path: 'rows.1',
+        message: 'not the same after a 180° turn: g2 is "M" but a6 is "."',
+      },
+    ])
   })
 
   it('rejects an id that does not match its file name', () => {

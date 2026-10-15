@@ -16,13 +16,21 @@ import { GLYPH_ALPHA, glyphColour, TERRAIN_COLOURS, TERRAIN_GLYPHS } from '@mt/b
 import { DataError, tileName, type GameData, type Side, type Terrain } from '@mt/shared'
 import { BattleView } from './BattleView.tsx'
 import { loadBundledGameData } from './gameData.ts'
+import { Menu } from './Menu.tsx'
+import { battleSetup, defaultChoice, type BattleChoice } from './battleChoice.ts'
 import { createBattleSession, idleUnits, type BattleSession, type SessionSnapshot } from './session.ts'
 import { th } from './strings.ts'
 
-const SCENARIO_ID = 'scenario_1'
-
-type Setup =
-  | { readonly kind: 'ready'; readonly data: GameData; readonly session: BattleSession; readonly diceSeed: string }
+/** What the app shows: the menu, a Battle, or why the game data failed to load. */
+type Screen =
+  | { readonly kind: 'menu'; readonly data: GameData; readonly choice: BattleChoice }
+  | {
+      readonly kind: 'battle'
+      readonly data: GameData
+      readonly choice: BattleChoice
+      readonly session: BattleSession
+      readonly diceSeed: string
+    }
   | { readonly kind: 'error'; readonly details: string }
 
 /** A fresh 64-bit Dice Seed as 16 hex digits. Randomness lives here, never in the engine. */
@@ -31,42 +39,59 @@ function randomDiceSeed(): string {
   return Array.from(words, (w) => w.toString(16).padStart(8, '0')).join('')
 }
 
-function startBattle(): Setup {
+function errorScreen(error: unknown): Screen {
+  const details = error instanceof DataError || error instanceof Error ? error.message : String(error)
+  return { kind: 'error', details }
+}
+
+function openMenu(): Screen {
   try {
     const data = loadBundledGameData()
-    const scenario = data.scenarios[SCENARIO_ID]
-    const board = scenario && data.boards[scenario.board]
-    if (scenario === undefined || board === undefined) throw new Error(`Missing ${SCENARIO_ID} or its Board`)
-    const diceSeed = randomDiceSeed()
-    const state = createBattle({ scenario, board, species: data.species, skills: data.skills, dice: { seed: diceSeed } })
-    return { kind: 'ready', data, session: createBattleSession(state), diceSeed }
+    return { kind: 'menu', data, choice: defaultChoice(data) }
   } catch (error) {
-    const details = error instanceof DataError || error instanceof Error ? error.message : String(error)
-    return { kind: 'error', details }
+    return errorScreen(error)
+  }
+}
+
+function startBattle(data: GameData, choice: BattleChoice): Screen {
+  try {
+    const diceSeed = randomDiceSeed()
+    const session = createBattleSession(createBattle(battleSetup(data, choice, diceSeed)))
+    return { kind: 'battle', data, choice, session, diceSeed }
+  } catch (error) {
+    return errorScreen(error)
   }
 }
 
 export function App() {
-  const [setup, setSetup] = useState(startBattle)
+  const [screen, setScreen] = useState(openMenu)
   return (
     <div className="app">
       <header className="app-header">
         <h1>{th.appTitle}</h1>
       </header>
-      {setup.kind === 'ready' ? (
+      {screen.kind === 'menu' ? (
+        <Menu
+          data={screen.data}
+          choice={screen.choice}
+          onChange={(choice) => setScreen({ ...screen, choice })}
+          onStart={() => setScreen(startBattle(screen.data, screen.choice))}
+        />
+      ) : screen.kind === 'battle' ? (
         <BattleScreen
           // A new session per Battle: React and Phaser both start over.
-          key={setup.diceSeed}
-          data={setup.data}
-          session={setup.session}
-          diceSeed={setup.diceSeed}
-          onRestart={() => setSetup(startBattle())}
+          key={screen.diceSeed}
+          data={screen.data}
+          session={screen.session}
+          diceSeed={screen.diceSeed}
+          onPlayAgain={() => setScreen(startBattle(screen.data, screen.choice))}
+          onMenu={() => setScreen({ kind: 'menu', data: screen.data, choice: screen.choice })}
         />
       ) : (
         <section className="panel error" role="alert">
           <h2>{th.dataErrorTitle}</h2>
           <p>{th.dataErrorBody}</p>
-          <pre>{setup.details}</pre>
+          <pre>{screen.details}</pre>
         </section>
       )}
       <footer className="app-footer">{th.version(__APP_VERSION__)}</footer>
@@ -112,10 +137,12 @@ interface BattleScreenProps {
   data: GameData
   session: BattleSession
   diceSeed: string
-  onRestart: () => void
+  /** A new Battle with the same menu choices (and a new Dice Seed). */
+  onPlayAgain: () => void
+  onMenu: () => void
 }
 
-function BattleScreen({ data, session, diceSeed, onRestart }: BattleScreenProps) {
+function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu }: BattleScreenProps) {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot)
   const { state } = snapshot
   const scenario = data.scenarios[state.scenarioId]
@@ -130,9 +157,14 @@ function BattleScreen({ data, session, diceSeed, onRestart }: BattleScreenProps)
           <h2>{th.resultTitle(state.outcome.winner)}</h2>
           <p>{th.cause[state.outcome.cause](otherSide(state.outcome.winner))}</p>
           <p>{th.resultRounds(state.round)}</p>
-          <button type="button" className="primary" onClick={onRestart}>
-            {th.restart}
-          </button>
+          <div className="buttons">
+            <button type="button" className="primary" onClick={onPlayAgain}>
+              {th.playAgain}
+            </button>
+            <button type="button" className="secondary" onClick={onMenu}>
+              {th.backToMenu}
+            </button>
+          </div>
         </section>
       )}
 
