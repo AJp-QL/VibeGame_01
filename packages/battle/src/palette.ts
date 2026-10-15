@@ -89,6 +89,10 @@ export const STATUS_ICONS: Readonly<Record<string, { readonly colour: number; re
   rallied: { colour: 0xffb84d, pattern: ['..#..', '.###.', '#####', '..#..', '..#..'] },
   // A cross.
   pin: { colour: 0xd0d0d0, pattern: ['#...#', '.#.#.', '..#..', '.#.#.', '#...#'] },
+  // A crosshair: every attacker gets advantage.
+  marked: { colour: 0xff6b5e, pattern: ['..#..', '.###.', '##.##', '.###.', '..#..'] },
+  // A leaf: hidden in the forest.
+  hidden: { colour: 0x6fdc7a, pattern: ['...##', '..###', '.###.', '###..', '#....'] },
 }
 export const STATUS_DOT: readonly string[] = ['.###.', '#####', '#####', '#####', '.###.']
 export const STATUS_POSITIVE = 0x7fc8ff

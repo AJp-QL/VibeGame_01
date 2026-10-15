@@ -130,7 +130,7 @@ const BURST: SkillHandler = {
         return rejection('out-of-range', `${id} is not in ${skill.name}'s area around ${tileName(centre)}`)
       }
       if (hiddenFrom(state, user, target)) {
-        return rejection('invalid-target', `${id} is Hidden and ${distance(user.tile, target.tile)} tiles from ${user.id}`)
+        return rejection('target-hidden', `${id} is Hidden and ${distance(user.tile, target.tile)} tiles from ${user.id}`)
       }
       targets.push(target)
     }

@@ -120,10 +120,10 @@ describe('tiers and cooldowns (rules §13, D-16)', () => {
   it('Passive skills and skills whose ticket has not landed are never offered', () => {
     const state = battle({ firstSide: 'B' })
     expect(rejection(useSkill(state, 'B.m1', 'pincer_guard'))).toBe('skill-not-available')
-    // Quillfox's skills come with ticket 10.
-    expect(rejection(useSkill(state, 'B.m2', 'long_shot', 'A.m1'))).toBe('skill-not-available')
+    // The Tamer's skills come with ticket 11.
+    expect(rejection(useSkill(state, 'B.tamer', 'distract', 'A.m1'))).toBe('skill-not-available')
     expect(skillUses(state, 'B.m1').map((a) => a.skill)).not.toContain('pincer_guard')
-    expect(skillUses(state, 'B.m2')).toEqual([])
+    expect(skillUses(state, 'B.tamer')).toEqual([])
   })
 })
 

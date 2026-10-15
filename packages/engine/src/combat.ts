@@ -4,10 +4,10 @@
  * exact odds a preview shows. Integer arithmetic only; dice come from the
  * Battle's stream in the order of rules §21.4.
  *
- * Line of sight (§7), advantage/disadvantage from element, terrain and Tamer
- * protection (§4, §5, §9, in rollMode.ts), Guarded (§12) and Rallied (§14)
- * are here. Each later rule has its slot: targeting (Hidden, Taunted) in
- * `checkEnemyTarget`, roll mode sources (Marked, Off-balance, Command) in
+ * Line of sight (§7), Hidden (§8.2), advantage/disadvantage from element,
+ * terrain, Marked and Tamer protection (§4, §5, §9, in rollMode.ts), Guarded
+ * (§12) and Rallied (§14) are here. Each later rule has its slot: targeting
+ * (Taunted) in `checkEnemyTarget`, roll mode sources (Off-balance, Command) in
  * `rollModeSources`, defence bonuses in `defenceOf`, damage adjustments
  * (Weakened, `damageDealtModifiers`) in `previewAttack`, Cover where `loseHp` is called in
  * `attackOnce`, and Counter after the attack in `attackOnce` (ticket 08:
@@ -27,9 +27,11 @@ import {
   attackRollBonuses,
   damageDealtModifiers,
   defenceBonus,
+  endAfterAttackRoll,
   giveSkillStatuses,
   statusOdds,
   statusType,
+  untargetableFrom,
   type Chance,
   type StatusBonus,
   type StatusOdds,
@@ -72,7 +74,7 @@ export function checkActor(state: BattleState, unitId: UnitId, uses: 'action' | 
 /**
  * Whether `user` may aim `skill` at the enemy `targetId` (rules §8.1): an
  * enemy on the Board at distance 1 to the skill's range and, at distance 2 or
- * more, in line of sight unless the user is Flying (§7).
+ * more, not Hidden (§8.2) and in line of sight unless the user is Flying (§7).
  */
 export function checkEnemyTarget(state: BattleState, user: UnitState, skill: Skill, targetId: UnitId): UnitState | Rejection {
   const target = findUnit(state, targetId)
@@ -83,6 +85,11 @@ export function checkEnemyTarget(state: BattleState, user: UnitState, skill: Ski
   const d = distance(user.tile, target.tile)
   if (d < 1 || d > skill.range) {
     return { code: 'out-of-range', message: `${targetId} is ${d} tiles away; ${skill.name} reaches ${skill.range}` }
+  }
+  // Rules §8.1 condition 2, §8.2: a Hidden enemy only from distance 1 (attacks, saves and Mark alike).
+  const hiddenFrom = untargetableFrom(state, target)
+  if (hiddenFrom !== null && d >= hiddenFrom) {
+    return { code: 'target-hidden', message: `${targetId} is Hidden and ${d} tiles from ${user.id}` }
   }
   // Rules §7.1: checked from distance 2; a Flying user sees over Units (a Flying target can still be blocked).
   if (d >= 2 && !isFlying(user)) {
@@ -368,7 +375,8 @@ function* counterattackAfter(before: BattleState, attackerId: UnitId, targetId: 
  * attack roll (the attacker's side may reroll it with Inspiration) → on a
  * hit, damage dice (doubled on a critical) + modifier → HP goes down (a Unit
  * at 0 leaves the Board and the Battle may end) → if the target is still up,
- * the skill's statuses (with their saves) → the target's counterattack if
+ * the skill's statuses (with their saves) → hit or miss, the attacker's
+ * Hidden ends (step 5, rules §8.2) → the target's counterattack if
  * it is Countering (step 6; never for a counterattack). Does not book the
  * Action or activation: the caller does. `hit` is this attack's own result.
  */
@@ -434,7 +442,13 @@ export function* attackOnce(
   if (hit && state.outcome === null && findUnit(state, target.id) !== undefined) {
     state = yield* giveSkillStatuses(state, attacker, target.id, skill)
   }
-  // Rules §10.5 step 5 (Off-balance, Hidden, Command: tickets 10 and 11) goes here, before the counterattack.
+  // Rules §10.5 step 5, hit or miss, counterattacks included: the attacker's statuses that last
+  // until it attacks end (Hidden, rules §8.2). Command (ticket 11) is spent here too.
+  if (state.outcome === null) {
+    const ended = endAfterAttackRoll(state, attacker.id)
+    yield* emit(...ended.events)
+    state = ended.state
+  }
   if (!isCounterattack) state = yield* counterattackAfter(state, attacker.id, target.id)
   return { state, hit }
 }

@@ -68,6 +68,7 @@ import {
 import {
   applyStatus,
   countDownStatuses,
+  endOffTerrain,
   endOwnTurnStartStatuses,
   startOfTurnDamage,
   type StatusBonus,
@@ -661,10 +662,12 @@ function applyMove(state: BattleState, unitId: UnitId, to: Tile): ApplyResult {
 
   const moved: UnitState = { ...unit, tile: to, hasMoved: true }
   const active = activate(state, unitId)
+  // Rules §8.2, D-18: Hidden is checked on the destination only, whatever the path crossed.
+  const revealed = endOffTerrain({ ...active, units: active.units.map((u) => (u.id === unitId ? moved : u)) })
   return {
     ok: true,
-    state: { ...active, units: active.units.map((u) => (u.id === unitId ? moved : u)) },
-    events: [{ type: 'unitMoved', unit: unitId, from: unit.tile, to, path }],
+    state: revealed.state,
+    events: [{ type: 'unitMoved', unit: unitId, from: unit.tile, to, path }, ...revealed.events],
   }
 }
 
@@ -701,11 +704,18 @@ function applyEndTurn(state: BattleState): ApplyResult {
   const ending = state.sideToAct
   const next = otherSide(ending)
   const counted = countDownStatuses(state, ending)
+  // End of Turn step 3 (rules §17.4, §8.2): every Unit's Hidden is checked. Ticket 11 puts the
+  // Attune countdown (step 2) between the two.
+  const revealed = endOffTerrain(counted.state)
   const rested: BattleState = {
-    ...counted.state,
-    units: counted.state.units.map((u) => (u.hasMoved || u.hasActed ? { ...u, hasMoved: false, hasActed: false } : u)),
+    ...revealed.state,
+    units: revealed.state.units.map((u) => (u.hasMoved || u.hasActed ? { ...u, hasMoved: false, hasActed: false } : u)),
   }
-  const ended: BattleEvent[] = [{ type: 'turnEnded', side: ending, turn: state.turnNumber[ending] }, ...counted.events]
+  const ended: BattleEvent[] = [
+    { type: 'turnEnded', side: ending, turn: state.turnNumber[ending] },
+    ...counted.events,
+    ...revealed.events,
+  ]
   if (ending !== state.firstSide && state.round >= ROUND_LIMIT) {
     const over = turnLimit(rested)
     return { ok: true, state: over.state, events: [...ended, over.event] }

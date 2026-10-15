@@ -38,9 +38,10 @@ export const th = {
   hintNothingLeft: 'Unit นี้เดินและใช้ Action ไปแล้วใน Turn นี้',
   hintChooseTarget: 'แตะศัตรูที่ไฮไลต์สีแดงเพื่อดูโอกาสโดนก่อนยืนยัน',
   hintConfirm: 'ดูโอกาสโดนและ damage แล้วกดยืนยัน หรือแตะศัตรูตัวอื่นเพื่อเปลี่ยนเป้า',
-  hintAllBlocked: 'ศัตรูในระยะถูก Unit อื่นขวางแนวเล็งทั้งหมด (ช่องที่ขีดกากบาท) ลองเดินไปตำแหน่งอื่นก่อน',
-  blockedTitle: 'เลือกไม่ได้: ถูกขวางแนวเล็ง (line of sight)',
-  blockedBy: (target: string, blockers: string) => `${target}: ${blockers} ขวางอยู่`,
+  hintAllBlocked: 'ศัตรูในระยะเลือกไม่ได้ทั้งหมด (ช่องที่ขีดกากบาท: ถูกขวางแนวเล็ง หรือติด Hidden) ลองเดินไปตำแหน่งอื่นก่อน',
+  blockedTitle: 'เลือกไม่ได้',
+  blockedBy: (target: string, blockers: string) => `${target}: ${blockers} ขวางแนวเล็ง (line of sight)`,
+  blockedHidden: (target: string) => `${target}: ติด Hidden ซ่อนตัวในป่า เล็งได้จากระยะ 1 เท่านั้น`,
   hintBattleOver: 'Battle จบแล้ว',
   hintSwitchEnds: (unit: string) => `ถ้าเริ่มเล่น Unit อื่น ${unit} จะเล่นต่อใน Turn นี้ไม่ได้`,
   hintActivationOver: 'Unit นี้เล่นจบแล้วใน Turn นี้ เพราะเริ่มเล่น Unit อื่นไปแล้ว',
@@ -174,6 +175,7 @@ export const th = {
   sourceTerrainMatch: (terrain: string) => `ยืนบนช่อง${terrain} ตรงกับธาตุตัวเอง`,
   sourceTerrainAquatic: 'ยืนบนช่องน้ำ: Aquatic นับช่องน้ำเป็นธาตุตัวเอง',
   sourceTerrainWeak: (terrain: string, own: string) => `ยืนบนช่อง${terrain} ซึ่งชนะธาตุ${own}ของตัวเอง`,
+  sourceTargetStatus: (status: string) => `เป้าติด ${status}: ผู้โจมตีทุกตัวได้ advantage`,
   sourceTamerProtected: (protectors: string) =>
     `เป้าเป็น Tamer ที่ได้รับการป้องกัน (${protectors} ยืนติด) Command หักล้างไม่ได้`,
 
@@ -226,6 +228,10 @@ export const th = {
   logUnitDown: (unit: string) => `${unit} ล้มและออกจาก Board`,
   logDefended: (unit: string) => `${unit} ใช้ Defend`,
   logStatusEnded: (unit: string, status: string) => `${status} ของ ${unit} หมดแล้ว`,
+  logStatusBroken: {
+    attackRoll: (unit: string, status: string) => `${status} ของ ${unit} หลุด เพราะทอย attack roll`,
+    terrain: (unit: string, status: string, terrain: string) => `${status} ของ ${unit} หลุด เพราะไม่ได้ยืนบนช่อง${terrain}แล้ว`,
+  },
   logSkillUsed: (unit: string, skill: string, targets: string) => `${unit} ใช้ ${skill}${targets ? ` กับ ${targets}` : ''}`,
   logSave: (unit: string, status: string, stat: string, roll: number, modifier: number, total: number, dc: number, saved: boolean) =>
     `${unit} ทอย save ${stat} ต้าน ${status}: d20 ได้ ${roll} ${signed(modifier)} = ${total} เทียบ DC ${dc} → ${saved ? 'ต้านได้' : 'ไม่ผ่าน'}`,
@@ -254,6 +260,8 @@ export const th = {
   skillDamage: (dice: string) => `damage ${dice}`,
   skillAttack: { physical: 'กายภาพ', elemental: 'ธาตุ' },
   skillRetreat: 'ถอยฟรี 1 ช่องหลังโจมตี',
+  skillRequiresTerrain: (terrain: string) => `ใช้ได้เฉพาะเมื่อยืนบนช่อง${terrain} (หลุดเมื่อออกจากช่อง${terrain}หรือทอย attack roll)`,
+  skillNoDamage: 'ไม่ทำ damage',
   skillAreaRange: (range: number, size: number, max: number) =>
     `ช่องกลางระยะ 0–${range} · พื้นที่ ${size}x${size} ศัตรูไม่เกิน ${max} ตัวที่เลือก ไม่โดนพวกเดียวกัน`,
   skillTeleport: (range: number) => `เทเลพอร์ต 1–${range} ช่อง ใช้แทนการเดิน ไม่ใช้ Action`,
@@ -268,7 +276,7 @@ export const th = {
   skillGivesSave: (status: string, stat: string) => `ติด ${status} (save ${stat})`,
   hintChooseSkillTarget: (skill: string) => `แตะเป้าที่ไฮไลต์สีแดงเพื่อดูผลของ ${skill} ก่อนยืนยัน`,
   hintConfirmSkill: (skill: string) => `ดูผลของ ${skill} แล้วกดยืนยัน หรือกดยกเลิก`,
-  hintSkillBlocked: 'เป้าในระยะถูก Unit อื่นขวางแนวเล็งทั้งหมด ลองเดินไปตำแหน่งอื่นก่อน',
+  hintSkillBlocked: 'เป้าในระยะเลือกไม่ได้ทั้งหมด (ถูกขวางแนวเล็ง หรือติด Hidden) ลองเดินไปตำแหน่งอื่นก่อน',
   hintRetreat: (unit: string) =>
     `Hit and Run: แตะช่องที่สว่างเพื่อให้ ${unit} ถอยฟรี 1 ช่อง (ไม่นับเป็นการเดิน) หรือกด "ไม่ถอย"`,
   stayInPlace: 'ไม่ถอย',
@@ -365,6 +373,8 @@ export const th = {
     'not-an-enemy': 'โจมตีได้เฉพาะ Unit ของอีกทีม',
     'out-of-range': 'เป้าอยู่นอกระยะ',
     'no-line-of-sight': 'มี Unit ขวางแนวเล็ง (line of sight) จึงโจมตีเป้านี้ไม่ได้',
+    'target-hidden': 'เป้าติด Hidden (ซ่อนตัวในป่า): ศัตรูเล็งได้จากระยะ 1 เท่านั้น ระยะ 2 ขึ้นไปเล็งไม่ได้',
+    'wrong-terrain': 'skill นี้ใช้ได้เฉพาะเมื่อยืนบน terrain ที่กำหนด (Camouflage: ช่องป่า)',
     'decision-pending': 'ต้องตัดสินใจก่อน: เลือกช่องถอยของ Hit and Run (หรือไม่ถอย) หรือเลือกว่าจะใช้ Inspiration หรือไม่',
     'no-decision': 'ตอนนี้ไม่มีเรื่องให้ทีมนี้ตัดสินใจ',
     'not-in-loadout': 'Unit นี้ไม่มี skill นี้',

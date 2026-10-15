@@ -363,7 +363,7 @@ describe('Burst: Major, elemental 1d6 on up to 2 chosen enemies around a centre 
 
   it('a Hidden enemy 2 or more tiles from the user cannot be chosen; next to the user it can (rules §8.2)', () => {
     const far = withStatus(battle(), 'B.m2', { id: 'hidden' })
-    expect(code(burst(far, 'd4', ['B.m2']))).toBe('invalid-target')
+    expect(code(burst(far, 'd4', ['B.m2']))).toBe('target-hidden')
     expect(legalUses(far, 'burst').flatMap((a) => a.targets ?? [])).not.toContain('B.m2')
     const near = withStatus(battle({ tiles: { A: TILES.A, B: ['g7', 'd4', 'e3'] } }), 'B.m2', { id: 'hidden' })
     expect(code(burst(near, 'd3', ['B.m2']))).toBe('accepted')

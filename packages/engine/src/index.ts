@@ -65,6 +65,7 @@ export type {
   PendingDecision,
   RerollableRoll,
   RetreatDecision,
+  StatusEndCause,
   StatusId,
   TamerUnit,
   TauntDuty,

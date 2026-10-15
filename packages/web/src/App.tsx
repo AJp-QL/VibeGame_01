@@ -770,7 +770,11 @@ function BlockedTargets({ blocked, name }: { blocked: SessionSnapshot['blocked']
       <strong>{th.blockedTitle}</strong>
       <ul>
         {blocked.map((b) => (
-          <li key={b.unit}>{th.blockedBy(name(b.unit), b.blockedBy.map(name).join(', '))}</li>
+          <li key={b.unit}>
+            {b.reason === 'target-hidden'
+              ? th.blockedHidden(name(b.unit))
+              : th.blockedBy(name(b.unit), b.blockedBy.map(name).join(', '))}
+          </li>
         ))}
       </ul>
     </div>
@@ -778,7 +782,7 @@ function BlockedTargets({ blocked, name }: { blocked: SessionSnapshot['blocked']
 }
 
 /** One line per source of advantage or disadvantage (rules §5.1). */
-function sourceText(source: RollModeSource, name: (id: string) => string): string {
+function sourceText(source: RollModeSource, name: (id: string) => string, statuses: BattleState['statusTypes']): string {
   switch (source.kind) {
     case 'element':
       return source.effect === 'advantage'
@@ -789,13 +793,23 @@ function sourceText(source: RollModeSource, name: (id: string) => string): strin
         return th.sourceTerrainWeak(th.element[source.terrain], th.element[source.attackerElement])
       }
       return source.aquatic ? th.sourceTerrainAquatic : th.sourceTerrainMatch(th.element[source.terrain])
+    case 'status':
+      return th.sourceTargetStatus(statusName(statuses, source.status))
     case 'tamerProtection':
       return th.sourceTamerProtected(source.protectors.map(name).join(', '))
   }
 }
 
 /** Where advantage and disadvantage come from, and the net effect after cancelling (spec user story 22). */
-function RollModeSources({ preview, name }: { preview: AttackPreview; name: (id: string) => string }) {
+function RollModeSources({
+  preview,
+  name,
+  statuses,
+}: {
+  preview: AttackPreview
+  name: (id: string) => string
+  statuses: BattleState['statusTypes']
+}) {
   const sources = preview.rollModeSources
   if (sources.length === 0) return <div className="muted">{th.previewNoSources}</div>
   const net = preview.rollMode === 'normal' ? th.previewNet.cancelled : th.previewNet[preview.rollMode]
@@ -804,7 +818,7 @@ function RollModeSources({ preview, name }: { preview: AttackPreview; name: (id:
       <ul>
         {sources.map((source, index) => (
           <li key={index} className={source.effect}>
-            <span className="tag">{th.rollEffect[source.effect]}</span> {sourceText(source, name)}
+            <span className="tag">{th.rollEffect[source.effect]}</span> {sourceText(source, name, statuses)}
           </li>
         ))}
       </ul>
@@ -920,7 +934,7 @@ function AttackOdds({ preview, name, data }: { preview: AttackPreview; name: (id
           )}
         </div>
       )}
-      <RollModeSources preview={preview} name={name} />
+      <RollModeSources preview={preview} name={name} statuses={data.statuses} />
       <div className="muted">
         {th.previewRoll(preview.attackBonus, th.defence[preview.defenceKind], preview.defence)}
         {preview.statusAttackBonuses.map((b) => ` (${th.previewAttackBonusStatus(statusName(data.statuses, b.status), b.bonus)})`)}
@@ -1048,8 +1062,18 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
         ),
       ]
     }
-    case 'statusEnded':
-      return [th.logStatusEnded(name(event.unit), statusName(state.statusTypes, event.status))]
+    case 'statusEnded': {
+      const status = statusName(state.statusTypes, event.status)
+      if (event.cause === 'attackRoll') return [th.logStatusBroken.attackRoll(name(event.unit), status)]
+      if (event.cause === 'terrain') {
+        // The terrain the skill that gave it needs (Camouflage: forest).
+        const needed = Object.values(data.skills).find(
+          (s) => s.effects?.requiresTerrain !== undefined && (s.applies ?? []).some((a) => a.status === event.status),
+        )?.effects?.requiresTerrain
+        return [th.logStatusBroken.terrain(name(event.unit), status, th.terrain[needed ?? 'forest'])]
+      }
+      return [th.logStatusEnded(name(event.unit), status)]
+    }
     case 'statusTicked':
       return [
         th.logStatusTicked(

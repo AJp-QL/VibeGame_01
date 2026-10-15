@@ -3,8 +3,9 @@
  * snapshot, animates the engine's events (Moves, attacks, damage, Units going
  * down) and turns taps into BoardInput. It keeps view objects only, never
  * game state. Each element tile carries a small corner mark (palette
- * TERRAIN_GLYPHS); statuses show as small icons (Guarded shield, Bleed drop, Rallied arrow); enemies that line of
- * sight blocks are crossed out while choosing a target. Tile and area skills
+ * TERRAIN_GLYPHS); statuses show as small icons (Guarded shield, Bleed drop, Rallied arrow, Pin cross, Marked
+ * crosshair, Hidden leaf); enemies that line of sight blocks, or that are Hidden 2 or more tiles away, are crossed
+ * out while choosing a target. Tile and area skills
  * light up the tiles they can be aimed at, Burst's 3x3 area shows around its
  * centre and its chosen targets carry their order number; Blink plays as a
  * fade out and in. It draws only the Units in `snapshot.units`, so Units hidden

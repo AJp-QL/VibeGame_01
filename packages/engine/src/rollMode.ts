@@ -3,13 +3,14 @@
  * source that applies to one attack roll, and how they combine.
  *
  * Sources so far: the element wheel (§4.2), the terrain under the attacker
- * (§4.3) and Tamer protection (§9). Marked, Off-balance (ticket 07 and
- * later) and Command (ticket 11) join `rollModeSources`; Defend gives no
- * advantage or disadvantage, it raises Guard and Ward (§12).
+ * (§4.3), a status on the target (Marked, §14.2) and Tamer protection (§9).
+ * Off-balance and Command (ticket 11) join `rollModeSources`; Defend gives
+ * no advantage or disadvantage, it raises Guard and Ward (§12).
  */
 import type { Element, ElementWheel, Terrain } from '@mt/shared'
 import { distance } from './movement.ts'
-import { terrainAt, type BattleState, type UnitId, type UnitState } from './state.ts'
+import { terrainAt, type BattleState, type StatusId, type UnitId, type UnitState } from './state.ts'
+import { attackersRollModeStatus } from './statuses.ts'
 
 /** How the d20 of an attack roll is rolled (rules §5.2). */
 export type RollMode = 'normal' | 'advantage' | 'disadvantage'
@@ -41,6 +42,17 @@ export type RollModeSource =
       readonly terrain: Element
       readonly attackerElement: Element
       readonly aquatic: boolean
+    }
+  /**
+   * A status of the target gives every attacker this (Marked: advantage,
+   * rules §5.1, §14.2), allies' attacks and counterattacks alike. Ticket 11
+   * may add the attacker's own statuses (Off-balance) with `holder: 'attacker'`.
+   */
+  | {
+      readonly kind: 'status'
+      readonly effect: RollEffect
+      readonly status: StatusId
+      readonly holder: 'target'
     }
   /**
    * The target is a Tamer with at least one allied Monster adjacent (rules
@@ -88,6 +100,11 @@ function terrainSources(state: BattleState, attacker: UnitState): RollModeSource
   return []
 }
 
+function targetStatusSources(state: BattleState, target: UnitState): RollModeSource[] {
+  const marked = attackersRollModeStatus(state, target)
+  return marked === null ? [] : [{ kind: 'status', effect: marked.effect, status: marked.status, holder: 'target' }]
+}
+
 function tamerProtectionSources(state: BattleState, target: UnitState): RollModeSource[] {
   if (target.kind !== 'tamer') return []
   // Units on the Board are the ones still up (rules §10.4).
@@ -101,12 +118,13 @@ function tamerProtectionSources(state: BattleState, target: UnitState): RollMode
 /**
  * Every source of advantage or disadvantage for this attacker's attack roll
  * against this target, as things stand now (rules §5.2: worked out again for
- * every attack roll). Order: element, terrain, Tamer protection.
+ * every attack roll). Order (rules §5.1): element, terrain, Marked, Tamer protection.
  */
 export function rollModeSources(state: BattleState, attacker: UnitState, target: UnitState): RollModeSource[] {
   return [
     ...elementSources(state, attacker, target),
     ...terrainSources(state, attacker),
+    ...targetStatusSources(state, target),
     ...tamerProtectionSources(state, target),
   ]
 }
