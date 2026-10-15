@@ -35,3 +35,10 @@ export const OUTLINE = 0x141414
 export const GRID_LINE = 0x1e1e1e
 export const SELECTED = 0xffe14d
 export const REACHABLE = 0xffffff
+/** Enemies the selected Unit can attack, and the one picked for the preview. */
+export const TARGET = 0xff4a3d
+export const PENDING_TARGET = 0xffe14d
+export const HP_BAR_BACK = 0x141414
+export const HP_BAR_FILL = 0x58d26b
+/** At a third of max HP or less. */
+export const HP_BAR_LOW = 0xff6b5e

@@ -1,13 +1,24 @@
 /**
  * The Phaser scene that draws the Board and its Units from the session's
- * snapshot, animates Moves from the engine's events and turns taps into
- * BoardInput. It keeps view objects only, never game state.
+ * snapshot, animates the engine's events (Moves, attacks, damage, Units going
+ * down) and turns taps into BoardInput. It keeps view objects only, never
+ * game state.
  */
 import * as Phaser from 'phaser'
 import { BOARD_SIZE, type Tile } from '@mt/shared'
-import type { BattleState, UnitId } from '@mt/engine'
-import { GRID_LINE, REACHABLE, SELECTED, TERRAIN_COLOURS } from './palette.ts'
-import type { BattleSessionPort, BattleSnapshot } from './port.ts'
+import { derivedValues, type BattleState, type UnitId } from '@mt/engine'
+import {
+  GRID_LINE,
+  HP_BAR_BACK,
+  HP_BAR_FILL,
+  HP_BAR_LOW,
+  PENDING_TARGET,
+  REACHABLE,
+  SELECTED,
+  TARGET,
+  TERRAIN_COLOURS,
+} from './palette.ts'
+import type { BattleSessionPort, BattleSnapshot, BoardLabels } from './port.ts'
 import { drawUnit } from './silhouettes.ts'
 
 export const TILE_SIZE = 32
@@ -15,9 +26,17 @@ export const BOARD_PIXELS = TILE_SIZE * BOARD_SIZE
 
 /** Milliseconds per step when a Unit walks its path. */
 const STEP_MS = 90
+/** Attack placeholder animation: lunge, then the result, then a fall. */
+const LUNGE_MS = 110
+const LUNGE_PIXELS = 9
+const RESULT_AT_MS = 2 * LUNGE_MS
+const FALL_AT_MS = RESULT_AT_MS + 350
+const FALL_MS = 300
+const FLOAT_MS = 800
 
 export interface BattleSceneData {
   readonly session: BattleSessionPort
+  readonly labels: BoardLabels
 }
 
 const tileCentre = (tile: Tile) => ({
@@ -25,11 +44,18 @@ const tileCentre = (tile: Tile) => ({
   y: tile.y * TILE_SIZE + TILE_SIZE / 2,
 })
 
+interface UnitView {
+  readonly container: Phaser.GameObjects.Container
+  readonly hpBar: Phaser.GameObjects.Graphics
+}
+
 export class BattleScene extends Phaser.Scene {
   private session!: BattleSessionPort
+  private labels!: BoardLabels
   private highlights!: Phaser.GameObjects.Graphics
-  private readonly unitViews = new Map<UnitId, Phaser.GameObjects.Container>()
-  private readonly walking = new Set<UnitId>()
+  private readonly unitViews = new Map<UnitId, UnitView>()
+  /** Units whose position a running animation owns (walking, lunging, falling). */
+  private readonly animating = new Set<UnitId>()
   private shownRevision = -1
 
   constructor() {
@@ -38,18 +64,20 @@ export class BattleScene extends Phaser.Scene {
 
   init(data: BattleSceneData): void {
     this.session = data.session
+    this.labels = data.labels
   }
 
   create(): void {
     const snapshot = this.session.getSnapshot()
     this.drawBoard(snapshot.state)
     this.highlights = this.add.graphics()
-    for (const unit of snapshot.state.units) {
-      const view = this.add.container(0, 0)
+    for (const unit of [...snapshot.state.units, ...snapshot.state.fallen]) {
+      const container = this.add.container(0, 0)
       const g = this.add.graphics()
       drawUnit(g, unit)
-      view.add(g)
-      this.unitViews.set(unit.id, view)
+      const hpBar = this.add.graphics()
+      container.add([g, hpBar])
+      this.unitViews.set(unit.id, { container, hpBar })
     }
     this.shownRevision = snapshot.revision
     this.render()
@@ -85,12 +113,32 @@ export class BattleScene extends Phaser.Scene {
       this.shownRevision = snapshot.revision
       this.animateEvents(snapshot)
     }
-    for (const unit of snapshot.state.units) {
+    const { state } = snapshot
+    for (const unit of state.units) {
       const view = this.unitViews.get(unit.id)
-      if (view === undefined || this.walking.has(unit.id)) continue
+      if (view === undefined) continue
+      this.drawHpBar(view.hpBar, unit.hp, derivedValues(state, unit.id).maxHp)
+      if (this.animating.has(unit.id)) continue
       const { x, y } = tileCentre(unit.tile)
-      view.setPosition(x, y)
+      view.container.setPosition(x, y)
     }
+    // A Unit that went down is off the Board (rules §10.4) once its fall has played.
+    for (const unit of state.fallen) {
+      const view = this.unitViews.get(unit.id)
+      if (view === undefined) continue
+      this.drawHpBar(view.hpBar, 0, 1)
+      if (!this.animating.has(unit.id)) view.container.setVisible(false)
+    }
+  }
+
+  private drawHpBar(g: Phaser.GameObjects.Graphics, hp: number, maxHp: number): void {
+    const width = 22
+    const filled = maxHp > 0 ? Math.ceil((width * hp) / maxHp) : 0
+    g.clear()
+    g.fillStyle(HP_BAR_BACK, 1)
+    g.fillRect(-width / 2 - 1, 13, width + 2, 4)
+    g.fillStyle(hp * 3 <= maxHp ? HP_BAR_LOW : HP_BAR_FILL, 1)
+    g.fillRect(-width / 2, 14, filled, 2)
   }
 
   private drawHighlights(snapshot: BattleSnapshot): void {
@@ -102,6 +150,17 @@ export class BattleScene extends Phaser.Scene {
       g.lineStyle(1, REACHABLE, 0.9)
       g.strokeRect(tile.x * TILE_SIZE + 2.5, tile.y * TILE_SIZE + 2.5, TILE_SIZE - 4, TILE_SIZE - 4)
     }
+    for (const tile of snapshot.targets) {
+      g.fillStyle(TARGET, 0.3)
+      g.fillRect(tile.x * TILE_SIZE + 1, tile.y * TILE_SIZE + 1, TILE_SIZE - 1, TILE_SIZE - 1)
+      g.lineStyle(1, TARGET, 1)
+      g.strokeRect(tile.x * TILE_SIZE + 2.5, tile.y * TILE_SIZE + 2.5, TILE_SIZE - 4, TILE_SIZE - 4)
+    }
+    const pending = snapshot.state.units.find((u) => u.id === snapshot.pendingTarget)
+    if (pending !== undefined) {
+      g.lineStyle(2, PENDING_TARGET, 1)
+      g.strokeRect(pending.tile.x * TILE_SIZE + 2, pending.tile.y * TILE_SIZE + 2, TILE_SIZE - 3, TILE_SIZE - 3)
+    }
     const selected = snapshot.state.units.find((u) => u.id === snapshot.selectedUnit)
     if (selected !== undefined) {
       g.lineStyle(2, SELECTED, 1)
@@ -109,25 +168,126 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  /** Walk each moved Unit along the path the engine reported. */
+  /** Play the events of the latest action, in order. */
   private animateEvents(snapshot: BattleSnapshot): void {
+    let critical = false
     for (const event of snapshot.events) {
-      if (event.type !== 'unitMoved') continue
-      const view = this.unitViews.get(event.unit)
-      if (view === undefined) continue
-      this.walking.add(event.unit)
-      const steps = event.path.map(tileCentre)
-      const walk = (index: number): void => {
-        const step = steps[index]
-        if (step === undefined) {
-          this.walking.delete(event.unit)
-          this.render()
-          return
+      switch (event.type) {
+        case 'unitMoved':
+          this.walk(event.unit, event.path)
+          break
+        case 'attackRolled':
+          critical = event.critical
+          this.lunge(event.attacker, event.target)
+          if (!event.hit) {
+            this.time.delayedCall(RESULT_AT_MS, () => this.floatText(event.target, this.labels.miss, '#d8d8d8'))
+          }
+          break
+        case 'damageDealt': {
+          const text = critical ? `-${event.amount} ${this.labels.critical}` : `-${event.amount}`
+          const colour = critical ? '#ffe14d' : '#ff6b5e'
+          this.time.delayedCall(RESULT_AT_MS, () => {
+            this.flash(event.target)
+            this.floatText(event.target, text, colour)
+          })
+          break
         }
-        this.tweens.add({ targets: view, x: step.x, y: step.y, duration: STEP_MS, onComplete: () => walk(index + 1) })
+        case 'unitDown':
+          this.fall(event.unit)
+          break
+        default:
+          break
       }
-      walk(0)
     }
+  }
+
+  /** Walk a moved Unit along the path the engine reported. */
+  private walk(unit: UnitId, path: readonly Tile[]): void {
+    const view = this.unitViews.get(unit)
+    if (view === undefined) return
+    this.animating.add(unit)
+    const steps = path.map(tileCentre)
+    const next = (index: number): void => {
+      const step = steps[index]
+      if (step === undefined) {
+        this.animating.delete(unit)
+        this.render()
+        return
+      }
+      this.tweens.add({ targets: view.container, x: step.x, y: step.y, duration: STEP_MS, onComplete: () => next(index + 1) })
+    }
+    next(0)
+  }
+
+  /** Placeholder attack: the attacker hops toward its target and back. */
+  private lunge(attacker: UnitId, target: UnitId): void {
+    const view = this.unitViews.get(attacker)
+    const to = this.unitViews.get(target)?.container
+    if (view === undefined || to === undefined) return
+    const from = view.container
+    const dx = Math.sign(to.x - from.x) * LUNGE_PIXELS
+    const dy = Math.sign(to.y - from.y) * LUNGE_PIXELS
+    this.animating.add(attacker)
+    this.tweens.add({
+      targets: view.container,
+      x: from.x + dx,
+      y: from.y + dy,
+      duration: LUNGE_MS,
+      yoyo: true,
+      onComplete: () => {
+        this.animating.delete(attacker)
+        this.render()
+      },
+    })
+  }
+
+  private flash(unit: UnitId): void {
+    const view = this.unitViews.get(unit)
+    if (view === undefined) return
+    this.tweens.add({ targets: view.container, alpha: 0.2, duration: 60, yoyo: true, repeat: 2 })
+  }
+
+  /** A Unit that went down blinks out and leaves the Board. */
+  private fall(unit: UnitId): void {
+    const view = this.unitViews.get(unit)
+    if (view === undefined) return
+    this.animating.add(unit)
+    this.time.delayedCall(FALL_AT_MS, () => {
+      this.tweens.add({
+        targets: view.container,
+        alpha: 0,
+        y: view.container.y + 4,
+        duration: FALL_MS,
+        onComplete: () => {
+          this.animating.delete(unit)
+          view.container.setVisible(false)
+        },
+      })
+    })
+  }
+
+  private floatText(unit: UnitId, text: string, colour: string): void {
+    const view = this.unitViews.get(unit)
+    if (view === undefined) return
+    const label = this.add
+      .text(view.container.x, view.container.y - 14, text, {
+        fontFamily: 'monospace',
+        fontSize: '10px',
+        fontStyle: 'bold',
+        color: colour,
+        stroke: '#141414',
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(10)
+    this.tweens.add({
+      targets: label,
+      y: label.y - 10,
+      alpha: 0,
+      delay: FLOAT_MS / 2,
+      duration: FLOAT_MS / 2,
+      onComplete: () => label.destroy(),
+    })
   }
 
   private onTap(pointer: Phaser.Input.Pointer): void {

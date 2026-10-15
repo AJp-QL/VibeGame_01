@@ -1,5 +1,8 @@
 import { useLayoutEffect, useRef } from 'react'
-import { createBattleGame, fitBattleGame, type BattleSessionPort } from '@mt/battle'
+import { createBattleGame, fitBattleGame, type BattleSessionPort, type BoardLabels } from '@mt/battle'
+import { th } from './strings.ts'
+
+const LABELS: BoardLabels = { miss: th.boardMiss, critical: th.boardCritical }
 
 /** Hosts the Phaser Board. Phaser reads the same session as React. */
 export function BattleView({ session }: { session: BattleSessionPort }) {
@@ -8,7 +11,7 @@ export function BattleView({ session }: { session: BattleSessionPort }) {
   useLayoutEffect(() => {
     const parent = parentRef.current
     if (parent === null) return
-    const game = createBattleGame(parent, session)
+    const game = createBattleGame(parent, session, LABELS)
     const observer = new ResizeObserver(() => {
       if (game.isBooted) fitBattleGame(game)
     })

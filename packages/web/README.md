@@ -39,4 +39,5 @@ build ได้โฟลเดอร์ static ที่ `packages/web/dist` (`b
 
 ## สถานะ
 - ticket 03 (walking skeleton): หน้า Battle เดียว แสดง Scenario 1 บน Crossroads เลือก Unit แล้วเดิน และจบ Turn ได้ มี log จากรายการเหตุการณ์ และแสดงเวอร์ชัน
-- ยังไม่มีเมนู, deployment, การโจมตี และ preview
+- ticket 05: เลือก Unit → กด "โจมตี" → แตะเป้าที่ไฮไลต์ → เห็น preview (% โอกาสโดน, ช่วง damage, % critical) → ยืนยันหรือยกเลิก, HP ทุก Unit (รายการ Unit และแถบบน Board), log ครบทุกเหตุการณ์, หน้าสรุปผล (ผู้ชนะ, สาเหตุ, Round) และเริ่ม Battle ใหม่
+- ยังไม่มีเมนูและ deployment

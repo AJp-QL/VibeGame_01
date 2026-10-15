@@ -119,26 +119,128 @@ body {
   color: var(--muted);
 }
 
-.end-turn {
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.buttons button,
+.result button {
   font: inherit;
   font-weight: 600;
   min-height: 44px;
   padding: 8px 20px;
-  border: 0;
+  border: 1px solid var(--muted);
   border-radius: 6px;
-  background: var(--accent);
-  color: #15161a;
+  background: transparent;
+  color: var(--text);
   cursor: pointer;
 }
 
-.end-turn:active {
+.buttons button.primary,
+.result button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #15161a;
+}
+
+.buttons button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.buttons button:active:not(:disabled),
+.result button:active {
   transform: translateY(1px);
 }
 
-.log ul {
+.buttons .end-turn {
+  margin-left: auto;
+}
+
+.preview {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid #ff4a3d;
+  border-radius: 6px;
+}
+
+.preview-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 4px 0;
+}
+
+.preview .big {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.result {
+  border-left: 6px solid var(--accent);
+}
+
+.result.side-A {
+  border-left-color: var(--side-a);
+}
+
+.result.side-B {
+  border-left-color: var(--side-b);
+}
+
+.result h2 {
+  font-size: 1.25rem;
+}
+
+.result p {
+  margin: 0 0 8px;
+}
+
+.roster ul {
   margin: 0;
-  padding-left: 20px;
-  max-height: 12em;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 4px 16px;
+}
+
+.roster li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-left: 8px;
+  border-left: 4px solid currentColor;
+}
+
+.roster li.side-A {
+  border-color: var(--side-a);
+}
+
+.roster li.side-B {
+  border-color: var(--side-b);
+}
+
+.roster li.down {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.roster .team {
+  color: var(--muted);
+}
+
+.log ol {
+  margin: 0;
+  padding-left: 28px;
+  max-height: 14em;
   overflow-y: auto;
 }
 

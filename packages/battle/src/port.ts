@@ -18,6 +18,10 @@ export interface BattleSnapshot {
   readonly selectedUnit: UnitId | null
   /** Tiles the selected Unit can Move to, taken from the engine's legal actions. */
   readonly reachable: readonly Tile[]
+  /** Tiles of the Units the selected Unit can attack now, from the engine's legal actions. */
+  readonly targets: readonly Tile[]
+  /** The target picked for the attack being previewed, if any. */
+  readonly pendingTarget: UnitId | null
 }
 
 /** A tap or click on the Board. No hover: mobile has none. */
@@ -30,4 +34,10 @@ export interface BattleSessionPort {
   /** Returns the unsubscribe function. */
   subscribe(listener: () => void): () => void
   input(input: BoardInput): void
+}
+
+/** Words the Board draws, from the web string table (battle has no text of its own). */
+export interface BoardLabels {
+  readonly miss: string
+  readonly critical: string
 }
