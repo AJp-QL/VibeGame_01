@@ -479,3 +479,71 @@ body {
 .side-choices .side-B {
   border-left-color: var(--side-b);
 }
+
+/* Replay (ticket 14): in-Battle menu, opening a Replay file, playback. */
+.battle-menu-toggle {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.battle-menu .buttons {
+  margin-top: 8px;
+}
+
+.replay-open h3 {
+  margin: 0 0 4px;
+}
+
+.replay-notice {
+  margin-top: 12px;
+}
+
+.replay-notice > button {
+  margin-top: 8px;
+}
+
+.replay-notice .issues {
+  margin: 4px 0;
+  padding-left: 20px;
+  font-size: 0.875rem;
+}
+
+.versions {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  table-layout: fixed;
+}
+
+.versions th,
+.versions td {
+  padding: 4px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--muted);
+}
+
+.versions thead th:first-child {
+  width: 30%;
+}
+
+.versions code {
+  word-break: break-all;
+}
+
+.versions tr.differs td {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.replay-header p {
+  margin: 2px 0;
+}
+
+.replay-step {
+  margin: 0 0 8px;
+}
+
+.step-buttons button {
+  flex: 1 1 140px;
+}

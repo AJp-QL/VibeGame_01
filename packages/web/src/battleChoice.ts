@@ -4,11 +4,12 @@
  * rules here; `battleSetup` turns the choice into the engine's BattleSetup.
  */
 import type { BattleSetup } from '@mt/engine'
-import type { Board, GameData, Scenario, Side } from '@mt/shared'
+import { BATTLE_MODES, type BattleMode, type Board, type GameData, type Scenario, type Side } from '@mt/shared'
 
-export const MODES = ['hotseat', 'ai'] as const
+/** The modes live in @mt/shared because every Replay records one. */
+export const MODES = BATTLE_MODES
 /** Hotseat: two players share one device. AI: one player against the AI. */
-export type Mode = (typeof MODES)[number]
+export type Mode = BattleMode
 
 /** Modes that can start now; playing against the AI arrives with the AI ticket (15). */
 export function isModeAvailable(mode: Mode): boolean {

@@ -14,20 +14,35 @@ import {
 import { DataError, tileName, type GameData, type Side } from '@mt/shared'
 import { BattleView } from './BattleView.tsx'
 import { loadBundledGameData } from './gameData.ts'
-import { Menu } from './Menu.tsx'
+import { Menu, type ReplayNotice } from './Menu.tsx'
 import { battleSetup, defaultChoice, type BattleChoice } from './battleChoice.ts'
+import { battleReplay, downloadReplay, openReplay, type OpenedReplay } from './replay.ts'
+import { ReplayScreen } from './ReplayScreen.tsx'
 import { createBattleSession, idleUnits, type BattleSession, type SessionSnapshot } from './session.ts'
 import { th } from './strings.ts'
 
-/** What the app shows: the menu, a Battle, or why the game data failed to load. */
+/** What the app shows: the menu, a Battle, a Replay, or why the game data failed to load. */
 type Screen =
-  | { readonly kind: 'menu'; readonly data: GameData; readonly choice: BattleChoice }
+  | {
+      readonly kind: 'menu'
+      readonly data: GameData
+      readonly choice: BattleChoice
+      /** Why the last Replay file could not be opened, if it could not. */
+      readonly notice?: ReplayNotice
+    }
   | {
       readonly kind: 'battle'
       readonly data: GameData
       readonly choice: BattleChoice
       readonly session: BattleSession
       readonly diceSeed: string
+    }
+  | {
+      readonly kind: 'replay'
+      readonly data: GameData
+      /** The menu choice to return to. */
+      readonly choice: BattleChoice
+      readonly opened: Extract<OpenedReplay, { kind: 'ready' }>
     }
   | { readonly kind: 'error'; readonly details: string }
 
@@ -61,6 +76,24 @@ function startBattle(data: GameData, choice: BattleChoice): Screen {
   }
 }
 
+/** The Replay of the Battle so far, saved as a file; the export time comes from the UI, not the engine. */
+function exportReplay(screen: Extract<Screen, { kind: 'battle' }>): void {
+  const { actions } = screen.session.getSnapshot()
+  downloadReplay(
+    battleReplay(screen.data, screen.choice, screen.diceSeed, actions, {
+      appVersion: __APP_VERSION__,
+      createdAt: new Date().toISOString(),
+    }),
+  )
+}
+
+/** Open a Replay file: play it back, or go back to the menu saying why it cannot be. */
+async function replayScreen(file: File, data: GameData, choice: BattleChoice): Promise<Screen> {
+  const opened = openReplay(await file.text(), data)
+  if (opened.kind === 'ready') return { kind: 'replay', data, choice, opened }
+  return { kind: 'menu', data, choice, notice: opened }
+}
+
 export function App() {
   const [screen, setScreen] = useState(openMenu)
   return (
@@ -72,8 +105,13 @@ export function App() {
         <Menu
           data={screen.data}
           choice={screen.choice}
+          notice={screen.notice ?? null}
           onChange={(choice) => setScreen({ ...screen, choice })}
           onStart={() => setScreen(startBattle(screen.data, screen.choice))}
+          onOpenReplay={(file) => {
+            replayScreen(file, screen.data, screen.choice).then(setScreen, (error: unknown) => setScreen(errorScreen(error)))
+          }}
+          onDismissNotice={() => setScreen({ kind: 'menu', data: screen.data, choice: screen.choice })}
         />
       ) : screen.kind === 'battle' ? (
         <BattleScreen
@@ -83,6 +121,13 @@ export function App() {
           session={screen.session}
           diceSeed={screen.diceSeed}
           onPlayAgain={() => setScreen(startBattle(screen.data, screen.choice))}
+          onMenu={() => setScreen({ kind: 'menu', data: screen.data, choice: screen.choice })}
+          onExportReplay={() => exportReplay(screen)}
+        />
+      ) : screen.kind === 'replay' ? (
+        <ReplayScreen
+          data={screen.data}
+          opened={screen.opened}
           onMenu={() => setScreen({ kind: 'menu', data: screen.data, choice: screen.choice })}
         />
       ) : (
@@ -138,9 +183,11 @@ interface BattleScreenProps {
   /** A new Battle with the same menu choices (and a new Dice Seed). */
   onPlayAgain: () => void
   onMenu: () => void
+  /** Download the Replay of this Battle so far. */
+  onExportReplay: () => void
 }
 
-function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu }: BattleScreenProps) {
+function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu, onExportReplay }: BattleScreenProps) {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot)
   const { state } = snapshot
   const scenario = data.scenarios[state.scenarioId]
@@ -149,6 +196,8 @@ function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu }: BattleSc
   return (
     <main className="battle">
       <StatusBar state={state} />
+
+      {state.outcome === null && <BattleMenu onExportReplay={onExportReplay} onLeave={onMenu} />}
 
       {state.outcome !== null && (
         <section className={`panel result side-${state.outcome.winner}`} role="status">
@@ -159,10 +208,15 @@ function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu }: BattleSc
             <button type="button" className="primary" onClick={onPlayAgain}>
               {th.playAgain}
             </button>
+            <button type="button" className="secondary" onClick={onExportReplay}>
+              {th.replay.export}
+            </button>
             <button type="button" className="secondary" onClick={onMenu}>
               {th.backToMenu}
             </button>
           </div>
+          {/* Playtester stats (ticket 17) will be exported together with the Replay. */}
+          <p className="muted">{th.replay.exportHint}</p>
         </section>
       )}
 
@@ -218,7 +272,7 @@ function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu }: BattleSc
   )
 }
 
-function StatusBar({ state }: { state: BattleState }) {
+export function StatusBar({ state }: { state: BattleState }) {
   if (state.phase === 'deployment') {
     return (
       <section className="status" aria-live="polite">
@@ -236,6 +290,55 @@ function StatusBar({ state }: { state: BattleState }) {
       </span>
       {state.outcome === null && limit < teamSize && (
         <span className="limit">{th.firstTurnLimit(limit, started.length)}</span>
+      )}
+    </section>
+  )
+}
+
+/** The in-Battle menu: export the Replay so far, or leave the Battle (after a second tap to confirm). */
+function BattleMenu({ onExportReplay, onLeave }: { onExportReplay: () => void; onLeave: () => void }) {
+  const [view, setView] = useState<'closed' | 'open' | 'leaving'>('closed')
+  if (view === 'closed') {
+    return (
+      <div className="battle-menu-toggle">
+        <button type="button" className="secondary" aria-expanded={false} onClick={() => setView('open')}>
+          ☰ {th.battleMenu.open}
+        </button>
+      </div>
+    )
+  }
+  return (
+    <section className="panel battle-menu" aria-label={th.battleMenu.title}>
+      {view === 'open' ? (
+        <>
+          <p className="muted">{th.replay.exportHint}</p>
+          <div className="buttons">
+            <button type="button" className="secondary" onClick={onExportReplay}>
+              {th.replay.export}
+            </button>
+            <button type="button" className="secondary" onClick={() => setView('leaving')}>
+              {th.battleMenu.leave}
+            </button>
+            <button type="button" className="secondary" aria-expanded={true} onClick={() => setView('closed')}>
+              {th.battleMenu.close}
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="warning" role="alertdialog" aria-labelledby="leave-warning">
+          <p id="leave-warning">{th.battleMenu.leaveConfirm}</p>
+          <div className="buttons">
+            <button type="button" className="secondary" onClick={onExportReplay}>
+              {th.replay.export}
+            </button>
+            <button type="button" className="primary" onClick={onLeave}>
+              {th.battleMenu.leaveYes}
+            </button>
+            <button type="button" className="secondary" onClick={() => setView('closed')}>
+              {th.battleMenu.leaveNo}
+            </button>
+          </div>
+        </div>
       )}
     </section>
   )
@@ -414,7 +517,7 @@ function PreviewCard({ preview, name, data }: { preview: AttackPreview; name: (i
   )
 }
 
-function HpList({ state, data }: { state: BattleState; data: GameData }) {
+export function HpList({ state, data }: { state: BattleState; data: GameData }) {
   return (
     <ul className="hp-list">
       {allUnits(state).map((unit) => {
@@ -490,7 +593,7 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
   }
 }
 
-function EventLog({ events, state, data }: { events: readonly BattleEvent[]; state: BattleState; data: GameData }) {
+export function EventLog({ events, state, data }: { events: readonly BattleEvent[]; state: BattleState; data: GameData }) {
   const name = namer(state, data)
   const lines = events.flatMap((event) => logLines(event, name, state, data))
   if (lines.length === 0) return <p className="empty">{th.logEmpty}</p>

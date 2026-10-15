@@ -35,3 +35,18 @@ export {
   type Terrain,
 } from './model.ts'
 export { DataError, loadGameData, type DataIssue, type GameData } from './gameData.ts'
+export { canonicalJson, dataHash, sha256Hex } from './dataHash.ts'
+export {
+  BATTLE_MODES,
+  parseReplay,
+  parseReplayText,
+  REPLAY_FORMAT,
+  REPLAY_FORMAT_VERSION,
+  ReplaySchema,
+  serializeReplay,
+  type BattleMode,
+  type ParseReplayResult,
+  type Replay,
+  type ReplayAction,
+  type ReplayMeta,
+} from './replay.ts'

@@ -39,6 +39,8 @@ export interface SessionSnapshot extends BattleSnapshot {
   readonly rejection: RejectionCode | null
   /** Every event so far, oldest first, for the log. */
   readonly log: readonly BattleEvent[]
+  /** Every action the engine accepted, in order: with the Dice Seed, this is the Battle's Replay. */
+  readonly actions: readonly Action[]
   readonly screen: HotseatScreen
   readonly mode: SelectionMode
   /** The selected Unit has at least one enemy it can attack now. */
@@ -143,6 +145,7 @@ export function createBattleSession(initial: BattleState): BattleSession {
     ...NO_ATTACK,
     rejection: null,
     log: [],
+    actions: [],
     screen: 'board',
   })
 
@@ -169,6 +172,7 @@ export function createBattleSession(initial: BattleState): BattleSession {
       ...NO_ATTACK,
       rejection: null,
       log: [...snapshot.log, ...result.events],
+      actions: [...snapshot.actions, action],
       ...after(result.state),
     })
   }

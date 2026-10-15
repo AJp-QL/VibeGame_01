@@ -9,6 +9,7 @@
  *   applyAction(state, action)    → { ok, state, events } | { ok: false, state, rejection }
  *   derivedValues(state, unitId)  → values computed from the Unit's data
  *   unitsVisibleTo(state, side)   → the Units a side may see (deployment is hidden)
+ *   recordReplay / replayCompatibility / replayBattle → Replay of a Battle (ENGINE_VERSION is stamped in it)
  */
 export {
   applyAction,
@@ -50,6 +51,21 @@ export type {
   UnitState,
   UnitTemplate,
 } from './state.ts'
+
+// Replay: record, check against this build, play again (spec Seam A "Replay").
+export {
+  recordReplay,
+  replayBattle,
+  replayCompatibility,
+  type BattleReplay,
+  type ReplayCompatibility,
+  type ReplayError,
+  type ReplayHeader,
+  type ReplayMismatch,
+  type ReplayResult,
+  type ReplayStep,
+} from './replay.ts'
+export { ENGINE_VERSION } from './version.ts'
 
 // Dice stream (rules §21.5): exported for the AI's separate stream, tests and tools.
 export {

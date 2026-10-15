@@ -192,6 +192,57 @@ export const th = {
     'out-of-range': 'เป้าอยู่นอกระยะ',
   } satisfies Record<RejectionCode, string>,
 
+  battleMenu: {
+    open: 'เมนู Battle',
+    close: 'ปิดเมนู',
+    title: 'เมนู Battle',
+    leave: 'ออกจาก Battle',
+    leaveConfirm: 'ออกจาก Battle นี้แล้วกลับไปเมนู? Battle นี้จะหายไป ถ้าจะเก็บไว้ให้ export Replay ก่อน',
+    leaveYes: 'ออกจาก Battle',
+    leaveNo: 'เล่นต่อ',
+  },
+
+  replay: {
+    export: 'Export Replay',
+    exportHint: 'บันทึกไฟล์ Replay ของ Battle นี้ (Dice Seed และทุก action) ส่งให้ผู้พัฒนาเล่นซ้ำได้',
+    open: 'เปิดไฟล์ Replay',
+    openTitle: 'Replay',
+    openHint: 'สำหรับผู้พัฒนา: เปิดไฟล์ Replay แล้วดู Battle ซ้ำทีละ action',
+    invalidTitle: 'ไฟล์นี้ไม่ใช่ Replay ที่ถูกต้อง',
+    mismatchTitle: 'เวอร์ชันไม่ตรง',
+    mismatchBody:
+      'Replay นี้บันทึกด้วย engine หรือข้อมูลเกมคนละชุดกับ build นี้ ระบบจะไม่แปลงให้ เปิดด้วย build ที่ตรงกัน (checkout git tag ของ build ที่บันทึก)',
+    mismatchTag: (tag: string) => `build ที่บันทึก: ${tag}`,
+    engineVersion: 'เวอร์ชัน engine',
+    dataHash: 'hash ของ data',
+    inReplay: 'ใน Replay',
+    inBuild: 'build นี้',
+    brokenTitle: 'เล่น Replay นี้ซ้ำไม่ได้',
+    brokenAction: (index: number, reason: string) => `action ที่ ${index} ถูกปฏิเสธ: ${reason}`,
+    brokenSetup: (message: string) => `สร้าง Battle จาก Replay ไม่ได้: ${message}`,
+    dismiss: 'ปิด',
+
+    title: 'ดู Replay',
+    details: (scenario: string, board: string, mode: string) => `${scenario} บน Board ${board} · ${mode}`,
+    recorded: (engine: string, app: string | undefined, at: string | undefined) =>
+      [`engine ${engine}`, app ? `build ${app}` : null, at ? `บันทึกเมื่อ ${at}` : null].filter(Boolean).join(' · '),
+    step: (step: number, total: number) => `action ${step}/${total}`,
+    atStart: 'จุดเริ่ม Battle (ก่อน action แรก)',
+    first: 'ไปต้นเกม',
+    back: 'ย้อน 1 action',
+    forward: 'ถัดไป 1 action',
+    last: 'ไปท้ายเกม',
+    readOnly: 'ดูอย่างเดียว ทำ action ใหม่ไม่ได้',
+    action: {
+      deploy: (unit: string, tile: string) => `${unit} วางที่ ${tile}`,
+      confirmDeployment: (side: string) => `ทีม ${side} ยืนยันการวาง`,
+      move: (unit: string, tile: string) => `${unit} เดินไป ${tile}`,
+      attack: (unit: string, skill: string, target: string) => `${unit} ใช้ ${skill} ใส่ ${target}`,
+      endTurn: (side: string) => `ทีม ${side} จบ Turn`,
+      other: (type: string) => `action "${type}"`,
+    },
+  },
+
   dataErrorTitle: 'ข้อมูลเกมไม่ผ่านการตรวจ',
   dataErrorBody: 'ไฟล์ใน data/ ไม่ตรงกับ schema รายละเอียดด้านล่าง',
 } as const
