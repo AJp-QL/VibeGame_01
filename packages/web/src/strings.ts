@@ -6,7 +6,7 @@
  * English UI is out of scope).
  */
 import type { Element, Side, Terrain } from '@mt/shared'
-import type { BattleEndCause, RejectionCode } from '@mt/engine'
+import type { BattleEndCause, CommandOption, RejectionCode } from '@mt/engine'
 import type { Mode } from './battleChoice.ts'
 
 /** "+2", "0", "−1" (true minus sign). */
@@ -176,6 +176,10 @@ export const th = {
   sourceTerrainAquatic: 'ยืนบนช่องน้ำ: Aquatic นับช่องน้ำเป็นธาตุตัวเอง',
   sourceTerrainWeak: (terrain: string, own: string) => `ยืนบนช่อง${terrain} ซึ่งชนะธาตุ${own}ของตัวเอง`,
   sourceTargetStatus: (status: string) => `เป้าติด ${status}: ผู้โจมตีทุกตัวได้ advantage`,
+  sourceAttackerStatus: (status: string) => `ผู้โจมตีติด ${status}: attack roll ครั้งนี้ได้ disadvantage แล้ว ${status} หลุด`,
+  sourceCommand: (tamer: string) => `Command ของ ${tamer}: attack roll ครั้งนี้ได้ advantage`,
+  sourceCommandDropped: (tamer: string) =>
+    `Command ของ ${tamer}: ไม่นับ เพราะเป้าเป็น Tamer ที่ได้รับการป้องกัน (หักล้างไม่ได้) แต่ attack roll ครั้งนี้ยังใช้ Command ไป`,
   sourceTamerProtected: (protectors: string) =>
     `เป้าเป็น Tamer ที่ได้รับการป้องกัน (${protectors} ยืนติด) Command หักล้างไม่ได้`,
 
@@ -245,6 +249,18 @@ export const th = {
   logPushBlocked: (unit: string, tile: string, blocker: string | null) =>
     `${unit} ไม่ถูกผลัก: ${blocker === null ? 'ช่องที่จะถูกผลักไปอยู่นอก Board' : `${tile} มี ${blocker} ยืนอยู่`}`,
   logCounterattack: (unit: string, target: string, dice: string) => `${unit} โจมตีกลับ (Counter) ใส่ ${target} ด้วย ${dice}`,
+  logDamageCovered: (target: string, tamer: string, amount: number, hp: number, maxHp: number) =>
+    `Cover: damage ${amount} ที่ ${target} ได้รับโอนไปที่ ${tamer} เหลือ HP ${hp}/${maxHp}`,
+  logHealed: (user: string, skill: string, target: string, amount: number, dice: string, rolls: readonly number[], modifier: number, hp: number, maxHp: number) =>
+    `${user} ใช้ ${skill} กับ ${target}: heal ${amount} (${dice}: ${rolls.join(' + ')} ${signed(modifier)}) HP ${hp}/${maxHp} (ไม่เกิน HP สูงสุด, heal ไม่หักลบ damage รวม)`,
+  logCoverApplied: (tamer: string, unit: string, refreshed: boolean) =>
+    `${tamer} ใช้ Cover กับ ${unit}${refreshed ? ' ซ้ำ (เริ่มนับใหม่)' : ''}: damage ที่ ${unit} ได้รับโอนมาที่ ${tamer} จนถึงเริ่ม Turn ถัดไปของทีม`,
+  logCoverEnded: (unit: string, tamer: string) => `Cover ของ ${tamer} บน ${unit} หมดแล้ว`,
+  logTerrainChanged: (unit: string, skill: string, tile: string, from: string, to: string, turns: number) =>
+    `${unit} ใช้ ${skill}: ช่อง ${tile} เปลี่ยนจาก${from}เป็น${to} (ส่วนที่เหลือของ Turn นี้ และอีก ${turns} Turn ของทีม แล้วกลับเป็นเดิม)`,
+  logTerrainReverted: (tile: string, from: string, to: string) => `ช่อง ${tile} กลับจาก${from}เป็น${to}ตามเดิมของ Board`,
+  logCommandIssued: (tamer: string, unit: string, option: string) => `${tamer} ใช้ Command กับ ${unit}: ${option} (ไม่ใช้ Action)`,
+  logCommandSpent: (unit: string) => `${unit} ใช้ advantage จาก Command ไปกับ attack roll นี้`,
   counterattackName: 'การโจมตีกลับ',
 
   // Skills and statuses (rules §13–§15): names come from data, everything else from here.
@@ -272,6 +288,37 @@ export const th = {
   hintAreaMore: (skill: string, chosen: number, max: number) =>
     `${skill}: เลือกแล้ว ${chosen}/${max} ตัว แตะศัตรูอีกตัวเพื่อเพิ่ม แตะตัวที่เลือกแล้วเพื่อเอาออก หรือกดยืนยัน`,
   hintChooseTile: (skill: string) => `${skill}: แตะช่องว่างที่สว่างสีฟ้าเพื่อเทเลพอร์ต (ใช้แทนการเดิน ไม่ใช้ Action)`,
+  hintChooseAttuneTile: (skill: string) => `${skill}: แตะช่องที่สว่างสีฟ้าติดกับ Tamer (ว่างหรือมี Unit ก็ได้) แล้วเลือกธาตุ`,
+  hintChooseElement: (skill: string, tile: string) => `${skill}: เลือกธาตุให้ช่อง ${tile}`,
+  skillAttune: (turns: number) => `ช่องติดกัน 1 ช่อง เปลี่ยนเป็นธาตุที่เลือก ${turns} Turn แล้วกลับเป็นเดิม`,
+  skillHeal: (dice: string, stat: string) => `heal ${dice} + ${stat} mod (ไม่เกิน HP สูงสุด)`,
+  skillCover: 'damage ที่ Monster ตัวนั้นได้รับโอนมาที่ Tamer จนถึงเริ่ม Turn ถัดไปของทีม',
+  skillRangeSelfOrAlly: (range: number) => `ตัวเองหรือพวกในระยะ ${range}`,
+  skillRangeAllyMonster: (range: number) => `Monster พวกเดียวกันในระยะ ${range}`,
+  elementsTitle: 'ธาตุ',
+  previewHeal: (user: string, skill: string, target: string, min: number, max: number, hp: number, maxHp: number) =>
+    `${user} ใช้ ${skill} กับ ${target}: heal ${min}–${max} (HP ตอนนี้ ${hp}/${maxHp} ไม่เกิน HP สูงสุด) ไม่ต้องทอยโจมตี`,
+  previewTerrain: (user: string, skill: string, tile: string, from: string, to: string, turns: number, original: string) =>
+    `${user} ใช้ ${skill}: ช่อง ${tile} จาก${from}เป็น${to} ส่วนที่เหลือของ Turn นี้และอีก ${turns} Turn ของทีม แล้วกลับเป็น${original}`,
+  previewCover: (tamer: string, unit: string) => `damage ที่ ${unit} จะได้รับโอนมาที่ ${tamer} จนถึงเริ่ม Turn ถัดไปของทีม ไม่ต้องอยู่ติดกัน`,
+
+  // Command (rules §16): not a skill, uses no Action.
+  command: 'Command',
+  commandTitle: 'Command (1 ครั้งต่อ Turn ไม่ใช้ Action)',
+  commandOption: { advantage: 'Advantage', move: 'ขยับ +1' } satisfies Record<CommandOption, string>,
+  commandOptionNote: {
+    advantage: 'attack roll ครั้งถัดไปใน Turn นี้ได้ advantage (หักล้างการป้องกัน Tamer ไม่ได้)',
+    move: 'ระยะเดินใน Turn นี้ +1',
+  } satisfies Record<CommandOption, string>,
+  commandLoyalty: 'ผ่าน loyalty check: ไม่มีใน phase 1 (ถือว่า loyalty เต็ม)',
+  hintChooseCommandTarget: 'Command: แตะ Monster พวกเดียวกันที่สว่าง (ระยะไม่เกิน 3 และยังไม่ได้เล่นใน Turn นี้)',
+  hintChooseCommandOption: (unit: string) => `Command ${unit}: เลือก Advantage หรือ ขยับ +1`,
+  hintConfirmCommand: (unit: string, option: string) => `Command ${unit}: ${option} กดยืนยัน หรือกดยกเลิก`,
+  confirmCommand: 'ยืนยัน Command',
+  commandTag: (option: string) => `Command: ${option}`,
+  commandSpentTag: 'Command: ใช้แล้ว',
+  coveredTag: (tamer: string) => `Cover โดย ${tamer}`,
+  attunedTag: (turns: number) => `Attune เหลือ ${turns}`,
   skillGives: (status: string) => `ติด ${status}`,
   skillGivesSave: (status: string, stat: string) => `ติด ${status} (save ${stat})`,
   hintChooseSkillTarget: (skill: string) => `แตะเป้าที่ไฮไลต์สีแดงเพื่อดูผลของ ${skill} ก่อนยืนยัน`,
@@ -383,6 +430,10 @@ export const th = {
     'invalid-target': 'skill นี้เลือกเป้าแบบนี้ไม่ได้',
     'not-an-ally': 'skill นี้ใช้ได้กับพวกเดียวกันเท่านั้น',
     taunted: 'ติด Taunted: ถ้าโจมตีผู้ taunt ได้ Action ต้องเป็นการโจมตีผู้ taunt ถ้าไม่ได้ ต้องเดินเข้าใกล้ที่สุดและห้ามโจมตี',
+    'not-a-tamer': 'Command ใช้ได้เฉพาะ Tamer',
+    'command-used': 'ทีมนี้ใช้ Command ไปแล้วใน Turn นี้ (1 ครั้งต่อ Turn)',
+    'command-first-turn': 'ใช้ Command ใน Turn แรกของทีมไม่ได้',
+    'already-activated': 'Monster ตัวนี้เริ่มเล่นไปแล้วใน Turn นี้ Command ได้เฉพาะตัวที่เล่นหลัง Tamer',
   } satisfies Record<RejectionCode, string>,
 
   battleMenu: {
@@ -434,6 +485,9 @@ export const th = {
       area: (unit: string, skill: string, tile: string, targets: string) => `${unit} ใช้ ${skill} ที่ช่อง ${tile} ใส่ ${targets} ตามลำดับ`,
       teleport: (unit: string, skill: string, tile: string) => `${unit} ใช้ ${skill} เทเลพอร์ตไป ${tile}`,
       skill: (unit: string, skill: string) => `${unit} ใช้ ${skill}`,
+      skillOn: (unit: string, skill: string, target: string) => `${unit} ใช้ ${skill} กับ ${target}`,
+      attune: (unit: string, skill: string, tile: string, element: string) => `${unit} ใช้ ${skill} เปลี่ยนช่อง ${tile} เป็น${element}`,
+      command: (unit: string, target: string, option: string) => `${unit} ใช้ Command กับ ${target}: ${option}`,
       retreat: (unit: string, tile: string) => `${unit} ถอยไป ${tile} (Hit and Run)`,
       stay: (unit: string) => `${unit} ไม่ถอย (Hit and Run)`,
       defend: (unit: string) => `${unit} ป้องกัน (Defend)`,

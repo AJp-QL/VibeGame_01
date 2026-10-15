@@ -1,5 +1,6 @@
 import { useState, useSyncExternalStore } from 'react'
 import {
+  COMMAND_OPTIONS,
   COUNTERATTACK,
   createBattle,
   decidingSide,
@@ -514,9 +515,22 @@ function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, cu
     if (snapshot.preview !== null) return th.hintConfirm
     return snapshot.canAttack ? th.hintChooseTarget : th.hintAllBlocked
   }
+  if (snapshot.mode === 'command') {
+    const target = snapshot.pendingTarget
+    if (target === null) return th.hintChooseCommandTarget
+    const unit = state.units.find((u) => u.id === target)
+    const label = unit === undefined ? target : unitName(unit, data)
+    return snapshot.pendingOption === null
+      ? th.hintChooseCommandOption(label)
+      : th.hintConfirmCommand(label, th.commandOption[snapshot.pendingOption])
+  }
   if (snapshot.mode === 'skill' && snapshot.pendingSkill !== null) {
     const skill = skillName(data, snapshot.pendingSkill)
     const aimed = state.skills[snapshot.pendingSkill]
+    if (aimed?.target === 'tile' && aimed.effects?.terrainTurns !== undefined) {
+      if (snapshot.preview !== null) return th.hintConfirmSkill(skill)
+      return snapshot.pendingTile === null ? th.hintChooseAttuneTile(skill) : th.hintChooseElement(skill, tileName(snapshot.pendingTile))
+    }
     if (aimed?.target === 'tile') return snapshot.preview !== null ? th.hintConfirmSkill(skill) : th.hintChooseTile(skill)
     if (aimed?.target === 'area') {
       const max = aimed.area?.maxTargets ?? 1
@@ -567,6 +581,38 @@ function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; ses
       {selected !== undefined && snapshot.mode === 'move' && !deciding && snapshot.skills.length > 0 && (
         <SkillButtons snapshot={snapshot} session={session} data={data} />
       )}
+      {snapshot.mode === 'skill' && snapshot.elementChoices.length > 0 && (
+        <div className="element-choices" role="group" aria-label={th.elementsTitle}>
+          {snapshot.elementChoices.map((element) => (
+            <button
+              key={element}
+              type="button"
+              className="secondary"
+              aria-pressed={snapshot.pendingElement === element}
+              onClick={() => session.chooseElement(element)}
+            >
+              <TerrainSwatch terrain={element} /> {th.element[element]}
+            </button>
+          ))}
+        </div>
+      )}
+      {snapshot.mode === 'command' && snapshot.pendingTarget !== null && (
+        <div className="command-options" role="group" aria-label={th.commandTitle}>
+          {COMMAND_OPTIONS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className="secondary"
+              aria-pressed={snapshot.pendingOption === option}
+              onClick={() => session.chooseCommandOption(option)}
+            >
+              {th.commandOption[option]}
+              <span className="muted"> · {th.commandOptionNote[option]}</span>
+            </button>
+          ))}
+          <p className="muted">{th.commandLoyalty}</p>
+        </div>
+      )}
       {snapshot.mode !== 'move' && snapshot.blocked.length > 0 && (
         <BlockedTargets blocked={snapshot.blocked} name={namer(state, data)} />
       )}
@@ -598,9 +644,20 @@ function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; ses
               {th.defend}
             </button>
           )}
+          {selected?.kind === 'tamer' && snapshot.mode === 'move' && (
+            <button
+              type="button"
+              className="secondary"
+              title={th.commandTitle}
+              disabled={!snapshot.canCommand}
+              onClick={() => session.chooseCommand()}
+            >
+              {th.command}
+            </button>
+          )}
           {snapshot.ready !== null && (
             <button type="button" className="primary" onClick={() => session.confirmAttack()}>
-              {snapshot.mode === 'skill' ? th.confirmSkill : th.confirmAttack}
+              {snapshot.mode === 'skill' ? th.confirmSkill : snapshot.mode === 'command' ? th.confirmCommand : th.confirmAttack}
             </button>
           )}
           {snapshot.mode !== 'move' && (
@@ -661,6 +718,16 @@ function UnitCard({ unit, state, data }: { unit: UnitState; state: BattleState; 
       <strong>{unitName(unit, data)}</strong> <span className="team">{th.team(unit.side)}</span>
       <div>{[...details, th.move(values.move), ...standing].join(' · ')}</div>
       <div>{[th.hp(unit.hp, values.maxHp), defences, th.attackBonus(values.attackBonus)].join(' · ')}</div>
+      {(unit.coveredBy !== undefined || state.command?.target === unit.id) && (
+        <div>
+          {unit.coveredBy !== undefined && <span className="tag status-tag positive">{th.coveredTag(namer(state, data)(unit.coveredBy))}</span>}{' '}
+          {state.command?.target === unit.id && (
+            <span className="tag status-tag positive">
+              {state.command.spent === true ? th.commandSpentTag : th.commandTag(th.commandOption[state.command.option])}
+            </span>
+          )}
+        </div>
+      )}
       <StatusList unit={unit} state={state} />
     </div>
   )
@@ -782,7 +849,12 @@ function BlockedTargets({ blocked, name }: { blocked: SessionSnapshot['blocked']
 }
 
 /** One line per source of advantage or disadvantage (rules §5.1). */
-function sourceText(source: RollModeSource, name: (id: string) => string, statuses: BattleState['statusTypes']): string {
+function sourceText(
+  source: RollModeSource,
+  name: (id: string) => string,
+  statuses: BattleState['statusTypes'],
+  commandDropped: boolean,
+): string {
   switch (source.kind) {
     case 'element':
       return source.effect === 'advantage'
@@ -794,7 +866,11 @@ function sourceText(source: RollModeSource, name: (id: string) => string, status
       }
       return source.aquatic ? th.sourceTerrainAquatic : th.sourceTerrainMatch(th.element[source.terrain])
     case 'status':
-      return th.sourceTargetStatus(statusName(statuses, source.status))
+      return source.holder === 'attacker'
+        ? th.sourceAttackerStatus(statusName(statuses, source.status))
+        : th.sourceTargetStatus(statusName(statuses, source.status))
+    case 'command':
+      return commandDropped ? th.sourceCommandDropped(name(source.tamer)) : th.sourceCommand(name(source.tamer))
     case 'tamerProtection':
       return th.sourceTamerProtected(source.protectors.map(name).join(', '))
   }
@@ -813,12 +889,14 @@ function RollModeSources({
   const sources = preview.rollModeSources
   if (sources.length === 0) return <div className="muted">{th.previewNoSources}</div>
   const net = preview.rollMode === 'normal' ? th.previewNet.cancelled : th.previewNet[preview.rollMode]
+  // Rules §5.3: Command's advantage does not count against a protected Tamer.
+  const commandDropped = sources.some((s) => s.kind === 'tamerProtection')
   return (
     <div className="sources">
       <ul>
         {sources.map((source, index) => (
           <li key={index} className={source.effect}>
-            <span className="tag">{th.rollEffect[source.effect]}</span> {sourceText(source, name, statuses)}
+            <span className="tag">{th.rollEffect[source.effect]}</span> {sourceText(source, name, statuses, commandDropped)}
           </li>
         ))}
       </ul>
@@ -876,6 +954,40 @@ function PreviewCard({
             </li>
           ))}
         </ol>
+      </div>
+    )
+  }
+  if (preview.type === 'heal') {
+    return (
+      <div className="preview" aria-live="polite">
+        <strong>
+          {th.previewHeal(name(preview.user), skillName(data, preview.skill), name(preview.target), preview.min, preview.max, preview.hp, preview.maxHp)}
+        </strong>
+      </div>
+    )
+  }
+  if (preview.type === 'terrain') {
+    return (
+      <div className="preview" aria-live="polite">
+        <strong>
+          {th.previewTerrain(
+            name(preview.user),
+            skillName(data, preview.skill),
+            tileName(preview.tile),
+            th.terrain[preview.from],
+            th.terrain[preview.to],
+            preview.turns,
+            th.terrain[preview.original],
+          )}
+        </strong>
+      </div>
+    )
+  }
+  if (preview.type === 'effect' && data.skills[preview.skill]?.effects?.cover === true) {
+    return (
+      <div className="preview" aria-live="polite">
+        <strong>{th.logSkillUsed(name(preview.user), skillName(data, preview.skill), preview.units.map(name).join(', '))}</strong>
+        <div>{th.previewCover(name(preview.user), preview.units.map(name).join(', '))}</div>
       </div>
     )
   }
@@ -1007,6 +1119,17 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
       return [`${rerolled}${roll}${mode} → ${result}`]
     }
     case 'damageDealt':
+      if (event.coveredBy !== undefined) {
+        return [
+          th.logDamageCovered(
+            name(event.target),
+            name(event.coveredBy),
+            event.amount,
+            event.hpAfter,
+            derivedValues(state, event.coveredBy).maxHp,
+          ),
+        ]
+      }
       return [
         th.logDamage(
           name(event.target),
@@ -1104,6 +1227,41 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
       ]
     case 'counterattack':
       return [th.logCounterattack(name(event.unit), name(event.target), diceText(event.dice))]
+    case 'healed':
+      return [
+        th.logHealed(
+          name(event.source),
+          skillName(data, event.skill),
+          name(event.target),
+          event.amount,
+          diceText(event.dice),
+          event.rolls,
+          event.modifier,
+          event.hpAfter,
+          derivedValues(state, event.target).maxHp,
+        ),
+      ]
+    case 'coverApplied':
+      return [th.logCoverApplied(name(event.by), name(event.unit), event.refreshed === true)]
+    case 'coverEnded':
+      return [th.logCoverEnded(name(event.unit), name(event.by))]
+    case 'terrainChanged':
+      return [
+        th.logTerrainChanged(
+          name(event.unit),
+          skillName(data, event.skill),
+          tileName(event.tile),
+          th.terrain[event.from],
+          th.terrain[event.to],
+          event.turnsLeft,
+        ),
+      ]
+    case 'terrainReverted':
+      return [th.logTerrainReverted(tileName(event.tile), th.terrain[event.from], th.terrain[event.to])]
+    case 'commandIssued':
+      return [th.logCommandIssued(name(event.unit), name(event.target), th.commandOption[event.option])]
+    case 'commandSpent':
+      return [th.logCommandSpent(name(event.unit))]
     case 'inspirationOffered':
       // The prompt shows the offer; the log records the answer.
       return []

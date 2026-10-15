@@ -208,15 +208,22 @@ export function describeAction(action: Action, actor: Side, state: BattleState, 
       return th.replay.action.defend(label(action.unit))
     case 'useSkill': {
       const skill = data.skills[action.skill]?.name ?? action.skill
+      if (action.tile !== undefined && action.element !== undefined) {
+        return th.replay.action.attune(label(action.unit), skill, tileName(action.tile), th.element[action.element])
+      }
       if (action.tile !== undefined) {
         return action.targets === undefined
           ? th.replay.action.teleport(label(action.unit), skill, tileName(action.tile))
           : th.replay.action.area(label(action.unit), skill, tileName(action.tile), action.targets.map(label).join(', '))
       }
-      return action.target === undefined
-        ? th.replay.action.skill(label(action.unit), skill)
+      if (action.target === undefined) return th.replay.action.skill(label(action.unit), skill)
+      // Ids start with the side: an ally (Cover, First Aid) or the user itself, or an enemy.
+      return action.target.charAt(0) === action.unit.charAt(0)
+        ? th.replay.action.skillOn(label(action.unit), skill, label(action.target))
         : th.replay.action.attack(label(action.unit), skill, label(action.target))
     }
+    case 'command':
+      return th.replay.action.command(label(action.unit), label(action.target), th.commandOption[action.option] ?? action.option)
     case 'retreat':
       return action.to === null
         ? th.replay.action.stay(label(action.unit))

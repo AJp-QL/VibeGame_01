@@ -19,13 +19,19 @@
  * step light up: tap one, or stay. Tapping any other Unit shows its card
  * (statuses with their remaining duration).
  *
+ * Tamer (rules §15.4, §16): Cover and First Aid light up the allies they may
+ * be aimed at (First Aid: the Tamer too); Attune lights up the tiles next to
+ * the Tamer (a tile or the Unit on it), then one of the 6 elements is chosen.
+ * Command has its own button: the allied Monsters it may order light up →
+ * tap one → choose advantage or +1 move → confirm.
+ *
  * Inspiration (rules §18): after a d20 the deciding side may reroll, the
  * engine pauses with a pending decision and the UI shows the roll with "use"
  * and "keep" buttons. When the side that must decide is not the one holding
  * the device (a save on the other side's Turn), a hand-over screen covers
  * the Board first, and again when the device must go back.
  */
-import { sameTile, type Tile } from '@mt/shared'
+import { sameTile, type Element, type Tile } from '@mt/shared'
 import {
   applyAction,
   areaTiles,
@@ -38,6 +44,7 @@ import {
   type ActionPreview,
   type BattleEvent,
   type BattleState,
+  type CommandOption,
   type RejectionCode,
   type SkillAvailability,
   type UnitId,
@@ -55,8 +62,8 @@ import type { BattleSessionPort, BattleSnapshot, BoardInput } from '@mt/battle'
  */
 export type HotseatScreen = 'board' | 'handoff' | 'initiative' | 'decisionHandoff'
 
-/** What the selected Unit is about to do: Move (default), pick a Basic Attack target, or use a skill. */
-export type SelectionMode = 'move' | 'attack' | 'skill'
+/** What the selected Unit is about to do: Move (default), pick a Basic Attack target, use a skill, or Command (Tamer). */
+export type SelectionMode = 'move' | 'attack' | 'skill' | 'command'
 
 /**
  * An enemy in range that the selected Unit cannot target: Units stand in the
@@ -88,6 +95,14 @@ export interface SessionSnapshot extends BattleSnapshot {
   readonly mode: SelectionMode
   /** The skill being aimed in `skill` mode. */
   readonly pendingSkill: string | null
+  /** Attune: the element chosen for `pendingTile`. */
+  readonly pendingElement: Element | null
+  /** Attune: the elements the legal actions allow on `pendingTile`, in the engine's order. */
+  readonly elementChoices: readonly Element[]
+  /** `command` mode: the option chosen for `pendingTarget`. */
+  readonly pendingOption: CommandOption | null
+  /** The selected Unit is a Tamer that may issue a Command now (rules §16). */
+  readonly canCommand: boolean
   /** A Unit tapped to read its card (any side), when it is not the selected one. */
   readonly inspectedUnit: UnitId | null
   /** The selected Unit has at least one enemy it can Basic Attack now. */
@@ -118,6 +133,12 @@ export interface BattleSession extends BattleSessionPort {
   chooseSkill(skill: string): void
   /** The selected Unit uses Defend as its Action. */
   defend(): void
+  /** The selected Tamer starts a Command: the Monsters it may order light up (rules §16). */
+  chooseCommand(): void
+  /** Command: advantage or +1 move for the Monster picked. */
+  chooseCommandOption(option: CommandOption): void
+  /** Attune: the element for the tile picked. */
+  chooseElement(element: Element): void
   /** Carry out the previewed attack or skill. */
   confirmAttack(): void
   /** After Hit and Run: stay instead of stepping. */
@@ -145,6 +166,8 @@ type Computed =
   | 'ready'
   | 'tileChoices'
   | 'area'
+  | 'elementChoices'
+  | 'canCommand'
 
 /** The tiles the legal actions let `unit` go to: Move destinations, placements, or Hit and Run's step. */
 function moveTiles(actions: readonly Action[], unit: UnitId | null): Tile[] {
@@ -193,6 +216,12 @@ function nextAreaTargets(uses: readonly UseSkillAction[], centre: Tile | null, c
     const next = targets[chosen.length]
     return next === undefined ? [] : [next]
   })
+}
+
+/** The allied Monsters the Tamer `unit` may Command now. */
+function commandTargets(actions: readonly Action[], unit: UnitId | null): UnitId[] {
+  if (unit === null) return []
+  return [...new Set(actions.flatMap((a) => (a.type === 'command' && a.unit === unit ? [a.target] : [])))]
 }
 
 /** The Units `unit` may aim at now: Basic Attack targets, or the targets of `skill`. */
@@ -269,18 +298,30 @@ function screenAfter(before: BattleState, after: BattleState, action: Action): H
 }
 
 /** No attack or skill in progress. */
-const NO_AIM = { mode: 'move', pendingTarget: null, pendingSkill: null, pendingTile: null, chosenTargets: [] } as const
+const NO_AIM = {
+  mode: 'move',
+  pendingTarget: null,
+  pendingSkill: null,
+  pendingTile: null,
+  chosenTargets: [],
+  pendingElement: null,
+  pendingOption: null,
+} as const
 
 export function createBattleSession(initial: BattleState): BattleSession {
   const listeners = new Set<() => void>()
 
   /** The action Confirm would send now, from the legal actions only. */
   function readyAction(base: Omit<SessionSnapshot, Computed>, actions: readonly Action[]): Action | null {
-    const { selectedUnit, mode, pendingTarget, pendingSkill, pendingTile, chosenTargets } = base
+    const { selectedUnit, mode, pendingTarget, pendingSkill, pendingTile, chosenTargets, pendingElement, pendingOption } = base
     if (selectedUnit === null) return null
     const legal = (match: (a: Action) => boolean) => actions.find(match) ?? null
     if (mode === 'attack' && pendingTarget !== null) {
       return legal((a) => a.type === 'basicAttack' && a.unit === selectedUnit && a.target === pendingTarget)
+    }
+    if (mode === 'command') {
+      if (pendingTarget === null || pendingOption === null) return null
+      return legal((a) => a.type === 'command' && a.unit === selectedUnit && a.target === pendingTarget && a.option === pendingOption)
     }
     const kind = aimKind(base.state, pendingSkill)
     if (mode === 'skill' && kind !== 'unit') {
@@ -288,7 +329,12 @@ export function createBattleSession(initial: BattleState): BattleSession {
       const tile = pendingTile
       return (
         usesOf(actions, selectedUnit, pendingSkill).find(
-          (a) => a.tile !== undefined && sameTile(a.tile, tile) && (kind === 'tile' || sameTargets(a.targets, chosenTargets)),
+          (a) =>
+            a.tile !== undefined &&
+            sameTile(a.tile, tile) &&
+            // Attune: also the element chosen.
+            (a.element === undefined || a.element === pendingElement) &&
+            (kind === 'tile' || sameTargets(a.targets, chosenTargets)),
         ) ?? null
       )
     }
@@ -311,16 +357,20 @@ export function createBattleSession(initial: BattleState): BattleSession {
     const kind = aimKind(state, aimingSkill)
     const uses = kind === 'unit' ? [] : usesOf(actions, selectedUnit, aimingSkill)
     const targets =
-      kind === 'area'
-        ? nextAreaTargets(uses, pendingTile, chosenTargets)
-        : kind === 'tile'
-          ? []
-          : aimTargets(actions, selectedUnit, aimingSkill)
+      mode === 'command'
+        ? commandTargets(actions, selectedUnit)
+        : kind === 'area'
+          ? nextAreaTargets(uses, pendingTile, chosenTargets)
+          : kind === 'tile'
+            ? []
+            : aimTargets(actions, selectedUnit, aimingSkill)
     const basicTargets = aimingSkill === null ? targets : aimTargets(actions, selectedUnit, null)
     const blocked =
       mode === 'move'
         ? blockedTargets(state, selectedUnit, null)
-        : kind === 'unit'
+        : mode === 'command'
+          ? []
+          : kind === 'unit'
           ? blockedTargets(state, selectedUnit, aimingSkill)
           : []
     const aimedSkill = aimingSkill === null ? undefined : state.skills[aimingSkill]
@@ -344,6 +394,14 @@ export function createBattleSession(initial: BattleState): BattleSession {
         return unit ? [unit.tile] : []
       })
     const aiming = mode !== 'move'
+    const elementChoices: Element[] = []
+    if (kind === 'tile' && pendingTile !== null) {
+      for (const use of uses) {
+        if (use.element !== undefined && use.tile !== undefined && sameTile(use.tile, pendingTile) && !elementChoices.includes(use.element)) {
+          elementChoices.push(use.element)
+        }
+      }
+    }
     return {
       ...base,
       // Hotseat: the player holding the device is the side to act.
@@ -361,6 +419,8 @@ export function createBattleSession(initial: BattleState): BattleSession {
       // Burst's centres until one is picked; Blink's destinations all along (tap another to change).
       tileChoices: kind === 'tile' || (kind === 'area' && pendingTile === null) ? useTiles(uses) : [],
       area: kind === 'area' && pendingTile !== null && aimedSkill !== undefined ? areaTiles(aimedSkill, pendingTile) : [],
+      elementChoices,
+      canCommand: commandTargets(actions, selectedUnit).length > 0,
     }
   }
 
@@ -460,8 +520,20 @@ export function createBattleSession(initial: BattleState): BattleSession {
         update({ inspectedUnit: boardInput.unit === owing ? null : boardInput.unit })
         return
       }
-      if (mode === 'skill' && aimKind(state, snapshot.pendingSkill) === 'area') {
+      if (mode === 'command') {
+        if (commandTargets(legalActions(state), selectedUnit).includes(boardInput.unit)) {
+          update({ pendingTarget: boardInput.unit, pendingOption: null, rejection: null })
+          return
+        }
+      } else if (mode === 'skill' && aimKind(state, snapshot.pendingSkill) === 'area') {
         if (aimArea(boardInput.unit)) return
+      } else if (mode === 'skill' && aimKind(state, snapshot.pendingSkill) === 'tile') {
+        // Attune may change the tile a Unit stands on: a tap on that Unit picks its tile.
+        const tapped = state.units.find((u) => u.id === boardInput.unit)
+        if (tapped !== undefined && snapshot.tileChoices.some((t) => sameTile(t, tapped.tile))) {
+          update({ pendingTile: tapped.tile, pendingElement: null, rejection: null })
+          return
+        }
       } else if (mode !== 'move') {
         const skill = mode === 'skill' ? snapshot.pendingSkill : null
         if (aimTargets(legalActions(state), selectedUnit, skill).includes(boardInput.unit)) {
@@ -481,7 +553,7 @@ export function createBattleSession(initial: BattleState): BattleSession {
     const { tile } = boardInput
     if (mode === 'skill' && (snapshot.tileChoices.some((t) => sameTile(t, tile)) || isCentre(tile))) {
       // A destination or centre (another centre after one was picked starts over from it).
-      update({ pendingTile: tile, chosenTargets: [], rejection: null })
+      update({ pendingTile: tile, chosenTargets: [], pendingElement: null, rejection: null })
       return
     }
     const onReachable = reachable.some((t) => t.x === tile.x && t.y === tile.y)
@@ -537,6 +609,15 @@ export function createBattleSession(initial: BattleState): BattleSession {
       const { selectedUnit } = snapshot
       if (selectedUnit !== null) dispatch({ type: 'defend', unit: selectedUnit })
     },
+    chooseCommand() {
+      if (snapshot.selectedUnit !== null && snapshot.canCommand) update({ ...NO_AIM, mode: 'command', rejection: null })
+    },
+    chooseCommandOption(option) {
+      if (snapshot.mode === 'command' && snapshot.pendingTarget !== null) update({ pendingOption: option, rejection: null })
+    },
+    chooseElement(element) {
+      if (snapshot.elementChoices.includes(element)) update({ pendingElement: element, rejection: null })
+    },
     confirmAttack() {
       if (snapshot.ready !== null) dispatch(snapshot.ready)
     },
@@ -555,6 +636,8 @@ export function createBattleSession(initial: BattleState): BattleSession {
     cancel() {
       if (snapshot.state.pending !== null) return
       if (snapshot.chosenTargets.length > 0) update({ chosenTargets: snapshot.chosenTargets.slice(0, -1), rejection: null })
+      else if (snapshot.pendingElement !== null) update({ pendingElement: null, rejection: null })
+      else if (snapshot.pendingOption !== null) update({ pendingOption: null, rejection: null })
       else if (snapshot.pendingTile !== null) {
         update({ pendingTile: null, rejection: null })
       } else if (snapshot.pendingTarget !== null) update({ pendingTarget: null, rejection: null })

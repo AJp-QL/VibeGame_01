@@ -62,6 +62,12 @@ export function skillSummary(skill: Skill, statuses: Readonly<Record<string, Sta
     parts.push(th.skillAreaRange(skill.range, skill.area.radius * 2 + 1, skill.area.maxTargets))
   } else if (skill.target === 'tile' && skill.effects?.replacesMove === true) {
     parts.push(th.skillTeleport(skill.range))
+  } else if (skill.target === 'tile' && skill.effects?.terrainTurns !== undefined) {
+    parts.push(th.skillAttune(skill.effects.terrainTurns))
+  } else if (skill.target === 'ally') {
+    parts.push(th.skillRangeSelfOrAlly(skill.range))
+  } else if (skill.target === 'allyMonster') {
+    parts.push(th.skillRangeAllyMonster(skill.range))
   } else {
     parts.push(skill.target === 'selfAndAllies' ? th.skillRangeAllies(skill.range) : th.skillRange(skill.range))
   }
@@ -73,6 +79,8 @@ export function skillSummary(skill: Skill, statuses: Readonly<Record<string, Sta
   }
   if (skill.attack !== undefined && skill.damage === undefined) parts.push(th.skillNoDamage)
   if (skill.effects?.retreat !== undefined) parts.push(th.skillRetreat)
+  if (skill.effects?.heal !== undefined) parts.push(th.skillHeal(diceText(skill.effects.heal.dice), statName(skill.effects.heal.stat)))
+  if (skill.effects?.cover === true) parts.push(th.skillCover)
   if (skill.effects?.requiresTerrain !== undefined) parts.push(th.skillRequiresTerrain(th.terrain[skill.effects.requiresTerrain]))
   return parts.join(' · ')
 }
