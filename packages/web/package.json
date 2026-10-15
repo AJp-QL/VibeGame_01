@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mt/ai": "workspace:*",
     "@mt/battle": "workspace:*",
     "@mt/engine": "workspace:*",
     "@mt/shared": "workspace:*",

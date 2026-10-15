@@ -281,6 +281,9 @@ importers:
 
   packages/web:
     dependencies:
+      '@mt/ai':
+        specifier: workspace:*
+        version: link:../ai
       '@mt/battle':
         specifier: workspace:*
         version: link:../battle

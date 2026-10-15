@@ -30,8 +30,16 @@
  * and "keep" buttons. When the side that must decide is not the one holding
  * the device (a save on the other side's Turn), a hand-over screen covers
  * the Board first, and again when the device must go back.
+ *
+ * Against the AI (spec user stories 9, 12, 51): the human plays one team and
+ * sees what that team may see; the AI (@mt/ai) works out its deployment
+ * before the human places (rules §17.1) and plays every decision of its side
+ * through the engine like a player, one action per `aiStep` (the UI calls it
+ * with a short delay so each action shows on the Board and in the log). No
+ * hand-over screens; the human can only act when it is the human's decision.
  */
-import { sameTile, type Element, type Tile } from '@mt/shared'
+import { sameTile, type Element, type Side, type Tile } from '@mt/shared'
+import { chooseAction, createAi, planDeployment, type AiProfile, type AiState } from '@mt/ai'
 import {
   applyAction,
   areaTiles,
@@ -117,6 +125,20 @@ export interface SessionSnapshot extends BattleSnapshot {
   readonly preview: ActionPreview | null
   /** The action the Confirm button would send, if there is one. */
   readonly ready: Action | null
+  /** Against the AI: the team the AI plays; `null` in Hotseat. */
+  readonly aiSide: Side | null
+  /** Against the AI: the AI has the next decision and `aiStep` will play it. */
+  readonly aiToAct: boolean
+}
+
+/** Play against the AI: it plays `side` with `profile`; the human plays the other team. */
+export interface AiOpponent {
+  readonly side: Side
+  readonly profile: AiProfile
+}
+
+export interface SessionOptions {
+  readonly ai?: AiOpponent
 }
 
 export interface BattleSession extends BattleSessionPort {
@@ -149,6 +171,8 @@ export interface BattleSession extends BattleSessionPort {
   declineInspiration(): void
   /** Step back: drop the previewed target, then leave attack/skill mode, then the selection. */
   cancel(): void
+  /** Against the AI: play the AI's next action if it has the decision (`aiToAct`); `true` if it did. */
+  aiStep(): boolean
 }
 
 /** Derived from the engine on every change; never stored on its own. */
@@ -168,6 +192,7 @@ type Computed =
   | 'area'
   | 'elementChoices'
   | 'canCommand'
+  | 'aiToAct'
 
 /** The tiles the legal actions let `unit` go to: Move destinations, placements, or Hit and Run's step. */
 function moveTiles(actions: readonly Action[], unit: UnitId | null): Tile[] {
@@ -291,8 +316,10 @@ function selectionAfter(state: BattleState): UnitId | null {
  * side that must act changed without a Turn ending (an Inspiration decision
  * for the other side, or back after it). Initiative keeps its own screen.
  */
-function screenAfter(before: BattleState, after: BattleState, action: Action): HotseatScreen {
+function screenAfter(before: BattleState, after: BattleState, action: Action, vsAi: boolean): HotseatScreen {
   if (before.phase === 'play' && before.firstSide === null) return 'initiative'
+  // Against the AI nobody hands a device over.
+  if (vsAi) return 'board'
   if (action.type === 'endTurn' || after.outcome !== null || after.phase !== 'play') return 'board'
   return decidingSide(after) === decidingSide(before) ? 'board' : 'decisionHandoff'
 }
@@ -308,8 +335,30 @@ const NO_AIM = {
   pendingOption: null,
 } as const
 
-export function createBattleSession(initial: BattleState): BattleSession {
+const otherSide = (side: Side): Side => (side === 'A' ? 'B' : 'A')
+
+export function createBattleSession(initial: BattleState, options: SessionOptions = {}): BattleSession {
   const listeners = new Set<() => void>()
+  const opponent = options.ai ?? null
+  const human: Side | null = opponent === null ? null : otherSide(opponent.side)
+  let ai: AiState | null = opponent === null ? null : createAi(initial, opponent.side, opponent.profile)
+  /** The AI's deployment, worked out before the human places (rules §17.1); sent once it is the AI's turn to place. */
+  let aiDeployment: readonly Action[] = []
+  if (ai !== null && initial.phase === 'deployment') {
+    const planned = planDeployment(initial, ai)
+    ai = planned.ai
+    aiDeployment = planned.actions
+  }
+
+  /** The human may act now: always in Hotseat; against the AI, when the decision is the human's. */
+  function humanMayAct(state: BattleState): boolean {
+    return human === null || (state.outcome === null && decidingSide(state) === human)
+  }
+
+  /** Whose view the Board shows: the side to act (Hotseat), or the human's team. */
+  function viewer(state: BattleState): Side {
+    return human ?? state.sideToAct
+  }
 
   /** The action Confirm would send now, from the legal actions only. */
   function readyAction(base: Omit<SessionSnapshot, Computed>, actions: readonly Action[]): Action | null {
@@ -404,8 +453,8 @@ export function createBattleSession(initial: BattleState): BattleSession {
     }
     return {
       ...base,
-      // Hotseat: the player holding the device is the side to act.
-      units: unitsVisibleTo(state, state.sideToAct),
+      // Hotseat: the player holding the device is the side to act. Against the AI: the human's team.
+      units: unitsVisibleTo(state, viewer(state)),
       canAct: unitsThatCanAct(actions),
       reachable: mode === 'move' || state.pending !== null ? moveTiles(actions, selectedUnit) : [],
       targets: aiming ? tilesOf(targets) : [],
@@ -421,6 +470,12 @@ export function createBattleSession(initial: BattleState): BattleSession {
       area: kind === 'area' && pendingTile !== null && aimedSkill !== undefined ? areaTiles(aimedSkill, pendingTile) : [],
       elementChoices,
       canCommand: commandTargets(actions, selectedUnit).length > 0,
+      aiToAct:
+        opponent !== null &&
+        state.outcome === null &&
+        state.phase === 'play' &&
+        decidingSide(state) === opponent.side &&
+        (base.screen === 'board' || state.pending !== null),
     }
   }
 
@@ -435,6 +490,7 @@ export function createBattleSession(initial: BattleState): BattleSession {
     log: [],
     actions: [],
     screen: 'board',
+    aiSide: opponent?.side ?? null,
   })
 
   function update(next: Partial<Omit<SessionSnapshot, Computed>>): void {
@@ -454,11 +510,11 @@ export function createBattleSession(initial: BattleState): BattleSession {
       return
     }
     update({
-      screen: screenAfter(before, result.state, action),
+      screen: screenAfter(before, result.state, action, opponent !== null),
       state: result.state,
       events: result.events,
       revision: snapshot.revision + 1,
-      selectedUnit: selectionAfter(result.state),
+      selectedUnit: humanMayAct(result.state) ? selectionAfter(result.state) : null,
       ...NO_AIM,
       inspectedUnit: null,
       rejection: null,
@@ -468,11 +524,30 @@ export function createBattleSession(initial: BattleState): BattleSession {
     })
   }
 
+  /**
+   * Against the AI, its deployment goes in whenever it is the AI's turn to
+   * place: at once when it is team A, right after the human confirms when it
+   * is team B. It was worked out first either way, from the Board alone.
+   */
+  function deployAi(): void {
+    if (opponent === null) return
+    while (snapshot.state.phase === 'deployment' && snapshot.state.sideToAct === opponent.side && aiDeployment.length > 0) {
+      const [next, ...rest] = aiDeployment
+      aiDeployment = rest
+      if (next !== undefined) dispatch(next)
+    }
+  }
+
+  /** The state now (a function, so TypeScript does not keep a narrowing across calls that change it). */
+  const currentState = (): BattleState => snapshot.state
+
+  deployAi()
+
   function selectUnit(unit: UnitId | null): void {
     const { state, selectedUnit } = snapshot
     // A pending decision (Hit and Run's step, Inspiration) keeps the selection.
     if (state.pending !== null) return
-    const own = unit !== null && unit.startsWith(`${state.sideToAct}.`) && state.outcome === null
+    const own = unit !== null && unit.startsWith(`${state.sideToAct}.`) && state.outcome === null && humanMayAct(state)
     // In play, choosing the selected Unit again clears the selection.
     const toggleOff = state.phase === 'play' && unit === selectedUnit
     // Any other Unit on the Board is shown, not selected (its card, statuses included).
@@ -514,6 +589,11 @@ export function createBattleSession(initial: BattleState): BattleSession {
 
   function input(boardInput: BoardInput): void {
     const { state, selectedUnit, reachable, mode } = snapshot
+    if (!humanMayAct(state)) {
+      // The AI's decision: Units can still be looked at, nothing else.
+      if (boardInput.type === 'tapUnit') update({ inspectedUnit: boardInput.unit })
+      return
+    }
     if (boardInput.type === 'tapUnit') {
       if (state.pending !== null) {
         const owing = state.pending.kind === 'retreat' ? state.pending.unit : null
@@ -582,16 +662,24 @@ export function createBattleSession(initial: BattleState): BattleSession {
     input,
     selectUnit,
     confirmDeployment() {
+      if (!humanMayAct(snapshot.state)) return
       // Cover the Board until the next player is ready (hand-off) or has seen initiative.
       dispatch({ type: 'confirmDeployment' }, (state) => ({
-        screen: state.phase === 'play' ? 'initiative' : 'handoff',
+        screen: state.phase === 'play' ? 'initiative' : opponent !== null ? 'board' : 'handoff',
         selectedUnit: null,
       }))
+      // Against the AI there is no hand-off: its hidden placements go in, then the reveal.
+      if (opponent !== null && snapshot.state.phase === 'deployment') {
+        deployAi()
+        if (currentState().phase === 'play') update({ screen: 'initiative', selectedUnit: null })
+      }
     },
     continueHotseat() {
       update({ screen: 'board', selectedUnit: firstUnplaced(snapshot.state) })
     },
-    endTurn: () => dispatch({ type: 'endTurn' }),
+    endTurn() {
+      if (humanMayAct(snapshot.state)) dispatch({ type: 'endTurn' })
+    },
     chooseAttack() {
       if (snapshot.selectedUnit !== null && (snapshot.canAttack || snapshot.blocked.length > 0)) {
         update({ ...NO_AIM, mode: 'attack', rejection: null })
@@ -607,7 +695,7 @@ export function createBattleSession(initial: BattleState): BattleSession {
     },
     defend() {
       const { selectedUnit } = snapshot
-      if (selectedUnit !== null) dispatch({ type: 'defend', unit: selectedUnit })
+      if (selectedUnit !== null && humanMayAct(snapshot.state)) dispatch({ type: 'defend', unit: selectedUnit })
     },
     chooseCommand() {
       if (snapshot.selectedUnit !== null && snapshot.canCommand) update({ ...NO_AIM, mode: 'command', rejection: null })
@@ -619,19 +707,26 @@ export function createBattleSession(initial: BattleState): BattleSession {
       if (snapshot.elementChoices.includes(element)) update({ pendingElement: element, rejection: null })
     },
     confirmAttack() {
-      if (snapshot.ready !== null) dispatch(snapshot.ready)
+      if (snapshot.ready !== null && humanMayAct(snapshot.state)) dispatch(snapshot.ready)
     },
     stayInPlace() {
       const pending = snapshot.state.pending
-      if (pending?.kind === 'retreat') dispatch({ type: 'retreat', unit: pending.unit, to: null })
+      if (pending?.kind === 'retreat' && humanMayAct(snapshot.state)) dispatch({ type: 'retreat', unit: pending.unit, to: null })
     },
     useInspiration() {
       const pending = snapshot.state.pending
-      if (pending?.kind === 'inspiration') dispatch({ type: 'useInspiration', side: pending.side })
+      if (pending?.kind === 'inspiration' && humanMayAct(snapshot.state)) dispatch({ type: 'useInspiration', side: pending.side })
     },
     declineInspiration() {
       const pending = snapshot.state.pending
-      if (pending?.kind === 'inspiration') dispatch({ type: 'declineInspiration', side: pending.side })
+      if (pending?.kind === 'inspiration' && humanMayAct(snapshot.state)) dispatch({ type: 'declineInspiration', side: pending.side })
+    },
+    aiStep() {
+      if (ai === null || !snapshot.aiToAct) return false
+      const choice = chooseAction(snapshot.state, ai)
+      ai = choice.ai
+      dispatch(choice.action)
+      return true
     },
     cancel() {
       if (snapshot.state.pending !== null) return

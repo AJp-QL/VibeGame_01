@@ -6,5 +6,5 @@
     "types": ["node"]
   },
   "include": ["."],
-  "references": [{ "path": ".." }, { "path": "../../shared" }, { "path": "../../engine" }, { "path": "../../battle" }]
+  "references": [{ "path": ".." }, { "path": "../../shared" }, { "path": "../../engine" }, { "path": "../../ai" }, { "path": "../../battle" }]
 }

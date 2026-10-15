@@ -8,6 +8,7 @@ import {
   battleSetup,
   canStart,
   defaultChoice,
+  aiOpponent,
   isModeAvailable,
   menuBoards,
   menuScenarios,
@@ -48,12 +49,15 @@ describe('menu: what it offers (spec user stories 8–9)', () => {
     expect(defaultChoice(data)).toEqual({ scenarioId: 'scenario_1', boardId: 'crossroads', mode: 'hotseat', humanSide: 'A' })
   })
 
-  it('shows "vs AI" but cannot start it yet (AI is ticket 15)', () => {
+  it('starts "vs AI" with the team chosen: the AI plays the other team (ticket 15)', () => {
     expect(isModeAvailable('hotseat')).toBe(true)
-    expect(isModeAvailable('ai')).toBe(false)
+    expect(isModeAvailable('ai')).toBe(true)
     const vsAi: BattleChoice = { ...defaultChoice(data), mode: 'ai', humanSide: 'B' }
-    expect(canStart(data, vsAi)).toBe(false)
-    expect(() => battleSetup(data, vsAi, SEED)).toThrow()
+    expect(canStart(data, vsAi)).toBe(true)
+    expect(battleSetup(data, vsAi, SEED).dice).toEqual({ seed: SEED })
+    expect(aiOpponent(vsAi)?.side).toBe('A')
+    expect(aiOpponent({ ...vsAi, humanSide: 'A' })?.side).toBe('B')
+    expect(aiOpponent(defaultChoice(data))).toBeUndefined()
   })
 
   it('cannot start a Scenario or Board that is not in data/', () => {

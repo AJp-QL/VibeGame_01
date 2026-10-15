@@ -81,7 +81,7 @@ export const th = {
     } satisfies Record<Mode, string>,
     modeNote: {
       hotseat: 'สองคนผลัดกันเล่นบนเครื่องเดียว',
-      ai: 'เร็ว ๆ นี้ ยังเล่นไม่ได้',
+      ai: 'เล่นคนเดียวกับ AI เลือกทีมได้ AI วางก่อนแบบซ่อน',
     } satisfies Record<Mode, string>,
     side: (side: Side) => `ทีม ${side}`,
     start: 'เริ่ม Battle',
@@ -341,6 +341,15 @@ export const th = {
       `ทีม ${side} ตัดสินใจว่าจะใช้ Inspiration ทอย d20 ของตัวเองใหม่หรือไม่ (ระหว่าง Turn ของทีม ${turnOf})`,
     handoffBack: (side: Side) => `ทีม ${side} เล่นต่อ`,
     handoffReady: (side: Side) => `ทีม ${side} พร้อม`,
+    aiDeciding: (side: Side) => `AI (ทีม ${side}) กำลังตัดสินใจว่าจะใช้ Inspiration หรือไม่`,
+  },
+
+  /** Playing against the AI (ticket 15). */
+  ai: {
+    sides: (human: Side, ai: Side) => `คุณเล่นทีม ${human} · AI เล่นทีม ${ai}`,
+    playing: (side: Side) => `AI (ทีม ${side}) กำลังเล่น ดูผลแต่ละขั้นใน Board และ log`,
+    deploymentHint: (side: Side, aiSide: Side) =>
+      `วาง Tamer และ Monster 2 ตัวบนช่องว่างในโซนเริ่มของทีม ${side} (2 แถวหลัง) AI (ทีม ${aiSide}) วางไว้ก่อนแล้วแบบซ่อน จะเปิดเผยพร้อมกันเมื่อคุณยืนยัน`,
   },
   logInspirationUsed: (side: Side) => `ทีม ${side} ใช้ Inspiration ทอยใหม่`,
   logInspirationDeclined: (side: Side) => `ทีม ${side} ไม่ใช้ Inspiration`,

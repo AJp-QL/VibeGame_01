@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import {
   COMMAND_OPTIONS,
   COUNTERATTACK,
@@ -25,7 +25,7 @@ import { DataError, isOnBoard, tileName, type GameData, type Side, type Terrain 
 import { BattleView } from './BattleView.tsx'
 import { loadBundledGameData } from './gameData.ts'
 import { Menu, type ReplayNotice } from './Menu.tsx'
-import { battleSetup, defaultChoice, type BattleChoice } from './battleChoice.ts'
+import { aiOpponent, battleSetup, defaultChoice, type BattleChoice } from './battleChoice.ts'
 import { battleReplay, downloadReplay, openReplay, type OpenedReplay } from './replay.ts'
 import { ReplayScreen } from './ReplayScreen.tsx'
 import { createBattleSession, idleUnits, type BattleSession, type SessionSnapshot } from './session.ts'
@@ -79,7 +79,8 @@ function openMenu(): Screen {
 function startBattle(data: GameData, choice: BattleChoice): Screen {
   try {
     const diceSeed = randomDiceSeed()
-    const session = createBattleSession(createBattle(battleSetup(data, choice, diceSeed)))
+    const ai = aiOpponent(choice)
+    const session = createBattleSession(createBattle(battleSetup(data, choice, diceSeed)), ai === undefined ? {} : { ai })
     return { kind: 'battle', data, choice, session, diceSeed }
   } catch (error) {
     return errorScreen(error)
@@ -198,15 +199,33 @@ interface BattleScreenProps {
   onExportReplay: () => void
 }
 
+/**
+ * Against the AI: wait this long before each AI action, so the human sees
+ * every step (move, roll, damage) on the Board and in the log (spec user story 51).
+ */
+const AI_STEP_MS = 700
+/** A quicker pause before the AI answers an Inspiration decision. */
+const AI_DECISION_MS = 400
+
 function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu, onExportReplay }: BattleScreenProps) {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot)
   const { state } = snapshot
+
+  // The AI plays one action at a time; each one changes the snapshot, which schedules the next.
+  const { aiToAct, revision } = snapshot
+  const aiDeciding = aiToAct && state.pending !== null
+  useEffect(() => {
+    if (!aiToAct) return undefined
+    const timer = setTimeout(() => session.aiStep(), aiDeciding ? AI_DECISION_MS : AI_STEP_MS)
+    return () => clearTimeout(timer)
+  }, [session, aiToAct, aiDeciding, revision])
   const scenario = data.scenarios[state.scenarioId]
   const board = data.boards[state.boardId]
 
   return (
     <main className="battle">
       <StatusBar state={state} />
+      {snapshot.aiSide !== null && <p className="muted vs-ai">{th.ai.sides(otherSide(snapshot.aiSide), snapshot.aiSide)}</p>}
 
       {state.outcome === null && <BattleMenu onExportReplay={onExportReplay} onLeave={onMenu} />}
 
@@ -375,6 +394,19 @@ function InspirationPrompt({ snapshot, session, data }: { snapshot: SessionSnaps
   const pending = state.pending
   if (pending?.kind !== 'inspiration') return null
   const roll = logLines(pending.roll, namer(state, data), state, data)
+  if (snapshot.aiSide === pending.side) {
+    // The AI answers on its own; the human only sees the roll it is deciding about.
+    return (
+      <div className={`inspiration-prompt side-${pending.side}`} role="status">
+        <strong>{th.inspiration.aiDeciding(pending.side)}</strong>
+        {roll.map((line) => (
+          <p key={line} className="roll">
+            {line}
+          </p>
+        ))}
+      </div>
+    )
+  }
   return (
     <div className={`inspiration-prompt side-${pending.side}`} role="group" aria-labelledby="inspiration-title">
       <strong id="inspiration-title">{th.inspiration.title(pending.side)}</strong>
@@ -478,7 +510,13 @@ function DeploymentPanel({ snapshot, session, data }: { snapshot: SessionSnapsho
   const canConfirm = legalActions(state).some((a) => a.type === 'confirmDeployment')
   return (
     <section className="panel controls">
-      <p className="hint">{snapshot.rejection !== null ? th.rejection[snapshot.rejection] : th.deploymentHint(side)}</p>
+      <p className="hint">
+        {snapshot.rejection !== null
+          ? th.rejection[snapshot.rejection]
+          : snapshot.aiSide !== null
+            ? th.ai.deploymentHint(side, snapshot.aiSide)
+            : th.deploymentHint(side)}
+      </p>
       <p className="hint">{th.deploymentPick}</p>
       <ul className="roster">
         {roster.map((unit) => {
@@ -572,6 +610,20 @@ function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; ses
 
   const inspected = state.units.find((u) => u.id === snapshot.inspectedUnit)
   const deciding = state.pending !== null
+
+  // Against the AI, while the AI has the decision: what it is doing, no controls.
+  if (snapshot.aiSide !== null && snapshot.aiSide === decidingSide(state)) {
+    return (
+      <section className="panel controls" aria-live="polite">
+        {state.pending?.kind === 'inspiration' ? (
+          <InspirationPrompt snapshot={snapshot} session={session} data={data} />
+        ) : (
+          <p className="hint">{th.ai.playing(snapshot.aiSide)}</p>
+        )}
+        {inspected !== undefined && <UnitCard unit={inspected} state={state} data={data} />}
+      </section>
+    )
+  }
 
   return (
     <section className="panel controls">

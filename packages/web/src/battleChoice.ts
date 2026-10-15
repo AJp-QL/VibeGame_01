@@ -3,17 +3,25 @@
  * Board, which mode and, against the AI, which team the human plays. No
  * rules here; `battleSetup` turns the choice into the engine's BattleSetup.
  */
+import { DEFAULT_GAME_PROFILE } from '@mt/ai'
 import type { BattleSetup } from '@mt/engine'
 import { BATTLE_MODES, type BattleMode, type Board, type GameData, type Scenario, type Side } from '@mt/shared'
+import type { AiOpponent } from './session.ts'
 
 /** The modes live in @mt/shared because every Replay records one. */
 export const MODES = BATTLE_MODES
 /** Hotseat: two players share one device. AI: one player against the AI. */
 export type Mode = BattleMode
 
-/** Modes that can start now; playing against the AI arrives with the AI ticket (15). */
+/** Modes that can start now: both (the AI arrived with ticket 15). */
 export function isModeAvailable(mode: Mode): boolean {
-  return mode === 'hotseat'
+  return (MODES as readonly string[]).includes(mode)
+}
+
+/** Against the AI: the AI plays the team the human did not choose, with the in-game profile. */
+export function aiOpponent(choice: BattleChoice): AiOpponent | undefined {
+  if (choice.mode !== 'ai') return undefined
+  return { side: choice.humanSide === 'A' ? 'B' : 'A', profile: DEFAULT_GAME_PROFILE }
 }
 
 export interface BattleChoice {
