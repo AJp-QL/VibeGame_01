@@ -7,9 +7,9 @@
  * (Off-balance, §14.2), Command (§16) and Tamer protection (§9). Defend gives
  * no advantage or disadvantage, it raises Guard and Ward (§12).
  */
-import type { Element, ElementWheel, Terrain } from '@mt/shared'
+import type { Element, ElementWheel, Terrain, Tile } from '@mt/shared'
 import { distance } from './movement.ts'
-import { terrainAt, type BattleState, type StatusId, type UnitId, type UnitState } from './state.ts'
+import { terrainAt, type BattleState, type StatusId, type UnitId, type UnitState, type UnitTemplate } from './state.ts'
 import { attackersRollModeStatus } from './statuses.ts'
 
 /** How the d20 of an attack roll is rolled (rules §5.2). */
@@ -192,4 +192,13 @@ export function combineRollMode(sources: readonly RollModeSource[]): RollMode {
   const disadvantage = counted.some((s) => s.effect === 'disadvantage')
   if (advantage === disadvantage) return 'normal'
   return advantage ? 'advantage' : 'disadvantage'
+}
+
+/**
+ * The terrain effect (rules §4.3) `unit` would get on its attack rolls
+ * standing on `tile` now: advantage, disadvantage or `null` (Tamers, Flying,
+ * neutral terrain). Works for a Unit not on the Board yet (deployment). For the AI.
+ */
+export function terrainEffectAt(state: BattleState, unit: UnitState | UnitTemplate, tile: Tile): RollEffect | null {
+  return terrainSources(state, { ...unit, tile } as UnitState)[0]?.effect ?? null
 }

@@ -55,10 +55,10 @@ export { lineOfSightTiles } from './lineOfSight.ts'
 export { areaTiles } from './wisplingSkills.ts'
 export { COMMAND_RANGE, type CommandAction } from './command.ts'
 export type { HealPreview, TerrainPreview } from './tamerSkills.ts'
-export { elementBeats, type RollEffect, type RollMode, type RollModeSource } from './rollMode.ts'
+export { elementBeats, terrainEffectAt, type RollEffect, type RollMode, type RollModeSource } from './rollMode.ts'
 export type { DerivedValues } from './derived.ts'
 export { isInStartZone, START_ZONE_ROWS, unitsVisibleTo } from './deployment.ts'
-export { distance } from './movement.ts'
+export { distance, moveRangeNow } from './movement.ts'
 export { COMMAND_OPTIONS, ROUND_LIMIT } from './state.ts'
 export type {
   Activations,
