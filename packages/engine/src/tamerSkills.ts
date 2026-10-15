@@ -146,7 +146,7 @@ const ATTUNE: SkillHandler = {
       ...(state.sideToAct === use.user.side ? { skipCountdown: true as const } : {}),
     }
     yield* emit({ type: 'terrainChanged', unit: use.user.id, skill: use.skill.id, tile, from, to: element, turnsLeft: turns })
-    // Rules §8.2: Hidden is checked on the changed tile at once (ticket 10).
+    // Rules §8.2: Hidden on the changed tile is checked at once, after every skill (skills.ts).
     return {
       ...state,
       terrain: withTerrain(state, tile, element),

@@ -117,13 +117,13 @@ describe('tiers and cooldowns (rules §13, D-16)', () => {
     expect(state.activations).toMatchObject({ current: 'A.m1', started: ['A.m1'] })
   })
 
-  it('Passive skills and skills whose ticket has not landed are never offered', () => {
+  it('Passive skills are never offered; every other loadout skill is in the game (ticket 11 landed the last ones)', () => {
     const state = battle({ firstSide: 'B' })
     expect(rejection(useSkill(state, 'B.m1', 'pincer_guard'))).toBe('skill-not-available')
-    // Quillfox's skills come with ticket 10.
-    expect(rejection(useSkill(state, 'B.m2', 'long_shot', 'A.m1'))).toBe('skill-not-available')
     expect(skillUses(state, 'B.m1').map((a) => a.skill)).not.toContain('pincer_guard')
-    expect(skillUses(state, 'B.m2')).toEqual([])
+    for (const unit of state.units) {
+      for (const s of unitSkills(state, unit.id)) expect(s.implemented, `${unit.id} ${s.skill}`).toBe(s.tier !== 'passive')
+    }
   })
 })
 

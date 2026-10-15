@@ -3,13 +3,14 @@
  * source that applies to one attack roll, and how they combine.
  *
  * Sources: the element wheel (§4.2), the terrain under the attacker (§4.3,
- * Attune included), Off-balance on the attacker (§14.2), Command (§16) and
- * Tamer protection (§9). Marked (ticket 10) joins `rollModeSources`; Defend
- * gives no advantage or disadvantage, it raises Guard and Ward (§12).
+ * Attune included), a status on the target (Marked) or on the attacker
+ * (Off-balance, §14.2), Command (§16) and Tamer protection (§9). Defend gives
+ * no advantage or disadvantage, it raises Guard and Ward (§12).
  */
 import type { Element, ElementWheel, Terrain } from '@mt/shared'
 import { distance } from './movement.ts'
 import { terrainAt, type BattleState, type StatusId, type UnitId, type UnitState } from './state.ts'
+import { attackersRollModeStatus } from './statuses.ts'
 
 /** How the d20 of an attack roll is rolled (rules §5.2). */
 export type RollMode = 'normal' | 'advantage' | 'disadvantage'
@@ -43,13 +44,16 @@ export type RollModeSource =
       readonly aquatic: boolean
     }
   /**
-   * The attacker has a status that gives its next attack roll disadvantage
-   * (Off-balance, rules §14.2). That attack roll spends it (§10.5 step 5).
+   * A status of the target gives every attacker this (Marked: advantage,
+   * rules §5.1, §14.2), allies' attacks and counterattacks alike; or a
+   * status of the attacker gives its next attack roll this (`holder:
+   * 'attacker'`, Off-balance: disadvantage), which that roll ends (§10.5 step 5).
    */
   | {
-      readonly kind: 'nextAttackRoll'
-      readonly effect: 'disadvantage'
+      readonly kind: 'status'
+      readonly effect: RollEffect
       readonly status: StatusId
+      readonly holder: 'target' | 'attacker'
     }
   /**
    * Command's advantage on the commanded Monster's next attack roll this Turn
@@ -109,6 +113,11 @@ function terrainSources(state: BattleState, attacker: UnitState): RollModeSource
   return []
 }
 
+function targetStatusSources(state: BattleState, target: UnitState): RollModeSource[] {
+  const marked = attackersRollModeStatus(state, target)
+  return marked === null ? [] : [{ kind: 'status', effect: marked.effect, status: marked.status, holder: 'target' }]
+}
+
 function tamerProtectionSources(state: BattleState, target: UnitState): RollModeSource[] {
   if (target.kind !== 'tamer') return []
   // Units on the Board are the ones still up (rules §10.4).
@@ -123,7 +132,7 @@ function tamerProtectionSources(state: BattleState, target: UnitState): RollMode
 function nextAttackRollSources(state: BattleState, attacker: UnitState): RollModeSource[] {
   return attacker.statuses.flatMap((status) =>
     state.statusTypes[status.id]?.effects.nextAttackRollMode === 'disadvantage'
-      ? [{ kind: 'nextAttackRoll', effect: 'disadvantage', status: status.id } as const]
+      ? [{ kind: 'status', effect: 'disadvantage', status: status.id, holder: 'attacker' } as const]
       : [],
   )
 }
@@ -142,8 +151,9 @@ export function commandSources(state: BattleState, attacker: UnitState, isCounte
 /**
  * Every source of advantage or disadvantage for this attacker's attack roll
  * against this target, as things stand now (rules §5.2: worked out again for
- * every attack roll). Order as in rules §5.1: element, terrain, Off-balance,
- * Command, Tamer protection. `isCounterattack`: Command never applies (§14.2).
+ * every attack roll). Order as in rules §5.1: element, terrain, Marked,
+ * Off-balance, Command, Tamer protection. `isCounterattack`: Command never
+ * applies (§14.2).
  */
 export function rollModeSources(
   state: BattleState,
@@ -154,6 +164,7 @@ export function rollModeSources(
   return [
     ...elementSources(state, attacker, target),
     ...terrainSources(state, attacker),
+    ...targetStatusSources(state, target),
     ...nextAttackRollSources(state, attacker),
     ...commandSources(state, attacker, isCounterattack),
     ...tamerProtectionSources(state, target),

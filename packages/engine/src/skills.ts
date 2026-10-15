@@ -16,7 +16,7 @@ import { distance } from './movement.ts'
 import { QUILLFOX_SKILLS } from './quillfoxSkills.ts'
 import type { SkillHandler, SkillHandlers, SkillResolution, SkillUse } from './skillHandler.ts'
 import { findUnit, type BattleState, type StatusId, type UnitId, type UnitState } from './state.ts'
-import { giveSkillStatuses, isImmobile, statusOdds, type StatusOdds } from './statuses.ts'
+import { endOffTerrain, giveSkillStatuses, isImmobile, statusOdds, type StatusOdds } from './statuses.ts'
 import { TAMER_SKILLS } from './tamerSkills.ts'
 import { TIDEWALL_SKILLS } from './tidewallSkills.ts'
 import { activate } from './turns.ts'
@@ -284,7 +284,18 @@ function* resolveSkill(state: BattleState, use: SkillUse): SkillResolution {
     ...(tile !== undefined ? { tile } : {}),
   })
   const resolved = yield* (handler.resolve ?? resolveGeneric)(booked, use)
-  return offerRetreat(resolved, use)
+  return offerRetreat(yield* revealOffTerrain(resolved), use)
+}
+
+/**
+ * After a skill: a Unit it moved (Blink) or whose tile it changed (Attune,
+ * ticket 11) loses Hidden off forest (rules §8.2). Pushes check on the spot (push.ts).
+ */
+function* revealOffTerrain(state: BattleState): SkillResolution {
+  if (state.outcome !== null) return state
+  const revealed = endOffTerrain(state)
+  yield* emit(...revealed.events)
+  return revealed.state
 }
 
 // --------------------------------------------------------------- preview
@@ -408,7 +419,7 @@ export function legalRetreats(state: BattleState): RetreatAction[] {
 
 /**
  * Hit and Run's step: not a Move (the Unit's Move stays available if unused)
- * and uses no dice. Ticket 10 checks Hidden after it (rules §8.2).
+ * and uses no dice. Hidden is checked after it (rules §8.2).
  */
 export function applyRetreat(state: BattleState, action: RetreatAction): ApplyResult {
   const reject = (code: Rejection['code'], message: string): ApplyResult => ({ ok: false, state, rejection: { code, message } })
@@ -429,9 +440,11 @@ export function applyRetreat(state: BattleState, action: RetreatAction): ApplyRe
   if (!retreatTiles(state, unit, pending.steps).some((t) => sameTile(t, to))) {
     return reject('out-of-reach', `${unit.id} can step only ${pending.steps} tile(s)`)
   }
+  // Rules §15.1, §8.2: Hidden is checked after the step.
+  const revealed = endOffTerrain({ ...resolved, units: resolved.units.map((u) => (u.id === unit.id ? { ...u, tile: to } : u)) })
   return {
     ok: true,
-    state: { ...resolved, units: resolved.units.map((u) => (u.id === unit.id ? { ...u, tile: to } : u)) },
-    events: [{ type: 'unitRetreated', unit: unit.id, from: unit.tile, to }],
+    state: revealed.state,
+    events: [{ type: 'unitRetreated', unit: unit.id, from: unit.tile, to }, ...revealed.events],
   }
 }

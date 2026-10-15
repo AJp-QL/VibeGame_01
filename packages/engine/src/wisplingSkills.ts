@@ -18,7 +18,7 @@
  */
 import { BOARD_SIZE, isOnBoard, sameTile, tileName, type Skill, type Tile } from '@mt/shared'
 import type { ActionPreview, Rejection, RejectionCode } from './battle.ts'
-import { isFlying, previewAttack } from './combat.ts'
+import { isFlying, previewAttack, spendAttackRoll } from './combat.ts'
 import { unitsOnLine } from './lineOfSight.ts'
 import { distance } from './movement.ts'
 import { emit } from './resolution.ts'
@@ -102,8 +102,8 @@ function orderedChoices(pool: readonly UnitState[], max: number): UnitState[][] 
  * (as with anything else the first attack roll spends, e.g. Off-balance).
  * Resolution needs no change as long as `attackOnce` spends it.
  */
-function afterFirstAttackRoll(state: BattleState, _user: UnitState): BattleState {
-  return state
+function afterFirstAttackRoll(state: BattleState, user: UnitState): BattleState {
+  return spendAttackRoll(state, user.id, false).state
 }
 
 const BURST: SkillHandler = {
@@ -130,7 +130,7 @@ const BURST: SkillHandler = {
         return rejection('out-of-range', `${id} is not in ${skill.name}'s area around ${tileName(centre)}`)
       }
       if (hiddenFrom(state, user, target)) {
-        return rejection('invalid-target', `${id} is Hidden and ${distance(user.tile, target.tile)} tiles from ${user.id}`)
+        return rejection('target-hidden', `${id} is Hidden and ${distance(user.tile, target.tile)} tiles from ${user.id}`)
       }
       targets.push(target)
     }

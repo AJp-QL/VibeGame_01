@@ -9,6 +9,7 @@
 import { isOnBoard, sameTile, type Tile } from '@mt/shared'
 import { emit, type Resolution } from './resolution.ts'
 import { findUnit, type BattleState, type UnitId } from './state.ts'
+import { endOffTerrain } from './statuses.ts'
 
 /** The push direction (rules §6.4): `(sign(x_target − x_pusher), sign(y_target − y_pusher))`. */
 export function pushDirection(from: Tile, target: Tile): Tile {
@@ -43,8 +44,9 @@ export function pushOutcome(
 
 /**
  * Push `targetId` away from `pusherId` (rules §6.4): `unitPushed`, or
- * `pushBlocked` when the destination is off the Board or taken. Ticket 10
- * checks the target's Hidden right after the push (rules §8.2).
+ * `pushBlocked` when the destination is off the Board or taken. Right after
+ * the push the target's Hidden is checked (rules §6.4, §8.2): pushed off
+ * forest, Camouflage's Hidden ends.
  */
 export function* push(state: BattleState, pusherId: UnitId, targetId: UnitId, tiles: number): Resolution<BattleState> {
   const target = findUnit(state, targetId)
@@ -58,5 +60,7 @@ export function* push(state: BattleState, pusherId: UnitId, targetId: UnitId, ti
   }
   const to = outcome.to
   yield* emit({ type: 'unitPushed', unit: targetId, by: pusherId, from: target.tile, to })
-  return { ...state, units: state.units.map((u) => (u.id === targetId ? { ...u, tile: to } : u)) }
+  const pushed = endOffTerrain({ ...state, units: state.units.map((u) => (u.id === targetId ? { ...u, tile: to } : u)) })
+  yield* emit(...pushed.events)
+  return pushed.state
 }

@@ -71,7 +71,9 @@ export function skillSummary(skill: Skill, statuses: Readonly<Record<string, Sta
     const name = statusName(statuses, application.status)
     parts.push(application.save === undefined ? th.skillGives(name) : th.skillGivesSave(name, statName(application.save)))
   }
+  if (skill.attack !== undefined && skill.damage === undefined) parts.push(th.skillNoDamage)
   if (skill.effects?.retreat !== undefined) parts.push(th.skillRetreat)
+  if (skill.effects?.requiresTerrain !== undefined) parts.push(th.skillRequiresTerrain(th.terrain[skill.effects.requiresTerrain]))
   return parts.join(' · ')
 }
 

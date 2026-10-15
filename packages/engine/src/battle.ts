@@ -62,6 +62,7 @@ import {
   type InitiativeRoll,
   type InspirationAnswer,
   type RerollableRoll,
+  type StatusEndCause,
   type StatusId,
   type UnitId,
   type UnitState,
@@ -71,6 +72,7 @@ import {
 import {
   applyStatus,
   countDownStatuses,
+  endOffTerrain,
   endOwnTurnStartStatuses,
   startOfTurnDamage,
   type StatusBonus,
@@ -265,8 +267,14 @@ export type BattleEvent =
    * it started again at full duration (or kept the higher bonus, Guarded).
    */
   | { readonly type: 'statusApplied'; readonly unit: UnitId; readonly status: UnitStatus; readonly refreshed?: true }
-  /** A status left a Unit: its duration ran out, or Guarded at the start of its side's next Turn (rules §14.1, §17.4). */
-  | { readonly type: 'statusEnded'; readonly unit: UnitId; readonly status: StatusId }
+  /**
+   * A status left a Unit: its duration ran out, or Guarded at the start of
+   * its side's next Turn (rules §14.1, §17.4). `cause` for statuses broken by
+   * their own conditions (Hidden, rules §8.2): the Unit made an attack roll
+   * (`attackRoll`), or it stands on a tile whose terrain no longer fits the
+   * skill that gave the status (`terrain`: off forest for Camouflage).
+   */
+  | { readonly type: 'statusEnded'; readonly unit: UnitId; readonly status: StatusId; readonly cause?: StatusEndCause }
   /**
    * Start-of-Turn damage from a status (Bleed 1d4, rules §17.4): not an
    * attack, so no Guard, Weakened or Cover. Counts for the other side's total damage (D-11).
@@ -363,6 +371,10 @@ export type RejectionCode =
   | 'out-of-range'
   /** Units stand on the line from the attacker to a target 2 or more tiles away (rules §7). */
   | 'no-line-of-sight'
+  /** The enemy is Hidden and 2 or more tiles away (rules §8.1, §8.2): only from distance 1. */
+  | 'target-hidden'
+  /** A skill that needs its user on a given terrain (Camouflage: forest, D-18). */
+  | 'wrong-terrain'
   /** A decision must be made first (Hit and Run's step, Inspiration): only its answers are legal. */
   | 'decision-pending'
   /** An answer (`retreat`, `useInspiration`, `declineInspiration`) when there is no such decision, or by another Unit or side. */
@@ -717,10 +729,12 @@ function applyMove(state: BattleState, unitId: UnitId, to: Tile): ApplyResult {
 
   const moved: UnitState = { ...unit, tile: to, hasMoved: true }
   const active = activate(state, unitId)
+  // Rules §8.2, D-18: Hidden is checked on the destination only, whatever the path crossed.
+  const revealed = endOffTerrain({ ...active, units: active.units.map((u) => (u.id === unitId ? moved : u)) })
   return {
     ok: true,
-    state: { ...active, units: active.units.map((u) => (u.id === unitId ? moved : u)) },
-    events: [{ type: 'unitMoved', unit: unitId, from: unit.tile, to, path }],
+    state: revealed.state,
+    events: [{ type: 'unitMoved', unit: unitId, from: unit.tile, to, path }, ...revealed.events],
   }
 }
 
@@ -760,15 +774,17 @@ function applyEndTurn(state: BattleState): ApplyResult {
   // back, 3. Hidden (ticket 10), 4. Command's unused effect is gone.
   const counted = countDownStatuses(state, ending)
   const attuned = countDownAttunedTiles(counted.state, ending)
+  const revealed = endOffTerrain(attuned.state)
   const rested: BattleState = {
-    ...attuned.state,
+    ...revealed.state,
     command: null,
-    units: attuned.state.units.map((u) => (u.hasMoved || u.hasActed ? { ...u, hasMoved: false, hasActed: false } : u)),
+    units: revealed.state.units.map((u) => (u.hasMoved || u.hasActed ? { ...u, hasMoved: false, hasActed: false } : u)),
   }
   const ended: BattleEvent[] = [
     { type: 'turnEnded', side: ending, turn: state.turnNumber[ending] },
     ...counted.events,
     ...attuned.events,
+    ...revealed.events,
   ]
   if (ending !== state.firstSide && state.round >= ROUND_LIMIT) {
     const over = turnLimit(rested)

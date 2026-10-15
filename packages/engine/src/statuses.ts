@@ -8,18 +8,33 @@
  * What each status does comes from data/statuses (`StatusType.effects`). The
  * effects read here: `startOfTurnDamage` (Bleed), `attackRoll` (Rallied),
  * `defenceFromSource` (Guarded), `immobile` (Pin), `damageDealt` (Weakened),
- * and `untargetableFrom` (Hidden) for Burst's targets. The others are read by
- * the tickets that bring their skills: `forcedToAttackSource` and
- * `counterattack` (08), `attackersRollMode` and `untargetableFrom` for
- * single-target aiming (10), `nextAttackRollMode` (11).
+ * `untargetableFrom` (Hidden: single-target aiming in combat.ts, Burst's
+ * targets in wisplingSkills.ts) and `attackersRollMode` (Marked, read by
+ * rollMode.ts). The others are read by the tickets that bring their skills:
+ * `forcedToAttackSource` and `counterattack` (08), `nextAttackRollMode` (11).
+ *
+ * Statuses that end by their own conditions (rules §8.2, §14.1): after the
+ * holder's attack roll (`untilBroken` and `untilAttackRoll` durations:
+ * Hidden, Off-balance; `endAfterAttackRoll`), and statuses given by a skill
+ * that needs a terrain (`whileOn`, Hidden from Camouflage on forest) when the
+ * holder stands elsewhere (`endOffTerrain`).
  */
-import type { Dice, Side, Skill, Stat, StatusApplication, StatusType } from '@mt/shared'
+import type { Dice, Side, Skill, Stat, StatusApplication, StatusType, Terrain } from '@mt/shared'
 import type { BattleEvent } from './battle.ts'
 import { loseHp } from './damage.ts'
 import { derive, statMod } from './derived.ts'
 import { rollDice } from './dice.ts'
 import { emit, rollD20, type Resolution } from './resolution.ts'
-import { findUnit, type BattleState, type StatusId, type UnitId, type UnitState, type UnitStatus } from './state.ts'
+import {
+  findUnit,
+  terrainAt,
+  type BattleState,
+  type StatusEndCause,
+  type StatusId,
+  type UnitId,
+  type UnitState,
+  type UnitStatus,
+} from './state.ts'
 
 /** The definition of a status; unknown ids are a data error (loadGameData checks them). */
 export function statusType(state: BattleState, id: StatusId): StatusType {
@@ -39,12 +54,15 @@ function typesOf(state: BattleState, unit: UnitState): { status: UnitStatus; typ
  * stacks. Reapplying resets it to its full duration (and newest source);
  * `keepHigher` statuses (Guarded) keep whichever bonus is higher. A status
  * given during its holder's own side's Turn skips the first countdown (D-02).
+ * `whileOn`: the terrain the giving skill needs (Camouflage: forest); the
+ * status ends once the holder stands elsewhere (`endOffTerrain`).
  */
 export function applyStatus(
   state: BattleState,
   unitId: UnitId,
   application: StatusApplication,
   sourceId: UnitId,
+  whileOn?: Terrain,
 ): { state: BattleState; event: BattleEvent } {
   const unit = findUnit(state, unitId)
   if (unit === undefined) throw new Error(`No Unit "${unitId}" on the Board`)
@@ -56,6 +74,7 @@ export function applyStatus(
     ...(duration.kind === 'turns' ? { turnsLeft: duration.turns } : {}),
     ...(duration.kind === 'turns' && state.sideToAct === unit.side ? { skipCountdown: true as const } : {}),
     ...(type.tracksSource ? { source: sourceId } : {}),
+    ...(whileOn !== undefined ? { whileOn } : {}),
   }
   const existing = unit.statuses.find((s) => s.id === type.id)
   if (existing !== undefined && type.stacking === 'keepHigher' && (existing.bonus ?? 0) > (status.bonus ?? 0)) {
@@ -148,7 +167,7 @@ export function* giveSkillStatuses(
       state = saving.state
       if (saving.roll.saved) continue
     }
-    const given = applyStatus(state, target.id, application, user.id)
+    const given = applyStatus(state, target.id, application, user.id, skill.effects?.requiresTerrain)
     state = given.state
     yield* emit(given.event)
   }
@@ -201,9 +220,74 @@ export function defenceBonus(state: BattleState, unit: UnitState): number {
   )
 }
 
+/**
+ * The status that makes every attacker roll with advantage against the Unit
+ * (Marked, rules §5.1, §14.2), or `null`. One source however many there are
+ * (rules §5.2).
+ */
+export function attackersRollModeStatus(state: BattleState, unit: UnitState): { status: StatusId; effect: 'advantage' } | null {
+  for (const { status, type } of typesOf(state, unit)) {
+    const effect = type.effects.attackersRollMode
+    if (effect !== undefined) return { status: status.id, effect }
+  }
+  return null
+}
+
 /** Pin: movement range 0, the Hit and Run step included (rules §14.2). */
 export function isImmobile(state: BattleState, unit: UnitState): boolean {
   return typesOf(state, unit).some(({ type }) => type.effects.immobile === true)
+}
+
+// ------------------------------------------------- broken by own conditions
+
+/**
+ * After an attack roll of `unitId` has resolved (rules §8.2, §10.5 step 5):
+ * its statuses that last until it attacks end (`untilBroken`: Hidden;
+ * `untilAttackRoll`: Off-balance), hit or miss, counterattacks and Mark
+ * included. Nothing happens to a Unit no longer on the Board.
+ */
+export function endAfterAttackRoll(state: BattleState, unitId: UnitId): { state: BattleState; events: BattleEvent[] } {
+  const unit = findUnit(state, unitId)
+  if (unit === undefined) return { state, events: [] }
+  const ending = unit.statuses.filter((status) => {
+    const kind = statusType(state, status.id).duration.kind
+    return kind === 'untilBroken' || kind === 'untilAttackRoll'
+  })
+  return withoutStatuses(state, unit, ending, 'attackRoll')
+}
+
+/**
+ * Every status given by a skill that needs a terrain (`whileOn`) ends on a
+ * Unit that stands on another terrain (rules §8.2, D-18: Hidden off forest).
+ * Checked after a Move (the destination only), Hit and Run's step, a skill
+ * (Blink, a push, Attune changing a tile) and at the end of every Turn
+ * (rules §17.4). All Units, in Unit order.
+ */
+export function endOffTerrain(before: BattleState): { state: BattleState; events: BattleEvent[] } {
+  let state = before
+  const events: BattleEvent[] = []
+  for (const unit of before.units) {
+    const terrain = terrainAt(state, unit.tile)
+    const ending = unit.statuses.filter((status) => status.whileOn !== undefined && status.whileOn !== terrain)
+    const ended = withoutStatuses(state, unit, ending, 'terrain')
+    state = ended.state
+    events.push(...ended.events)
+  }
+  return { state, events }
+}
+
+function withoutStatuses(
+  state: BattleState,
+  unit: UnitState,
+  ending: readonly UnitStatus[],
+  cause: StatusEndCause,
+): { state: BattleState; events: BattleEvent[] } {
+  if (ending.length === 0) return { state, events: [] }
+  const statuses = unit.statuses.filter((status) => !ending.includes(status))
+  return {
+    state: { ...state, units: state.units.map((u) => (u.id === unit.id ? { ...u, statuses } : u)) },
+    events: ending.map((status) => ({ type: 'statusEnded', unit: unit.id, status: status.id, cause })),
+  }
 }
 
 // ------------------------------------------------------------- Turn timing

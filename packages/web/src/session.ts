@@ -58,11 +58,16 @@ export type HotseatScreen = 'board' | 'handoff' | 'initiative' | 'decisionHandof
 /** What the selected Unit is about to do: Move (default), pick a Basic Attack target, or use a skill. */
 export type SelectionMode = 'move' | 'attack' | 'skill'
 
-/** An enemy in range that the selected Unit cannot target because Units stand in the way (rules §7). */
+/**
+ * An enemy in range that the selected Unit cannot target: Units stand in the
+ * way (rules §7), or it is Hidden and 2 or more tiles away (rules §8.2).
+ */
 export interface BlockedTarget {
   readonly unit: UnitId
   readonly tile: Tile
-  /** The Units on the line, from the engine's rejection. */
+  /** Why, from the engine's rejection. */
+  readonly reason: 'no-line-of-sight' | 'target-hidden'
+  /** The Units on the line, from the engine's rejection (empty when Hidden). */
   readonly blockedBy: readonly UnitId[]
 }
 
@@ -87,7 +92,7 @@ export interface SessionSnapshot extends BattleSnapshot {
   readonly inspectedUnit: UnitId | null
   /** The selected Unit has at least one enemy it can Basic Attack now. */
   readonly canAttack: boolean
-  /** Enemies in range of the selected Unit's attack (or skill) that line of sight blocks, from the engine. */
+  /** Enemies in range of the selected Unit's attack (or skill) that line of sight or Hidden rule out, from the engine. */
   readonly blocked: readonly BlockedTarget[]
   /** The selected Unit may use Defend now (it is in the legal actions). */
   readonly canDefend: boolean
@@ -204,9 +209,9 @@ function aimTargets(actions: readonly Action[], unit: UnitId | null, skill: stri
 }
 
 /**
- * Enemies of `unit` that the engine refuses only because of line of sight,
- * for a Basic Attack or `skill`. The engine checks range before line of
- * sight, so this rejection means the target is in range.
+ * Enemies of `unit` that the engine refuses only because of line of sight or
+ * Hidden, for a Basic Attack or `skill`. The engine checks range before
+ * both, so these rejections mean the target is in range.
  */
 function blockedTargets(state: BattleState, unit: UnitId | null, skill: string | null): BlockedTarget[] {
   if (unit === null || state.phase !== 'play') return []
@@ -218,8 +223,10 @@ function blockedTargets(state: BattleState, unit: UnitId | null, skill: string |
         ? { type: 'basicAttack', unit, target: target.id }
         : { type: 'useSkill', unit, skill, target: target.id }
     const result = previewAction(state, action)
-    if (result.ok || result.rejection.code !== 'no-line-of-sight') return []
-    return [{ unit: target.id, tile: target.tile, blockedBy: result.rejection.blockedBy ?? [] }]
+    if (result.ok) return []
+    const reason = result.rejection.code
+    if (reason !== 'no-line-of-sight' && reason !== 'target-hidden') return []
+    return [{ unit: target.id, tile: target.tile, reason, blockedBy: result.rejection.blockedBy ?? [] }]
   })
 }
 
@@ -461,9 +468,10 @@ export function createBattleSession(initial: BattleState): BattleSession {
           update({ pendingTarget: boardInput.unit, rejection: null })
           return
         }
-        if (snapshot.blocked.some((b) => b.unit === boardInput.unit)) {
+        const blocked = snapshot.blocked.find((b) => b.unit === boardInput.unit)
+        if (blocked !== undefined) {
           // Not selectable: say why instead of dropping the selection.
-          update({ pendingTarget: null, rejection: 'no-line-of-sight' })
+          update({ pendingTarget: null, rejection: blocked.reason })
           return
         }
       }

@@ -18,5 +18,6 @@
 
 ## สถานะ
 - มีครบ 10 status ของ phase 1 (rules §14.2)
-- engine ใช้ effect แล้ว: `startOfTurnDamage`, `attackRoll`, `defenceFromSource`, `immobile` (ticket 07)
-- effect ที่เหลือมีตัวเลขใน data แล้ว engine จะอ่านใน ticket ของ skill ที่ให้ status นั้น (08 Taunted/Countering, 09 Weakened, 10 Marked/Hidden, 11 Off-balance)
+- engine ใช้ effect แล้ว: `startOfTurnDamage`, `attackRoll`, `defenceFromSource`, `immobile` (ticket 07), `forcedToAttackSource`, `counterattack` (08), `damageDealt` (09), `attackersRollMode`, `untargetableFrom` (10)
+- `nextAttackRollMode` (Off-balance) มีตัวเลขใน data แล้ว engine จะอ่านใน ticket 11
+- `untilBroken` (Hidden) และ `untilAttackRoll` (Off-balance) หลุดหลัง attack roll ของ Unit ที่ติด (ticket 10) Hidden หลุดเพิ่มเมื่อ Unit ไม่ได้ยืนบน terrain ที่ skill ที่ให้ต้องการ (Camouflage: ป่า)
