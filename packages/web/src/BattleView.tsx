@@ -2,7 +2,12 @@ import { useLayoutEffect, useRef } from 'react'
 import { createBattleGame, fitBattleGame, type BattleSessionPort, type BoardLabels } from '@mt/battle'
 import { th } from './strings.ts'
 
-const LABELS: BoardLabels = { miss: th.boardMiss, critical: th.boardCritical }
+const LABELS: BoardLabels = {
+  miss: th.boardMiss,
+  critical: th.boardCritical,
+  counter: th.boardCounter,
+  pushBlocked: th.boardPushBlocked,
+}
 
 /** Hosts the Phaser Board. Phaser reads the same session as React. */
 export function BattleView({ session }: { session: BattleSessionPort }) {

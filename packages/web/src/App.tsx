@@ -857,6 +857,16 @@ function PreviewCard({ preview, name, data }: { preview: ActionPreview; name: (i
           {th.previewIfHit}: <StatusOddsList odds={preview.statuses} statuses={data.statuses} />
         </div>
       )}
+      {preview.counterattack !== undefined && preview.counterattack.damage !== null && (
+        <div>
+          {th.previewCounterattack(
+            name(preview.counterattack.attacker),
+            percent(preview.counterattack.hitChance),
+            preview.counterattack.damage.min,
+            preview.counterattack.damage.max,
+          )}
+        </div>
+      )}
       <RollModeSources preview={preview} name={name} />
       <div className="muted">
         {th.previewRoll(preview.attackBonus, th.defence[preview.defenceKind], preview.defence)}

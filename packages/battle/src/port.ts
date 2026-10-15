@@ -53,4 +53,8 @@ export interface BattleSessionPort {
 export interface BoardLabels {
   readonly miss: string
   readonly critical: string
+  /** Shown over a Unit that strikes back (Countering). */
+  readonly counter: string
+  /** Shown over a Unit whose push had nowhere to go. */
+  readonly pushBlocked: string
 }

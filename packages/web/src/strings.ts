@@ -179,6 +179,8 @@ export const th = {
 
   boardMiss: 'พลาด',
   boardCritical: 'critical!',
+  boardCounter: 'โจมตีกลับ!',
+  boardPushBlocked: 'ผลักไม่ได้',
 
   logTitle: 'บันทึก',
   logEmpty: 'ยังไม่มีเหตุการณ์',
@@ -266,6 +268,8 @@ export const th = {
   logRerolled: 'ทอยใหม่',
   confirmSkill: 'ยืนยันใช้ skill',
   previewIfHit: 'ถ้าโดน',
+  previewCounterattack: (unit: string, percent: string, min: number, max: number) =>
+    `${unit} ติด Countering จะโจมตีกลับ (โดนหรือพลาดก็ตาม): โอกาสโดน ${percent}, damage ${min}–${max}`,
   previewSave: (status: string, percent: string, stat: string, dc: number, modifier: number) =>
     `${status}: โอกาสเป้าไม่ผ่าน save ${percent} (d20 ${signed(modifier)} ${stat} ต้องได้อย่างน้อย ${dc})`,
   previewNoSave: (status: string) => `${status}: ติดทันที ไม่มี save`,
