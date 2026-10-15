@@ -4,12 +4,12 @@
 
 **Blocked by:** 03 — Walking skeleton
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] HP, Guard, Ward, proficiency, attack bonus และ damage หลักของทุก Unit ใน Scenario 1 ตรงกับตาราง stat block ใน Prototype kit (ระยะเดิน Tidewall ใช้สูตรล้วน) ใช้จำนวนเต็มล้วน
-- [ ] attack roll d20 + SEN mod + proficiency เทียบ Guard, damage กายภาพ + POW mod ที่ระยะ 1 และ SEN mod ที่ระยะ 2 ขึ้นไป, Monster 1d8 และ Tamer 1d6
-- [ ] ทอย 20 เป็น critical (ทอย dice damage 2 เท่า), ทอย 1 พลาดเสมอ
-- [ ] preview ไม่เปลี่ยน state ไม่กินลูกเต๋า และ % ตรงกับความน่าจะเป็นจริง
-- [ ] log แสดงทุก action และผลทอย สร้างจากรายการเหตุการณ์
-- [ ] เงื่อนไขชนะทั้งสองแบบทำงาน หน้าสรุปแสดงผู้ชนะ สาเหตุ จำนวน Round และเริ่ม Battle ใหม่ได้
-- [ ] test ผ่าน interface ของ engine ใช้ลำดับผลทอยที่กำหนดเอง
+- [x] HP, Guard, Ward, proficiency, attack bonus และ damage หลักของทุก Unit ใน Scenario 1 ตรงกับตาราง stat block ใน Prototype kit (ระยะเดิน Tidewall ใช้สูตรล้วน) ใช้จำนวนเต็มล้วน
+- [x] attack roll d20 + SEN mod + proficiency เทียบ Guard, damage กายภาพ + POW mod ที่ระยะ 1 และ SEN mod ที่ระยะ 2 ขึ้นไป, Monster 1d8 และ Tamer 1d6
+- [x] ทอย 20 เป็น critical (ทอย dice damage 2 เท่า), ทอย 1 พลาดเสมอ
+- [x] preview ไม่เปลี่ยน state ไม่กินลูกเต๋า และ % ตรงกับความน่าจะเป็นจริง
+- [x] log แสดงทุก action และผลทอย สร้างจากรายการเหตุการณ์
+- [x] เงื่อนไขชนะทั้งสองแบบทำงาน หน้าสรุปแสดงผู้ชนะ สาเหตุ จำนวน Round และเริ่ม Battle ใหม่ได้
+- [x] test ผ่าน interface ของ engine ใช้ลำดับผลทอยที่กำหนดเอง
