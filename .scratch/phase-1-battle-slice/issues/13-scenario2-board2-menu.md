@@ -4,9 +4,9 @@
 
 **Blocked by:** 05 — Basic Attack ครบวง
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] ค่าที่ได้จากสูตรของทุก Unit ใน Scenario 2 ตรงกับตาราง kit (ระยะเดิน Tidewall ใช้สูตรล้วน)
-- [ ] Board ที่ 2 สมมาตรเมื่อหมุน 180 องศา มีทุกธาตุ และตำแหน่งต่างจาก Crossroads ชัดเจน
-- [ ] มี test ตรวจความสมมาตรของ Board ทุกแบบใน data
-- [ ] เมนูใช้ string table และทำงานด้วย tap และ click
+- [x] ค่าที่ได้จากสูตรของทุก Unit ใน Scenario 2 ตรงกับตาราง kit (ระยะเดิน Tidewall ใช้สูตรล้วน)
+- [x] Board ที่ 2 สมมาตรเมื่อหมุน 180 องศา มีทุกธาตุ และตำแหน่งต่างจาก Crossroads ชัดเจน
+- [x] มี test ตรวจความสมมาตรของ Board ทุกแบบใน data
+- [x] เมนูใช้ string table และทำงานด้วย tap และ click
