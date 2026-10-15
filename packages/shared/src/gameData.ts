@@ -11,9 +11,11 @@ import {
   BoardSchema,
   ScenarioSchema,
   SIDES,
+  SkillSchema,
   SpeciesSchema,
   type Board,
   type Scenario,
+  type Skill,
   type Species,
 } from './model.ts'
 
@@ -21,6 +23,7 @@ export interface GameData {
   readonly boards: Readonly<Record<string, Board>>
   readonly species: Readonly<Record<string, Species>>
   readonly scenarios: Readonly<Record<string, Scenario>>
+  readonly skills: Readonly<Record<string, Skill>>
 }
 
 export interface DataIssue {
@@ -50,6 +53,7 @@ const FOLDERS = {
   boards: BoardSchema,
   species: SpeciesSchema,
   scenarios: ScenarioSchema,
+  skills: SkillSchema,
 } as const
 
 type Folder = keyof typeof FOLDERS
@@ -70,6 +74,7 @@ export function loadGameData(files: Readonly<Record<string, unknown>>): GameData
   const boards: Record<string, Board> = {}
   const species: Record<string, Species> = {}
   const scenarios: Record<string, Scenario> = {}
+  const skills: Record<string, Skill> = {}
 
   for (const [file, content] of Object.entries(files)) {
     const match = /^([a-z_]+)\/([a-z0-9_]+)\.json$/.exec(file)
@@ -84,7 +89,7 @@ export function loadGameData(files: Readonly<Record<string, unknown>>): GameData
       continue
     }
 
-    const result = (FOLDERS[folder] as z.ZodType<Board | Species | Scenario>).safeParse(content)
+    const result = (FOLDERS[folder] as z.ZodType<Board | Species | Scenario | Skill>).safeParse(content)
     if (!result.success) {
       for (const issue of result.error.issues) {
         issues.push({ file, path: issue.path.join('.'), message: issue.message })
@@ -99,7 +104,8 @@ export function loadGameData(files: Readonly<Record<string, unknown>>): GameData
 
     if (folder === 'boards') boards[record.id] = record as Board
     else if (folder === 'species') species[record.id] = record as Species
-    else scenarios[record.id] = record as Scenario
+    else if (folder === 'scenarios') scenarios[record.id] = record as Scenario
+    else skills[record.id] = record as Skill
   }
 
   for (const scenario of Object.values(scenarios)) {
@@ -129,5 +135,5 @@ export function loadGameData(files: Readonly<Record<string, unknown>>): GameData
   }
 
   if (issues.length > 0) throw new DataError(issues)
-  return { boards, species, scenarios }
+  return { boards, species, scenarios, skills }
 }

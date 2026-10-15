@@ -54,6 +54,11 @@ export const th = {
     'off-board': 'ช่องนี้อยู่นอก Board',
     'tile-occupied': 'ช่องนี้มี Unit อยู่แล้ว',
     'out-of-reach': 'เดินไปไม่ถึงช่องนี้',
+    'battle-over': 'Battle จบแล้ว',
+    'already-acted': 'Unit นี้ใช้ Action ไปแล้วใน Turn นี้',
+    'unknown-skill': 'ไม่พบ skill นี้',
+    'not-an-enemy': 'โจมตีได้เฉพาะ Unit ของอีกทีม',
+    'out-of-range': 'เป้าอยู่นอกระยะ',
   } satisfies Record<RejectionCode, string>,
 
   dataErrorTitle: 'ข้อมูลเกมไม่ผ่านการตรวจ',

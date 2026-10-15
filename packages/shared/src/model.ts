@@ -96,6 +96,54 @@ export const SpeciesSchema: z.ZodType<Species> = z.strictObject({
   guardBonus: z.int().min(0).max(10),
 })
 
+// ------------------------------------------------------------------ skills
+
+/** Skill tier (rules §13.1). */
+export const SKILL_TIERS = ['minor', 'major', 'signature', 'passive'] as const
+export type SkillTier = (typeof SKILL_TIERS)[number]
+
+/** Physical attacks roll against Guard, elemental ones against Ward (rules §10.1). */
+export const ATTACK_KINDS = ['physical', 'elemental'] as const
+export type AttackKind = (typeof ATTACK_KINDS)[number]
+
+/** `count` dice with `sides` faces, e.g. 2d6 = { count: 2, sides: 6 }. */
+export interface Dice {
+  readonly count: number
+  readonly sides: number
+}
+
+const DiceSchema = z.strictObject({
+  count: z.int().min(1).max(10),
+  sides: z.int().min(2).max(20),
+})
+
+/**
+ * A skill that makes one attack roll against one enemy and deals damage
+ * (rules §15.1). Phase 1 data so far holds Basic Attack only; the other
+ * skill shapes (save, self, area, no damage) arrive with the skill framework.
+ */
+export interface Skill {
+  readonly id: string
+  readonly name: string
+  readonly tier: SkillTier
+  /** Targets at distance 1 to `range` (rules §2.3). */
+  readonly range: number
+  readonly attack: AttackKind
+  readonly damage: Dice
+  /** Dice a Tamer rolls instead, when different (Basic Attack: 1d6, rules §10.3). */
+  readonly tamerDamage?: Dice | undefined
+}
+
+export const SkillSchema: z.ZodType<Skill> = z.strictObject({
+  id: ID,
+  name: z.string().min(1),
+  tier: z.enum(SKILL_TIERS),
+  range: z.int().min(1).max(6),
+  attack: z.enum(ATTACK_KINDS),
+  damage: DiceSchema,
+  tamerDamage: DiceSchema.optional(),
+})
+
 // ------------------------------------------------------------------- units
 
 /** The six stats, each 1–30 (rules §3.1). */

@@ -25,7 +25,7 @@ function startBattle(): Setup {
     const board = scenario && data.boards[scenario.board]
     if (scenario === undefined || board === undefined) throw new Error(`Missing ${SCENARIO_ID} or its Board`)
     const diceSeed = randomDiceSeed()
-    const state = createBattle({ scenario, board, species: data.species, dice: { seed: diceSeed } })
+    const state = createBattle({ scenario, board, species: data.species, skills: data.skills, dice: { seed: diceSeed } })
     return { kind: 'ready', data, session: createBattleSession(state), diceSeed }
   } catch (error) {
     const details = error instanceof DataError || error instanceof Error ? error.message : String(error)

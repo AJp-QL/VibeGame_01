@@ -1,0 +1,9 @@
+{
+  "id": "basic_attack",
+  "name": "Basic Attack",
+  "tier": "minor",
+  "range": 1,
+  "attack": "physical",
+  "damage": { "count": 1, "sides": 8 },
+  "tamerDamage": { "count": 1, "sides": 6 }
+}

@@ -22,6 +22,7 @@ function newSession() {
     scenario: data.scenarios.scenario_1!,
     board: data.boards.crossroads!,
     species: data.species,
+    skills: data.skills,
     dice: { seed: '0123456789abcdef' },
   })
   return createBattleSession(state)

@@ -136,8 +136,31 @@ describe('malformed data is rejected', () => {
   })
 
   it('rejects files in a data folder that has no schema yet', () => {
-    expect(issuesOf(withFile('skills/heavy_blow.json', { id: 'heavy_blow' }))).toContainEqual(
-      expect.objectContaining({ file: 'skills/heavy_blow.json' }),
+    expect(issuesOf(withFile('statuses/bleed.json', { id: 'bleed' }))).toContainEqual(
+      expect.objectContaining({ file: 'statuses/bleed.json', message: expect.stringContaining('no schema') }),
     )
+  })
+
+  it('rejects a skill with impossible dice, an unknown attack kind or extra keys', () => {
+    const skill = structuredClone(realFiles['skills/basic_attack.json']) as Record<string, any>
+    skill.damage.sides = 1
+    skill.attack = 'psychic'
+    skill.cooldown = 2
+    const paths = issuesOf(withFile('skills/basic_attack.json', skill)).map((i) => i.path)
+    expect(paths).toEqual(expect.arrayContaining(['damage.sides', 'attack', '']))
+  })
+})
+
+describe('skills in data/ (rules §15.1)', () => {
+  it('Basic Attack: Minor, range 1, physical, Monster 1d8 and Tamer 1d6', () => {
+    expect(loadGameData(realFiles).skills.basic_attack).toEqual({
+      id: 'basic_attack',
+      name: 'Basic Attack',
+      tier: 'minor',
+      range: 1,
+      attack: 'physical',
+      damage: { count: 1, sides: 8 },
+      tamerDamage: { count: 1, sides: 6 },
+    })
   })
 })
