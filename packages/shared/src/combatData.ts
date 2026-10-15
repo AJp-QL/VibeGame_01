@@ -74,7 +74,10 @@ export interface SkillEffects {
   readonly counterattackDamage?: Dice
   /** Blink: used instead of Move, not as the Action (rules §15.1, D-13). Engine: ticket 09. */
   readonly replacesMove?: boolean
-  /** Camouflage: usable only while the user stands on this terrain (D-18). Engine: ticket 10. */
+  /**
+   * Camouflage: usable only while the user stands on this terrain (D-18); the
+   * statuses it gives last only while the Unit stays on it (Hidden, rules §8.2).
+   */
   readonly requiresTerrain?: Terrain
   /** Cover: damage the target takes goes to the user until the user's next Turn (rules §15.4). Engine: ticket 11. */
   readonly cover?: boolean
@@ -172,8 +175,9 @@ export const SkillSchema: z.ZodType<Skill> = SkillObject.superRefine(checkSkill)
  * - `turns`: counts down by 1 each time the holder's side ends a Turn and ends at 0;
  *   given during the holder's own side's Turn, the end of that Turn does not count (D-02).
  * - `untilOwnTurnStart`: ends at the start of the holder's side's next Turn, before Bleed ticks.
- * - `untilAttackRoll`: ends after the holder's next attack roll (Off-balance). Engine: ticket 11.
- * - `untilBroken`: ends only by its own conditions (Hidden). Engine: ticket 10.
+ * - `untilAttackRoll`: ends after the holder's next attack roll (Off-balance; its roll mode: ticket 11).
+ * - `untilBroken`: ends by its own conditions only (Hidden, rules §8.2): after the holder's
+ *   next attack roll, or once the holder stands off the terrain the giving skill needs.
  */
 export type StatusDuration =
   | { readonly kind: 'turns'; readonly turns: number }
@@ -193,11 +197,11 @@ export interface StatusEffects {
   readonly immobile?: boolean
   /** Weakened: added to every damage the holder deals, minimum 1 (rules §10.3). Engine: ticket 09. */
   readonly damageDealt?: number
-  /** Marked: every attacker gets this on attack rolls against the holder (rules §5.1). Engine: ticket 10. */
+  /** Marked: every attacker gets this on attack rolls against the holder (rules §5.1). */
   readonly attackersRollMode?: 'advantage'
   /** Off-balance: the holder's next attack roll (rules §14.2). Engine: ticket 11. */
   readonly nextAttackRollMode?: 'disadvantage'
-  /** Hidden: enemies cannot target the holder from this distance or more (rules §8.2). Engine: ticket 10. */
+  /** Hidden: enemies cannot target the holder from this distance or more (rules §8.2). */
   readonly untargetableFrom?: number
   /** Taunted: must attack (or close in on) the Unit that applied it (rules §14.3). Engine: ticket 08. */
   readonly forcedToAttackSource?: boolean

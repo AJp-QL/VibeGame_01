@@ -23,5 +23,6 @@
 
 ## สถานะ
 - มีครบทุก skill ใน loadout ของ phase 1 (rules §15) + Basic Attack + Defend
-- engine ใช้ได้แล้ว: Basic Attack, Defend, Heavy Blow, Rend, Hit and Run, Pack Howl (ticket 07)
-- skill อื่นมีข้อมูลแล้วแต่ engine ยังไม่เปิด (ticket 08 Tidewall, 09 Wispling, 10 Quillfox, 11 Tamer) ดู packages/engine/src/skillHandler.ts
+- engine ใช้ได้แล้ว: Basic Attack, Defend, Fangrel (ticket 07), Tidewall (08), Wispling (09), Quillfox (10: Long Shot, Pin, Mark, Camouflage)
+- skill ของ Tamer มีข้อมูลแล้วแต่ engine ยังไม่เปิด (ticket 11) ดู packages/engine/src/skillHandler.ts
+- `effects.requiresTerrain` (Camouflage): ใช้ได้เฉพาะเมื่อผู้ใช้ยืนบน terrain นั้น และ status ที่ skill ให้อยู่ได้เฉพาะขณะยืนบน terrain นั้น (`UnitStatus.whileOn`)
