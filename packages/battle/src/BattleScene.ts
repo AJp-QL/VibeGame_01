@@ -2,22 +2,31 @@
  * The Phaser scene that draws the Board and its Units from the session's
  * snapshot, animates the engine's events (Moves, attacks, damage, Units going
  * down) and turns taps into BoardInput. It keeps view objects only, never
- * game state. It draws only the Units in `snapshot.units`, so Units hidden
+ * game state. Each element tile carries a small corner mark (palette
+ * TERRAIN_GLYPHS); a Guarded Unit shows a shield; enemies that line of
+ * sight blocks are crossed out while choosing a target. It draws only the Units in `snapshot.units`, so Units hidden
  * during deployment never appear and cannot be tapped.
  */
 import * as Phaser from 'phaser'
 import { BOARD_SIZE, type Tile } from '@mt/shared'
 import { derivedValues, type BattleState, type UnitId, type UnitState } from '@mt/engine'
 import {
+  BLOCKED_TARGET,
+  GLYPH_ALPHA,
+  glyphColour,
   GRID_LINE,
+  GUARDED,
+  GUARDED_SHIELD,
   HP_BAR_BACK,
   HP_BAR_FILL,
   HP_BAR_LOW,
   PENDING_TARGET,
   REACHABLE,
   SELECTED,
+  OUTLINE,
   TARGET,
   TERRAIN_COLOURS,
+  TERRAIN_GLYPHS,
 } from './palette.ts'
 import type { BattleSessionPort, BattleSnapshot, BoardLabels } from './port.ts'
 import { drawUnit } from './silhouettes.ts'
@@ -51,6 +60,14 @@ const tileCentre = (tile: Tile) => ({
 interface UnitView {
   readonly container: Phaser.GameObjects.Container
   readonly hpBar: Phaser.GameObjects.Graphics
+  readonly statusIcons: Phaser.GameObjects.Graphics
+}
+
+/** Draw a pixel pattern (rows of "#" and ".") with its top-left corner at (x, y). */
+function drawPattern(g: Phaser.GameObjects.Graphics, pattern: readonly string[], x: number, y: number): void {
+  pattern.forEach((row, dy) => {
+    for (let dx = 0; dx < row.length; dx++) if (row[dx] === '#') g.fillRect(x + dx, y + dy, 1, 1)
+  })
 }
 
 export class BattleScene extends Phaser.Scene {
@@ -92,6 +109,8 @@ export class BattleScene extends Phaser.Scene {
       row.forEach((terrain, x) => {
         g.fillStyle(TERRAIN_COLOURS[terrain], 1)
         g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+        g.fillStyle(glyphColour(terrain), GLYPH_ALPHA)
+        drawPattern(g, TERRAIN_GLYPHS[terrain], x * TILE_SIZE + 3, y * TILE_SIZE + 3)
       }),
     )
     g.fillStyle(GRID_LINE, 1)
@@ -120,6 +139,7 @@ export class BattleScene extends Phaser.Scene {
       // Units being placed are not on the Board yet, and are at full HP.
       const maxHp = state.phase === 'play' ? derivedValues(state, unit.id).maxHp : unit.hp
       this.drawHpBar(view.hpBar, unit.hp, maxHp)
+      this.drawStatusIcons(view.statusIcons, unit)
       if (this.animating.has(unit.id)) continue
       const { x, y } = tileCentre(unit.tile)
       view.container.setPosition(x, y)
@@ -138,8 +158,9 @@ export class BattleScene extends Phaser.Scene {
     const g = this.add.graphics()
     drawUnit(g, unit)
     const hpBar = this.add.graphics()
-    container.add([g, hpBar])
-    const view = { container, hpBar }
+    const statusIcons = this.add.graphics()
+    container.add([g, hpBar, statusIcons])
+    const view = { container, hpBar, statusIcons }
     this.unitViews.set(unit.id, view)
     return view
   }
@@ -152,6 +173,17 @@ export class BattleScene extends Phaser.Scene {
     g.fillRect(-width / 2 - 1, 13, width + 2, 4)
     g.fillStyle(hp * 3 <= maxHp ? HP_BAR_LOW : HP_BAR_FILL, 1)
     g.fillRect(-width / 2, 14, filled, 2)
+  }
+
+  /** Guarded: a small shield in the top corner the team pennant does not use (A's pennant is left, B's right). */
+  private drawStatusIcons(g: Phaser.GameObjects.Graphics, unit: UnitState): void {
+    g.clear()
+    if (!unit.statuses.some((s) => s.id === 'guarded')) return
+    const left = unit.side === 'A' ? 8 : -15
+    g.fillStyle(OUTLINE, 1)
+    g.fillRect(left, -15, 7, 7)
+    g.fillStyle(GUARDED, 1)
+    drawPattern(g, GUARDED_SHIELD, left + 1, -14)
   }
 
   private drawHighlights(snapshot: BattleSnapshot): void {
@@ -168,6 +200,15 @@ export class BattleScene extends Phaser.Scene {
       g.fillRect(tile.x * TILE_SIZE + 1, tile.y * TILE_SIZE + 1, TILE_SIZE - 1, TILE_SIZE - 1)
       g.lineStyle(1, TARGET, 1)
       g.strokeRect(tile.x * TILE_SIZE + 2.5, tile.y * TILE_SIZE + 2.5, TILE_SIZE - 4, TILE_SIZE - 4)
+    }
+    for (const tile of snapshot.blockedTargets) {
+      // Crossed out: in range, but a Unit stands in the line of sight.
+      const left = tile.x * TILE_SIZE + 4
+      const top = tile.y * TILE_SIZE + 4
+      const size = TILE_SIZE - 8
+      g.lineStyle(2, BLOCKED_TARGET, 0.9)
+      g.lineBetween(left, top, left + size, top + size)
+      g.lineBetween(left + size, top, left, top + size)
     }
     const pending = snapshot.units.find((u) => u.id === snapshot.pendingTarget)
     if (pending !== undefined) {

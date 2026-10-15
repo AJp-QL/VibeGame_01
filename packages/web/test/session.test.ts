@@ -22,13 +22,13 @@ function gameData() {
 
 const data = gameData()
 
-function newSession(options: Partial<Pick<BattleSetup, 'dice' | 'preset'>> = {}) {
+function newSession(options: Partial<Pick<BattleSetup, 'dice' | 'preset' | 'skills'>> = {}) {
   return createBattleSession(
     createBattle({
       scenario: data.scenarios.scenario_1!,
       board: data.boards.crossroads!,
       species: data.species,
-      skills: data.skills,
+      skills: options.skills ?? data.skills,
       dice: options.dice ?? { seed: '0123456789abcdef' },
       ...(options.preset ? { preset: options.preset } : {}),
     }),
@@ -253,5 +253,76 @@ describe('BattleSession: attack flow (select → Attack → target → preview �
     session.chooseAttack()
     session.input({ type: 'tapUnit', unit: 'B.m2' })
     expect(session.getSnapshot()).toMatchObject({ selectedUnit: null, pendingTarget: null, revision: 0 })
+  })
+
+  it('the preview carries the engine\'s advantage/disadvantage sources and net effect', () => {
+    // Fangrel (forest) on d4 next to Tidewall (desert) on d5: desert beats forest.
+    const session = playingSession({ A: ['a1', 'd4', 'g1'], B: ['a7', 'd5', 'g7'] })
+    session.input({ type: 'tapUnit', unit: 'A.m1' })
+    session.chooseAttack()
+    session.input({ type: 'tapUnit', unit: 'B.m1' })
+    expect(session.getSnapshot().preview).toMatchObject({
+      rollMode: 'disadvantage',
+      rollModeSources: [{ kind: 'element', effect: 'disadvantage', attackerElement: 'forest', targetElement: 'desert' }],
+      hitChance: { denominator: 400 },
+    })
+  })
+})
+
+describe('BattleSession: line of sight (targets behind a Unit are not selectable, and say why)', () => {
+  // Fangrel on d1 with Basic Attack reaching 4 (skill data); Tidewall on d4 behind Tamer A on d2.
+  const tiles = (at: Tiles) => (side: Side) => {
+    const [tamer, m1, m2] = at[side].map(tileFromName)
+    return [tamer!, m1!, m2!] as const
+  }
+  const BLOCKED: Tiles = { A: ['d2', 'd1', 'g1'], B: ['a7', 'd4', 'g7'] }
+  const session = () =>
+    newSession({
+      skills: { ...data.skills, basic_attack: { ...data.skills.basic_attack!, range: 4 } },
+      preset: { tiles: { A: tiles(BLOCKED)('A'), B: tiles(BLOCKED)('B') }, firstSide: 'A' },
+    })
+
+  it('lists the blocked enemy with the Units in the way; Attack opens to show it crossed out', () => {
+    const s = session()
+    s.input({ type: 'tapUnit', unit: 'A.m1' })
+    expect(s.getSnapshot()).toMatchObject({
+      canAttack: false,
+      blocked: [{ unit: 'B.m1', tile: tileFromName('d4'), blockedBy: ['A.tamer'] }],
+      blockedTargets: [],
+    })
+    s.chooseAttack()
+    const snapshot = s.getSnapshot()
+    expect(snapshot.mode).toBe('attack')
+    expect(snapshot.targets).toEqual([])
+    expect(snapshot.blockedTargets.map(tileName)).toEqual(['d4'])
+  })
+
+  it('tapping the blocked enemy does not pick it: the reason shows instead', () => {
+    const s = session()
+    s.input({ type: 'tapUnit', unit: 'A.m1' })
+    s.chooseAttack()
+    s.input({ type: 'tapUnit', unit: 'B.m1' })
+    expect(s.getSnapshot()).toMatchObject({
+      selectedUnit: 'A.m1',
+      pendingTarget: null,
+      preview: null,
+      rejection: 'no-line-of-sight',
+      revision: 0,
+    })
+  })
+})
+
+describe('BattleSession: Defend', () => {
+  it('Defend uses the selected Unit\'s Action: Guarded, logged, selection cleared', () => {
+    const s = playingSession()
+    s.input({ type: 'tapUnit', unit: 'A.m1' })
+    expect(s.getSnapshot().canDefend).toBe(true)
+    s.defend()
+    const snapshot = s.getSnapshot()
+    expect(snapshot.log.map((e) => e.type)).toEqual(['defended', 'statusApplied'])
+    expect(snapshot.state.units.find((u) => u.id === 'A.m1')?.statuses).toEqual([{ id: 'guarded', bonus: 2 }])
+    expect(snapshot.selectedUnit).toBeNull()
+    s.input({ type: 'tapUnit', unit: 'A.m1' })
+    expect(s.getSnapshot().canDefend).toBe(false)
   })
 })

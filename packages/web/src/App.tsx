@@ -8,10 +8,12 @@ import {
   type BattleState,
   type Chance,
   type Initiative,
+  type RollModeSource,
   type UnitState,
   type UnitTemplate,
 } from '@mt/engine'
-import { DataError, tileName, type GameData, type Side } from '@mt/shared'
+import { GLYPH_ALPHA, glyphColour, TERRAIN_COLOURS, TERRAIN_GLYPHS } from '@mt/battle'
+import { DataError, tileName, type GameData, type Side, type Terrain } from '@mt/shared'
 import { BattleView } from './BattleView.tsx'
 import { loadBundledGameData } from './gameData.ts'
 import { createBattleSession, idleUnits, type BattleSession, type SessionSnapshot } from './session.ts'
@@ -135,6 +137,7 @@ function BattleScreen({ data, session, diceSeed, onRestart }: BattleScreenProps)
       )}
 
       <BattleView session={session} />
+      <TerrainLegend />
 
       {state.phase === 'deployment' ? (
         <DeploymentPanel snapshot={snapshot} session={session} data={data} />
@@ -266,16 +269,21 @@ function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, cu
   const { state } = snapshot
   if (snapshot.rejection !== null) return th.rejection[snapshot.rejection]
   if (selected === undefined) return th.hintSelect(state.sideToAct)
-  if (snapshot.mode === 'attack') return snapshot.preview === null ? th.hintChooseTarget : th.hintConfirm
+  if (snapshot.mode === 'attack') {
+    if (snapshot.preview !== null) return th.hintConfirm
+    return snapshot.canAttack ? th.hintChooseTarget : th.hintAllBlocked
+  }
   const { current: playing, started, limit } = state.activations
   if (started.includes(selected.id) && playing !== selected.id) return th.hintActivationOver
   if (!started.includes(selected.id) && started.length >= limit) return th.hintActivationLimit(limit)
   if (selected.hasMoved) {
     if (snapshot.canAttack) return th.hintAttackOnly
+    if (snapshot.canDefend) return th.hintDefendOnly
     return selected.hasActed ? th.hintNothingLeft : th.hintAlreadyMoved
   }
   if (current !== undefined && current.id !== selected.id) return th.hintSwitchEnds(unitName(current, data))
-  return snapshot.canAttack ? th.hintMoveOrAttack : th.hintMove
+  if (snapshot.canAttack) return th.hintMoveOrAttack
+  return snapshot.canDefend ? th.hintMoveOrDefend : th.hintMove
 }
 
 function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; session: BattleSession; data: GameData }) {
@@ -298,12 +306,25 @@ function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; ses
     <section className="panel controls">
       <p className="hint">{turnHint(snapshot, selected, current, data)}</p>
       {selected !== undefined && <UnitCard unit={selected} state={state} data={data} />}
+      {snapshot.mode === 'attack' && snapshot.blocked.length > 0 && (
+        <BlockedTargets blocked={snapshot.blocked} name={namer(state, data)} />
+      )}
       {snapshot.preview !== null && <PreviewCard preview={snapshot.preview} name={namer(state, data)} data={data} />}
       {warning === null ? (
         <div className="buttons">
           {selected !== undefined && snapshot.mode === 'move' && (
-            <button type="button" className="secondary" disabled={!snapshot.canAttack} onClick={() => session.chooseAttack()}>
+            <button
+              type="button"
+              className="secondary"
+              disabled={!snapshot.canAttack && snapshot.blocked.length === 0}
+              onClick={() => session.chooseAttack()}
+            >
               {th.attack}
+            </button>
+          )}
+          {selected !== undefined && snapshot.mode === 'move' && (
+            <button type="button" className="secondary" disabled={!snapshot.canDefend} onClick={() => session.defend()}>
+              {th.defend}
             </button>
           )}
           {snapshot.preview !== null && (
@@ -345,21 +366,77 @@ function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; ses
   )
 }
 
+/** Guard and Ward bonus from Guarded, 0 when the Unit is not Guarded. */
+function guardedBonus(unit: UnitState): number {
+  return unit.statuses.reduce((bonus, s) => (s.id === 'guarded' ? Math.max(bonus, s.bonus) : bonus), 0)
+}
+
 function UnitCard({ unit, state, data }: { unit: UnitState; state: BattleState; data: GameData }) {
   const values = derivedValues(state, unit.id)
   const details =
     unit.kind === 'tamer'
       ? [th.level(unit.level), th.movementType.ground]
       : [th.star(unit.star), th.element[unit.element], th.movementType[unit.movement]]
+  const terrain = state.terrain[unit.tile.y]?.[unit.tile.x]
+  const standing = terrain === undefined ? [] : [th.standingOn(th.terrain[terrain])]
+  const bonus = guardedBonus(unit)
+  const defences =
+    bonus > 0 ? th.defencesGuarded(values.guard + bonus, values.ward + bonus, bonus) : th.defences(values.guard, values.ward)
   return (
     <div className={`unit-card side-${unit.side}`}>
       <strong>{unitName(unit, data)}</strong> <span className="team">{th.team(unit.side)}</span>
-      <div>{[...details, th.move(values.move)].join(' · ')}</div>
-      <div>
-        {[th.hp(unit.hp, values.maxHp), th.defences(values.guard, values.ward), th.attackBonus(values.attackBonus)].join(
-          ' · ',
-        )}
-      </div>
+      {bonus > 0 && <span className="tag guarded">{th.guardedTag(bonus)}</span>}
+      <div>{[...details, th.move(values.move), ...standing].join(' · ')}</div>
+      <div>{[th.hp(unit.hp, values.maxHp), defences, th.attackBonus(values.attackBonus)].join(' · ')}</div>
+    </div>
+  )
+}
+
+function BlockedTargets({ blocked, name }: { blocked: SessionSnapshot['blocked']; name: (id: string) => string }) {
+  return (
+    <div className="blocked">
+      <strong>{th.blockedTitle}</strong>
+      <ul>
+        {blocked.map((b) => (
+          <li key={b.unit}>{th.blockedBy(name(b.unit), b.blockedBy.map(name).join(', '))}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** One line per source of advantage or disadvantage (rules §5.1). */
+function sourceText(source: RollModeSource, name: (id: string) => string): string {
+  switch (source.kind) {
+    case 'element':
+      return source.effect === 'advantage'
+        ? th.sourceElementWins(th.element[source.attackerElement], th.element[source.targetElement])
+        : th.sourceElementLoses(th.element[source.attackerElement], th.element[source.targetElement])
+    case 'terrain':
+      if (source.effect === 'disadvantage') {
+        return th.sourceTerrainWeak(th.element[source.terrain], th.element[source.attackerElement])
+      }
+      return source.aquatic ? th.sourceTerrainAquatic : th.sourceTerrainMatch(th.element[source.terrain])
+    case 'tamerProtection':
+      return th.sourceTamerProtected(source.protectors.map(name).join(', '))
+  }
+}
+
+/** Where advantage and disadvantage come from, and the net effect after cancelling (spec user story 22). */
+function RollModeSources({ preview, name }: { preview: AttackPreview; name: (id: string) => string }) {
+  const sources = preview.rollModeSources
+  if (sources.length === 0) return <div className="muted">{th.previewNoSources}</div>
+  const net = preview.rollMode === 'normal' ? th.previewNet.cancelled : th.previewNet[preview.rollMode]
+  return (
+    <div className="sources">
+      <ul>
+        {sources.map((source, index) => (
+          <li key={index} className={source.effect}>
+            <span className="tag">{th.rollEffect[source.effect]}</span> {sourceText(source, name)}
+          </li>
+        ))}
+      </ul>
+      <div className={`net ${preview.rollMode}`}>{net}</div>
     </div>
   )
 }
@@ -375,8 +452,10 @@ function PreviewCard({ preview, name, data }: { preview: AttackPreview; name: (i
       <div>
         {th.previewCritical(percent(preview.criticalChance), preview.criticalDamage.min, preview.criticalDamage.max)}
       </div>
+      <RollModeSources preview={preview} name={name} />
       <div className="muted">
-        {th.previewRoll(preview.attackBonus, th.defence[preview.defenceKind], preview.defence)} · {th.previewRules}
+        {th.previewRoll(preview.attackBonus, th.defence[preview.defenceKind], preview.defence)}
+        {preview.guardedBonus > 0 && ` ${th.previewGuarded(preview.guardedBonus)}`} · {th.previewRules}
       </div>
     </div>
   )
@@ -391,6 +470,7 @@ function HpList({ state, data }: { state: BattleState; data: GameData }) {
           <li key={unit.id} className={`side-${unit.side}${down ? ' down' : ''}`}>
             <span>
               {unitName(unit, data)} <span className="team">{th.team(unit.side)}</span>
+              {!down && guardedBonus(unit) > 0 && <span className="tag guarded">{th.guardedTag(guardedBonus(unit))}</span>}
             </span>
             <span>{down ? th.down : th.hp(unit.hp, derivedValues(state, unit.id).maxHp)}</span>
           </li>
@@ -433,7 +513,8 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
           : event.hit
             ? th.logHit
             : th.logMiss
-      return [`${roll} → ${result}`]
+      const mode = event.rollMode === 'normal' ? '' : ` (${th.rollEffect[event.rollMode]})`
+      return [`${roll}${mode} → ${result}`]
     }
     case 'damageDealt':
       return [
@@ -478,5 +559,50 @@ function EventLog({ events, state, data }: { events: readonly BattleEvent[]; sta
           <li key={index}>{line}</li>
         ))}
     </ol>
+  )
+}
+
+// ------------------------------------------------------------------ legend
+
+const TERRAINS: readonly Terrain[] = ['normal', 'forest', 'water', 'mountain', 'desert', 'light', 'dark']
+
+const hex = (colour: number) => `#${colour.toString(16).padStart(6, '0')}`
+
+/** The same colour and corner mark as a Board tile (battle palette), as a tiny SVG. */
+function TerrainSwatch({ terrain }: { terrain: Terrain }) {
+  const mark = hex(glyphColour(terrain))
+  return (
+    <svg className="swatch" viewBox="0 0 12 12" width="24" height="24" aria-hidden="true" shapeRendering="crispEdges">
+      <rect width="12" height="12" fill={hex(TERRAIN_COLOURS[terrain])} />
+      {TERRAIN_GLYPHS[terrain].flatMap((row, y) =>
+        [...row].flatMap((cell, x) =>
+          cell === '#' ? [<rect key={`${x}-${y}`} x={x + 2} y={y + 2} width="1" height="1" fill={mark} fillOpacity={GLYPH_ALPHA} />] : [],
+        ),
+      )}
+    </svg>
+  )
+}
+
+/** Every kind of tile under the Board, and the position rules behind a tap. */
+function TerrainLegend() {
+  return (
+    <section className="panel legend">
+      <ul className="swatches">
+        {TERRAINS.map((terrain) => (
+          <li key={terrain}>
+            <TerrainSwatch terrain={terrain} /> {th.terrain[terrain]}
+          </li>
+        ))}
+      </ul>
+      <details>
+        <summary>{th.legendTitle}</summary>
+        <ul>
+          <li>{th.legendWheel}</li>
+          <li>{th.legendTerrain}</li>
+          <li>{th.legendProtection}</li>
+          <li>{th.legendLineOfSight}</li>
+        </ul>
+      </details>
+    </section>
   )
 }

@@ -372,3 +372,98 @@ body {
   padding-left: 28px;
   max-height: 14em;
 }
+
+/* Advantage/disadvantage sources, Guarded, line of sight, terrain legend (ticket 06). */
+
+.tag {
+  display: inline-block;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #3a3d48;
+}
+
+.tag.guarded {
+  background: #1f4b6b;
+  color: #cfeaff;
+}
+
+.sources ul {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sources li {
+  font-size: 0.875rem;
+}
+
+.sources li .tag {
+  margin-left: 0;
+}
+
+.sources li.advantage .tag {
+  background: #23552d;
+  color: #c9f5cf;
+}
+
+.sources li.disadvantage .tag {
+  background: #6a2626;
+  color: #ffd2cc;
+}
+
+.sources .net {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.blocked {
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  border: 1px dashed #b0b0b0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.blocked ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
+.legend .swatches {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 0.875rem;
+}
+
+.legend .swatches li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend .swatch {
+  border: 1px solid #000;
+}
+
+.legend details {
+  margin-top: 8px;
+  font-size: 0.875rem;
+}
+
+.legend summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.legend details ul {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
