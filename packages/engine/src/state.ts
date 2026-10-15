@@ -53,7 +53,16 @@ export interface UnitStatus {
   readonly skipCountdown?: true
   /** The Unit that applied it, for statuses that track it (Taunted: the taunter). */
   readonly source?: UnitId
+  /**
+   * Given by a skill usable only on this terrain (`effects.requiresTerrain`):
+   * the status lasts only while the Unit stands on it (Hidden from
+   * Camouflage: forest, rules §8.2, D-18).
+   */
+  readonly whileOn?: Terrain
 }
+
+/** Why a status broke by its own conditions (rules §8.2): the holder's attack roll, or terrain. */
+export type StatusEndCause = 'attackRoll' | 'terrain'
 
 /**
  * A choice that must be made before any other action: Hit and Run's step
