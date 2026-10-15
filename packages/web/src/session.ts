@@ -13,10 +13,17 @@
  * it is chosen. Defend is one button. After Hit and Run the tiles of its free
  * step light up: tap one, or stay. Tapping any other Unit shows its card
  * (statuses with their remaining duration).
+ *
+ * Inspiration (rules §18): after a d20 the deciding side may reroll, the
+ * engine pauses with a pending decision and the UI shows the roll with "use"
+ * and "keep" buttons. When the side that must decide is not the one holding
+ * the device (a save on the other side's Turn), a hand-over screen covers
+ * the Board first, and again when the device must go back.
  */
 import type { Tile } from '@mt/shared'
 import {
   applyAction,
+  decidingSide,
   legalActions,
   previewAction,
   unitSkills,
@@ -34,9 +41,12 @@ import type { BattleSessionPort, BattleSnapshot, BoardInput } from '@mt/battle'
 /**
  * Hotseat screens that cover the Board:
  * - `handoff`: a side confirmed its deployment; pass the device to the other side.
- * - `initiative`: both sides confirmed; placements are revealed and initiative shown.
+ * - `initiative`: both sides confirmed; placements are revealed and initiative shown
+ *   (with the Inspiration decisions on initiative, rules §17.2).
+ * - `decisionHandoff`: the side that must act now changed in the middle of a Turn
+ *   (a save's Inspiration decision for the other side, then back): pass the device.
  */
-export type HotseatScreen = 'board' | 'handoff' | 'initiative'
+export type HotseatScreen = 'board' | 'handoff' | 'initiative' | 'decisionHandoff'
 
 /** What the selected Unit is about to do: Move (default), pick a Basic Attack target, or use a skill. */
 export type SelectionMode = 'move' | 'attack' | 'skill'
@@ -100,6 +110,10 @@ export interface BattleSession extends BattleSessionPort {
   confirmAttack(): void
   /** After Hit and Run: stay instead of stepping. */
   stayInPlace(): void
+  /** Answer the pending Inspiration decision: reroll the d20 just seen (rules §18). */
+  useInspiration(): void
+  /** Answer the pending Inspiration decision: keep the roll. */
+  declineInspiration(): void
   /** Step back: drop the previewed target, then leave attack/skill mode, then the selection. */
   cancel(): void
 }
@@ -185,7 +199,18 @@ function firstUnplaced(state: BattleState): UnitId | null {
 
 /** Who is selected after an accepted action: the Unit owing a step, a Unit to place, or nobody. */
 function selectionAfter(state: BattleState): UnitId | null {
-  return state.pending?.unit ?? firstUnplaced(state)
+  return state.pending?.kind === 'retreat' ? state.pending.unit : firstUnplaced(state)
+}
+
+/**
+ * The cover after an accepted action in play: hand the device over when the
+ * side that must act changed without a Turn ending (an Inspiration decision
+ * for the other side, or back after it). Initiative keeps its own screen.
+ */
+function screenAfter(before: BattleState, after: BattleState, action: Action): HotseatScreen {
+  if (before.phase === 'play' && before.firstSide === null) return 'initiative'
+  if (action.type === 'endTurn' || after.outcome !== null || after.phase !== 'play') return 'board'
+  return decidingSide(after) === decidingSide(before) ? 'board' : 'decisionHandoff'
 }
 
 /** No attack or skill in progress. */
@@ -281,12 +306,14 @@ export function createBattleSession(initial: BattleState): BattleSession {
     action: Action,
     after: (state: BattleState) => Partial<Omit<SessionSnapshot, Computed>> = () => ({}),
   ): void {
-    const result = applyAction(snapshot.state, action)
+    const before = snapshot.state
+    const result = applyAction(before, action)
     if (!result.ok) {
       update({ rejection: result.rejection.code })
       return
     }
     update({
+      screen: screenAfter(before, result.state, action),
       state: result.state,
       events: result.events,
       revision: snapshot.revision + 1,
@@ -302,7 +329,7 @@ export function createBattleSession(initial: BattleState): BattleSession {
 
   function selectUnit(unit: UnitId | null): void {
     const { state, selectedUnit } = snapshot
-    // A pending step (Hit and Run) keeps its Unit selected.
+    // A pending decision (Hit and Run's step, Inspiration) keeps the selection.
     if (state.pending !== null) return
     const own = unit !== null && unit.startsWith(`${state.sideToAct}.`) && state.outcome === null
     // In play, choosing the selected Unit again clears the selection.
@@ -316,7 +343,8 @@ export function createBattleSession(initial: BattleState): BattleSession {
     const { state, selectedUnit, reachable, mode } = snapshot
     if (boardInput.type === 'tapUnit') {
       if (state.pending !== null) {
-        update({ inspectedUnit: boardInput.unit === state.pending.unit ? null : boardInput.unit })
+        const owing = state.pending.kind === 'retreat' ? state.pending.unit : null
+        update({ inspectedUnit: boardInput.unit === owing ? null : boardInput.unit })
         return
       }
       if (mode !== 'move') {
@@ -337,7 +365,7 @@ export function createBattleSession(initial: BattleState): BattleSession {
     const { tile } = boardInput
     const onReachable = reachable.some((t) => t.x === tile.x && t.y === tile.y)
     if (state.pending !== null) {
-      if (onReachable) dispatch({ type: 'retreat', unit: state.pending.unit, to: tile })
+      if (onReachable && state.pending.kind === 'retreat') dispatch({ type: 'retreat', unit: state.pending.unit, to: tile })
       return
     }
     if (selectedUnit !== null && mode === 'move' && onReachable) {
@@ -393,7 +421,15 @@ export function createBattleSession(initial: BattleState): BattleSession {
     },
     stayInPlace() {
       const pending = snapshot.state.pending
-      if (pending !== null) dispatch({ type: 'retreat', unit: pending.unit, to: null })
+      if (pending?.kind === 'retreat') dispatch({ type: 'retreat', unit: pending.unit, to: null })
+    },
+    useInspiration() {
+      const pending = snapshot.state.pending
+      if (pending?.kind === 'inspiration') dispatch({ type: 'useInspiration', side: pending.side })
+    },
+    declineInspiration() {
+      const pending = snapshot.state.pending
+      if (pending?.kind === 'inspiration') dispatch({ type: 'declineInspiration', side: pending.side })
     },
     cancel() {
       if (snapshot.state.pending !== null) return

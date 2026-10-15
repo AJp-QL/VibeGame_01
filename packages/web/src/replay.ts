@@ -5,6 +5,8 @@
  * engine's (`recordReplay`, `replayBattle`); the file format is @mt/shared's.
  */
 import {
+  BASIC_ATTACK,
+  decidingSide,
   legalActions,
   recordReplay,
   replayBattle,
@@ -17,10 +19,12 @@ import {
   type ReplayMismatch,
   type ReplayStep,
   type UnitId,
+  type UnitTemplate,
 } from '@mt/engine'
-import { parseReplayText, serializeReplay, type GameData, type Replay, type ReplayMeta, type Side } from '@mt/shared'
+import { parseReplayText, serializeReplay, tileName, type GameData, type Replay, type ReplayMeta, type Side } from '@mt/shared'
 import type { BattleSessionPort, BattleSnapshot } from '@mt/battle'
 import type { BattleChoice } from './battleChoice.ts'
+import { th } from './strings.ts'
 
 // ------------------------------------------------------------------ export
 
@@ -97,7 +101,7 @@ export interface PlaybackSnapshot extends BattleSnapshot {
   /** Actions applied so far: 0 = the Battle as created, `total` = the end of the Replay. */
   readonly step: number
   readonly total: number
-  /** The action that led to this step, and the side that took it (null at step 0). */
+  /** The action that led to this step, and the side that took it (null at step 0): the deciding side for an answer to a decision. */
   readonly action: Action | null
   readonly actor: Side | null
   /** Every event up to this step, oldest first. */
@@ -141,7 +145,7 @@ export function createReplayPlayer(initial: BattleState, steps: readonly ReplayS
       step,
       total: steps.length,
       action: last?.action ?? null,
-      actor: step === 0 ? null : stateAt(step - 1).sideToAct,
+      actor: step === 0 ? null : decidingSide(stateAt(step - 1)),
       log: steps.slice(0, step).flatMap((s) => s.events),
     }
   }
@@ -168,5 +172,54 @@ export function createReplayPlayer(initial: BattleState, steps: readonly ReplayS
     back: () => go(snapshot.step - 1),
     forward: () => go(snapshot.step + 1),
     last: () => go(steps.length),
+  }
+}
+
+// ------------------------------------------------------------- action text
+
+/** "Fangrel (ทีม A)", from the Units on the Board, those that fell, or the deployment roster. */
+function unitLabel(id: string, state: BattleState, data: GameData): string {
+  const unit: UnitTemplate | undefined =
+    state.units.find((u) => u.id === id) ??
+    state.fallen.find((u) => u.id === id) ??
+    state.deployment?.roster.find((u) => u.id === id)
+  if (unit === undefined) return id
+  const name = unit.kind === 'tamer' ? th.tamer : (data.species[unit.species]?.name ?? unit.species)
+  return `${name} (${th.team(unit.side)})`
+}
+
+/** One line saying what a Replay action did, for the playback controls. */
+export function describeAction(action: Action, actor: Side, state: BattleState, data: GameData): string {
+  const label = (id: string) => unitLabel(id, state, data)
+  switch (action.type) {
+    case 'deploy':
+      return th.replay.action.deploy(label(action.unit), tileName(action.to))
+    case 'confirmDeployment':
+      return th.replay.action.confirmDeployment(actor)
+    case 'move':
+      return th.replay.action.move(label(action.unit), tileName(action.to))
+    case 'basicAttack':
+      return th.replay.action.attack(label(action.unit), data.skills[BASIC_ATTACK]?.name ?? BASIC_ATTACK, label(action.target))
+    case 'defend':
+      return th.replay.action.defend(label(action.unit))
+    case 'useSkill': {
+      const skill = data.skills[action.skill]?.name ?? action.skill
+      return action.target === undefined
+        ? th.replay.action.skill(label(action.unit), skill)
+        : th.replay.action.attack(label(action.unit), skill, label(action.target))
+    }
+    case 'retreat':
+      return action.to === null
+        ? th.replay.action.stay(label(action.unit))
+        : th.replay.action.retreat(label(action.unit), tileName(action.to))
+    case 'endTurn':
+      return th.replay.action.endTurn(actor)
+    case 'useInspiration':
+      return th.replay.action.useInspiration(action.side)
+    case 'declineInspiration':
+      return th.replay.action.declineInspiration(action.side)
+    default:
+      // Action types added by later tickets show their type until they get their own text.
+      return th.replay.action.other((action as { type: string }).type)
   }
 }

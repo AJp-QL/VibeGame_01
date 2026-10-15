@@ -735,3 +735,59 @@ body {
 .step-buttons button {
   flex: 1 1 140px;
 }
+
+/* ---- ticket 12: Inspiration, Round x/10 and damage totals ---- */
+
+.totals,
+.inspiration-left {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.totals .side-A,
+.inspiration-left .side-A {
+  color: var(--side-a);
+}
+
+.totals .side-B,
+.inspiration-left .side-B {
+  color: var(--side-b);
+}
+
+.inspiration-left .spent {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.inspiration-prompt {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--accent);
+  border-left-width: 6px;
+  border-radius: 6px;
+}
+
+.inspiration-prompt.side-A {
+  border-left-color: var(--side-a);
+}
+
+.inspiration-prompt.side-B {
+  border-left-color: var(--side-b);
+}
+
+.inspiration-prompt .roll {
+  margin: 4px 0;
+  font-weight: 600;
+}
+
+.inspiration-prompt .muted {
+  margin: 0 0 8px;
+}
+
+.initiative .rerolled {
+  color: var(--accent);
+}
+
+.result.side-draw {
+  border-left-color: var(--muted);
+}

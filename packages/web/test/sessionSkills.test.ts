@@ -42,6 +42,8 @@ function playingSession(dice: DiceSource = { seed: '0123456789abcdef' }) {
       elementWheel: data.elementWheel,
       dice,
       preset: { tiles: { A: tiles('A'), B: tiles('B') }, firstSide: 'A' },
+      // Inspiration has its own tests (sessionInspiration.test.ts): no pauses here.
+      inspiration: { A: false, B: false },
     }),
   )
 }

@@ -23,6 +23,7 @@ function gameData() {
 const data = gameData()
 
 function newSession(options: Partial<Pick<BattleSetup, 'dice' | 'preset' | 'skills'>> = {}) {
+  // Inspiration has its own tests (sessionInspiration.test.ts): no pauses here.
   return createBattleSession(
     createBattle({
       scenario: data.scenarios.scenario_1!,
@@ -33,6 +34,7 @@ function newSession(options: Partial<Pick<BattleSetup, 'dice' | 'preset' | 'skil
       elementWheel: data.elementWheel,
       dice: options.dice ?? { seed: '0123456789abcdef' },
       ...(options.preset ? { preset: options.preset } : {}),
+      inspiration: { A: false, B: false },
     }),
   )
 }

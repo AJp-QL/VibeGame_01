@@ -18,7 +18,10 @@ export const th = {
   diceSeed: (seed: string) => `Dice Seed ${seed}`,
   scenarioOnBoard: (scenario: string, board: string) => `${scenario} บน Board ${board}`,
 
-  round: (round: number) => `Round ${round}`,
+  round: (round: number, limit: number) => `Round ${round}/${limit}`,
+  damageTotals: 'damage รวม',
+  damageTotal: (side: Side, total: number) => `ทีม ${side} ${total}`,
+  inspirationLeft: (side: Side, left: boolean) => `ทีม ${side} ${left ? 'เหลือ 1' : 'ใช้แล้ว'}`,
   team: (side: Side) => `ทีม ${side}`,
   turnOf: (side: Side, turn: number) => `Turn ${turn} ของทีม ${side}`,
   endTurn: 'จบ Turn',
@@ -101,6 +104,7 @@ export const th = {
   initiativeRoll: (side: Side, d20: number, modifier: number, total: number) =>
     `ทีม ${side}: d20 ได้ ${d20} ${modifier < 0 ? '−' : '+'} ${Math.abs(modifier)} = ${total}`,
   initiativeTie: 'เสมอ ทอยใหม่ทั้งสองฝั่ง',
+  initiativeRerolled: (side: Side) => `ทีม ${side} ใช้ Inspiration ทอย d20 ของตัวเองใหม่`,
   initiativeFirst: (side: Side) => `ทีม ${side} เริ่มก่อน`,
   initiativeFirstTurn: (side: Side) => `Turn แรกของทีม ${side} เล่นได้แค่ 2 จาก 3 Unit (เลือกเองว่าตัวไหน)`,
   startBattle: 'เริ่ม Battle',
@@ -237,6 +241,24 @@ export const th = {
   hintRetreat: (unit: string) =>
     `Hit and Run: แตะช่องที่สว่างเพื่อให้ ${unit} ถอยฟรี 1 ช่อง (ไม่นับเป็นการเดิน) หรือกด "ไม่ถอย"`,
   stayInPlace: 'ไม่ถอย',
+
+  // Inspiration (rules §18): one reroll of a side's own d20 per Battle.
+  inspiration: {
+    name: 'Inspiration',
+    title: (side: Side) => `Inspiration ของทีม ${side}`,
+    body: 'ทอย d20 ของทีมตัวเองใหม่ได้ 1 ครั้งต่อ Battle (attack roll, save หรือ initiative) ต้องใช้ผลใหม่แม้แย่กว่าเดิม',
+    hint: (side: Side) => `ทีม ${side} เลือก: ใช้ Inspiration ทอยใหม่ หรือไม่ใช้`,
+    use: 'ใช้ Inspiration ทอยใหม่',
+    decline: 'ไม่ใช้',
+    handoffTitle: (side: Side) => `ส่งเครื่องให้ทีม ${side}`,
+    handoffDecide: (side: Side, turnOf: Side) =>
+      `ทีม ${side} ตัดสินใจว่าจะใช้ Inspiration ทอย d20 ของตัวเองใหม่หรือไม่ (ระหว่าง Turn ของทีม ${turnOf})`,
+    handoffBack: (side: Side) => `ทีม ${side} เล่นต่อ`,
+    handoffReady: (side: Side) => `ทีม ${side} พร้อม`,
+  },
+  logInspirationUsed: (side: Side) => `ทีม ${side} ใช้ Inspiration ทอยใหม่`,
+  logInspirationDeclined: (side: Side) => `ทีม ${side} ไม่ใช้ Inspiration`,
+  logRerolled: 'ทอยใหม่',
   confirmSkill: 'ยืนยันใช้ skill',
   previewIfHit: 'ถ้าโดน',
   previewSave: (status: string, percent: string, stat: string, dc: number, modifier: number) =>
@@ -270,14 +292,21 @@ export const th = {
   },
   statusPositive: 'บวก',
   statusNegative: 'ลบ',
-  logBattleEnded: (winner: Side, round: number) => `Battle จบใน Round ${round}: ทีม ${winner} ชนะ`,
+  logBattleEnded: (winner: Side | null, round: number) =>
+    `Battle จบใน Round ${round}: ${winner === null ? 'เสมอ' : `ทีม ${winner} ชนะ`}`,
 
   cause: {
     tamerDown: (loser: Side) => `Tamer ของทีม ${loser} ล้ม`,
     monstersDown: (loser: Side) => `Monster ทุกตัวของทีม ${loser} ล้ม`,
-  } satisfies Record<BattleEndCause, (loser: Side) => string>,
-  resultTitle: (winner: Side) => `ทีม ${winner} ชนะ`,
+  } satisfies Record<Exclude<BattleEndCause, 'turnLimit'>, (loser: Side) => string>,
+  turnLimitCause: (rounds: number) => `ครบ ${rounds} Round: ตัดสินด้วย damage รวมตลอด Battle (heal ไม่หักลบ)`,
+  turnLimitResult: (a: number, b: number, winner: Side | null) =>
+    winner === null
+      ? `damage รวมเท่ากัน (ทีม A ${a} ทีม B ${b}) จึงเสมอ`
+      : `ทีม ${winner} ทำ damage รวมมากกว่า (ทีม A ${a} ทีม B ${b})`,
+  resultTitle: (winner: Side | null) => (winner === null ? 'เสมอ' : `ทีม ${winner} ชนะ`),
   resultRounds: (round: number) => `จบใน Round ${round}`,
+  resultDamage: (a: number, b: number) => `damage รวมตลอด Battle: ทีม A ${a} · ทีม B ${b}`,
 
   rejection: {
     'unknown-action': 'ทำแบบนี้ไม่ได้',
@@ -298,8 +327,8 @@ export const th = {
     'not-an-enemy': 'โจมตีได้เฉพาะ Unit ของอีกทีม',
     'out-of-range': 'เป้าอยู่นอกระยะ',
     'no-line-of-sight': 'มี Unit ขวางแนวเล็ง (line of sight) จึงโจมตีเป้านี้ไม่ได้',
-    'decision-pending': 'ต้องเลือกช่องถอยของ Hit and Run (หรือไม่ถอย) ก่อน',
-    'no-decision': 'ตอนนี้ไม่มีการถอยให้เลือก',
+    'decision-pending': 'ต้องตัดสินใจก่อน: เลือกช่องถอยของ Hit and Run (หรือไม่ถอย) หรือเลือกว่าจะใช้ Inspiration หรือไม่',
+    'no-decision': 'ตอนนี้ไม่มีเรื่องให้ทีมนี้ตัดสินใจ',
     'not-in-loadout': 'Unit นี้ไม่มี skill นี้',
     'skill-not-available': 'skill นี้ยังใช้ไม่ได้',
     'on-cooldown': 'skill นี้ยังติด cooldown',
@@ -358,6 +387,8 @@ export const th = {
       stay: (unit: string) => `${unit} ไม่ถอย (Hit and Run)`,
       defend: (unit: string) => `${unit} ป้องกัน (Defend)`,
       endTurn: (side: string) => `ทีม ${side} จบ Turn`,
+      useInspiration: (side: string) => `ทีม ${side} ใช้ Inspiration ทอยใหม่`,
+      declineInspiration: (side: string) => `ทีม ${side} ไม่ใช้ Inspiration`,
       other: (type: string) => `action "${type}"`,
     },
   },

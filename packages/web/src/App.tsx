@@ -1,14 +1,16 @@
 import { useState, useSyncExternalStore } from 'react'
 import {
   createBattle,
+  decidingSide,
   derivedValues,
   legalActions,
+  ROUND_LIMIT,
   type ActionPreview,
   type AttackPreview,
   type BattleEvent,
+  type BattleOutcome,
   type BattleState,
   type Chance,
-  type Initiative,
   type RollModeSource,
   type StatusOdds,
   type UnitState,
@@ -205,10 +207,8 @@ function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu, onExportRe
       {state.outcome === null && <BattleMenu onExportReplay={onExportReplay} onLeave={onMenu} />}
 
       {state.outcome !== null && (
-        <section className={`panel result side-${state.outcome.winner}`} role="status">
-          <h2>{th.resultTitle(state.outcome.winner)}</h2>
-          <p>{th.cause[state.outcome.cause](otherSide(state.outcome.winner))}</p>
-          <p>{th.resultRounds(state.round)}</p>
+        <section className={`panel result side-${state.outcome.winner ?? 'draw'}`} role="status">
+          <ResultSummary outcome={state.outcome} state={state} />
           <div className="buttons">
             <button type="button" className="primary" onClick={onPlayAgain}>
               {th.playAgain}
@@ -263,13 +263,33 @@ function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu, onExportRe
         </div>
       )}
 
-      {snapshot.screen === 'initiative' && state.initiative !== null && (
+      {snapshot.screen === 'initiative' && (
         <div className="cover see-through" role="dialog" aria-modal="true" aria-labelledby="initiative-title">
           <div className="panel dialog">
             <h2 id="initiative-title">{th.revealTitle}</h2>
-            <InitiativeResult initiative={state.initiative} />
+            <InitiativeResult log={snapshot.log} firstSide={state.initiative?.firstSide ?? null} />
+            {state.pending?.kind === 'inspiration' ? (
+              <InspirationPrompt snapshot={snapshot} session={session} data={data} />
+            ) : (
+              <button type="button" className="primary" onClick={() => session.continueHotseat()}>
+                {th.startBattle}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {snapshot.screen === 'decisionHandoff' && state.outcome === null && (
+        <div className="cover" role="dialog" aria-modal="true" aria-labelledby="decision-handoff-title">
+          <div className="panel dialog">
+            <h2 id="decision-handoff-title">{th.inspiration.handoffTitle(decidingSide(state))}</h2>
+            <p>
+              {state.pending?.kind === 'inspiration'
+                ? th.inspiration.handoffDecide(state.pending.side, state.sideToAct)
+                : th.inspiration.handoffBack(decidingSide(state))}
+            </p>
             <button type="button" className="primary" onClick={() => session.continueHotseat()}>
-              {th.startBattle}
+              {th.inspiration.handoffReady(decidingSide(state))}
             </button>
           </div>
         </div>
@@ -288,16 +308,87 @@ export function StatusBar({ state }: { state: BattleState }) {
   }
   const { limit, started } = state.activations
   const teamSize = state.units.filter((u) => u.side === state.sideToAct).length
+  const sides = ['A', 'B'] as const
   return (
     <section className="status" aria-live="polite">
-      <span className="round">{th.round(state.round)}</span>
-      <span className={`turn side-${state.sideToAct}`}>
-        {th.turnOf(state.sideToAct, state.turnNumber[state.sideToAct])}
-      </span>
+      {state.round > 0 && <span className="round">{th.round(state.round, ROUND_LIMIT)}</span>}
+      {state.firstSide !== null && (
+        <span className={`turn side-${state.sideToAct}`}>
+          {th.turnOf(state.sideToAct, state.turnNumber[state.sideToAct])}
+        </span>
+      )}
       {state.outcome === null && limit < teamSize && (
         <span className="limit">{th.firstTurnLimit(limit, started.length)}</span>
       )}
+      <span className="totals">
+        {th.damageTotals}:{' '}
+        {sides.map((side) => (
+          <span key={side} className={`side-${side}`}>
+            {' '}
+            {th.damageTotal(side, state.damageDealt[side])}
+          </span>
+        ))}
+      </span>
+      <span className="inspiration-left">
+        {th.inspiration.name}:{' '}
+        {sides.map((side) => (
+          <span key={side} className={`side-${side}${state.inspiration[side] ? '' : ' spent'}`}>
+            {' '}
+            {th.inspirationLeft(side, state.inspiration[side])}
+          </span>
+        ))}
+      </span>
     </section>
+  )
+}
+
+/** Winner (or draw), why, how many Rounds and the damage totals (spec user story 47). */
+export function ResultSummary({ outcome, state }: { outcome: BattleOutcome; state: BattleState }) {
+  const { A, B } = state.damageDealt
+  return (
+    <>
+      <h2>{th.resultTitle(outcome.winner)}</h2>
+      {outcome.cause === 'turnLimit' ? (
+        <>
+          <p>{th.turnLimitCause(ROUND_LIMIT)}</p>
+          <p>{th.turnLimitResult(A, B, outcome.winner)}</p>
+        </>
+      ) : (
+        <p>{th.cause[outcome.cause](otherSide(outcome.winner ?? 'A'))}</p>
+      )}
+      <p>{th.resultRounds(state.round)}</p>
+      {outcome.cause !== 'turnLimit' && <p>{th.resultDamage(A, B)}</p>}
+    </>
+  )
+}
+
+/**
+ * A pending Inspiration decision (rules §18): the roll just made and the two
+ * answers. Shown to the side that decides (Hotseat hands the device over first).
+ */
+function InspirationPrompt({ snapshot, session, data }: { snapshot: SessionSnapshot; session: BattleSession; data: GameData }) {
+  const { state } = snapshot
+  const pending = state.pending
+  if (pending?.kind !== 'inspiration') return null
+  const roll = logLines(pending.roll, namer(state, data), state, data)
+  return (
+    <div className={`inspiration-prompt side-${pending.side}`} role="group" aria-labelledby="inspiration-title">
+      <strong id="inspiration-title">{th.inspiration.title(pending.side)}</strong>
+      {roll.map((line) => (
+        <p key={line} className="roll">
+          {line}
+        </p>
+      ))}
+      <p className="muted">{th.inspiration.body}</p>
+      <div className="buttons">
+        <button type="button" className="primary" onClick={() => session.useInspiration()}>
+          {th.inspiration.use}
+        </button>
+        <button type="button" className="secondary" onClick={() => session.declineInspiration()}>
+          {th.inspiration.decline}
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -350,20 +441,27 @@ function BattleMenu({ onExportReplay, onLeave }: { onExportReplay: () => void; o
   )
 }
 
-function InitiativeResult({ initiative }: { initiative: Initiative }) {
+/** Every initiative roll so far (Inspiration rerolls included), and who starts once decided. */
+function InitiativeResult({ log, firstSide }: { log: readonly BattleEvent[]; firstSide: Side | null }) {
+  const rolls = log.flatMap((e) => (e.type === 'initiativeRolled' ? [e] : []))
   return (
     <div className="initiative">
       <h3>{th.initiativeTitle}</h3>
-      {initiative.rolls.map((pair, index) => (
+      {rolls.map((roll, index) => (
         <ul key={index}>
+          {roll.rerolled !== undefined && <li className="rerolled">{th.initiativeRerolled(roll.rerolled)}</li>}
           {(['A', 'B'] as const).map((side) => (
-            <li key={side}>{th.initiativeRoll(side, pair[side].d20, pair[side].modifier, pair[side].total)}</li>
+            <li key={side}>{th.initiativeRoll(side, roll.rolls[side].d20, roll.rolls[side].modifier, roll.rolls[side].total)}</li>
           ))}
-          {pair.A.total === pair.B.total && <li className="tie">{th.initiativeTie}</li>}
+          {roll.tie && <li className="tie">{th.initiativeTie}</li>}
         </ul>
       ))}
-      <p className={`first side-${initiative.firstSide}`}>{th.initiativeFirst(initiative.firstSide)}</p>
-      <p>{th.initiativeFirstTurn(initiative.firstSide)}</p>
+      {firstSide !== null && (
+        <>
+          <p className={`first side-${firstSide}`}>{th.initiativeFirst(firstSide)}</p>
+          <p>{th.initiativeFirstTurn(firstSide)}</p>
+        </>
+      )}
     </div>
   )
 }
@@ -406,6 +504,7 @@ function DeploymentPanel({ snapshot, session, data }: { snapshot: SessionSnapsho
 function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, current: UnitState | undefined, data: GameData) {
   const { state } = snapshot
   if (snapshot.rejection !== null) return th.rejection[snapshot.rejection]
+  if (state.pending?.kind === 'inspiration') return th.inspiration.hint(state.pending.side)
   if (state.pending !== null) return th.hintRetreat(selected === undefined ? state.pending.unit : unitName(selected, data))
   if (selected === undefined) return th.hintSelect(state.sideToAct)
   if (snapshot.mode === 'attack') {
@@ -461,7 +560,9 @@ function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; ses
         <BlockedTargets blocked={snapshot.blocked} name={namer(state, data)} />
       )}
       {snapshot.preview !== null && <PreviewCard preview={snapshot.preview} name={namer(state, data)} data={data} />}
-      {deciding ? (
+      {state.pending?.kind === 'inspiration' ? (
+        <InspirationPrompt snapshot={snapshot} session={session} data={data} />
+      ) : deciding ? (
         <div className="buttons">
           <button type="button" className="secondary" onClick={() => session.stayInPlace()}>
             {th.stayInPlace}
@@ -792,8 +893,10 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
       return [th.logDeploymentConfirmed(event.side)]
     case 'deploymentRevealed':
       return [th.logRevealed]
-    case 'initiativeRolled':
-      return [th.logInitiative(event.rolls.A.total, event.rolls.B.total, event.tie)]
+    case 'initiativeRolled': {
+      const line = th.logInitiative(event.rolls.A.total, event.rolls.B.total, event.tie)
+      return [event.rerolled === undefined ? line : `${th.initiativeRerolled(event.rerolled)}: ${line}`]
+    }
     case 'initiativeDecided':
       return [th.logInitiativeDecided(event.firstSide)]
     case 'unitMoved':
@@ -817,7 +920,8 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
             ? th.logHit
             : th.logMiss
       const mode = event.rollMode === 'normal' ? '' : ` (${th.rollEffect[event.rollMode]})`
-      return [`${roll}${mode} → ${result}`]
+      const rerolled = event.rerolled === true ? `${th.logRerolled}: ` : ''
+      return [`${rerolled}${roll}${mode} → ${result}`]
     }
     case 'damageDealt':
       return [
@@ -842,7 +946,8 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
     }
     case 'saveRolled':
       return [
-        th.logSave(
+        (event.rerolled === true ? `${th.logRerolled}: ` : '') +
+          th.logSave(
           name(event.unit),
           statusName(state.statusTypes, event.status),
           statName(event.stat),
@@ -884,8 +989,20 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
       return [th.logRetreated(name(event.unit), tileName(event.from), tileName(event.to))]
     case 'retreatDeclined':
       return [th.logRetreatDeclined(name(event.unit))]
-    case 'battleEnded':
-      return [`${th.logBattleEnded(event.winner, event.round)} (${th.cause[event.cause](otherSide(event.winner))})`]
+    case 'inspirationOffered':
+      // The prompt shows the offer; the log records the answer.
+      return []
+    case 'inspirationUsed':
+      return [th.logInspirationUsed(event.side)]
+    case 'inspirationDeclined':
+      return [th.logInspirationDeclined(event.side)]
+    case 'battleEnded': {
+      const why =
+        event.cause === 'turnLimit'
+          ? th.turnLimitResult(event.damageDealt?.A ?? 0, event.damageDealt?.B ?? 0, event.winner)
+          : th.cause[event.cause](otherSide(event.winner ?? 'A'))
+      return [`${th.logBattleEnded(event.winner, event.round)} (${why})`]
+    }
     case 'turnEnded':
       return [th.logTurnEnded(event.side)]
     case 'turnStarted':

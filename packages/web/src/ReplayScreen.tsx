@@ -1,9 +1,8 @@
 import { useMemo, useSyncExternalStore } from 'react'
-import { BASIC_ATTACK, type Action, type BattleState, type UnitTemplate } from '@mt/engine'
-import { tileName, type GameData, type Replay, type Side } from '@mt/shared'
-import { EventLog, HpList, StatusBar } from './App.tsx'
+import type { GameData, Replay } from '@mt/shared'
+import { EventLog, HpList, ResultSummary, StatusBar } from './App.tsx'
 import { BattleView } from './BattleView.tsx'
-import { createReplayPlayer, type OpenedReplay } from './replay.ts'
+import { createReplayPlayer, describeAction, type OpenedReplay } from './replay.ts'
 import { th } from './strings.ts'
 
 interface ReplayScreenProps {
@@ -57,10 +56,8 @@ export function ReplayScreen({ data, opened, onMenu }: ReplayScreenProps) {
       </section>
 
       {state.outcome !== null && (
-        <section className={`panel result side-${state.outcome.winner}`} role="status">
-          <h2>{th.resultTitle(state.outcome.winner)}</h2>
-          <p>{th.cause[state.outcome.cause](state.outcome.winner === 'A' ? 'B' : 'A')}</p>
-          <p>{th.resultRounds(state.round)}</p>
+        <section className={`panel result side-${state.outcome.winner ?? 'draw'}`} role="status">
+          <ResultSummary outcome={state.outcome} state={state} />
         </section>
       )}
 
@@ -99,46 +96,4 @@ export function ReplayDetails({ replay, data }: { replay: Replay; data: GameData
       </p>
     </>
   )
-}
-
-/** "Fangrel (ทีม A)", from the Units on the Board, those that fell, or the deployment roster. */
-function unitLabel(id: string, state: BattleState, data: GameData): string {
-  const unit: UnitTemplate | undefined =
-    state.units.find((u) => u.id === id) ??
-    state.fallen.find((u) => u.id === id) ??
-    state.deployment?.roster.find((u) => u.id === id)
-  if (unit === undefined) return id
-  const name = unit.kind === 'tamer' ? th.tamer : (data.species[unit.species]?.name ?? unit.species)
-  return `${name} (${th.team(unit.side)})`
-}
-
-function describeAction(action: Action, actor: Side, state: BattleState, data: GameData): string {
-  const label = (id: string) => unitLabel(id, state, data)
-  switch (action.type) {
-    case 'deploy':
-      return th.replay.action.deploy(label(action.unit), tileName(action.to))
-    case 'confirmDeployment':
-      return th.replay.action.confirmDeployment(actor)
-    case 'move':
-      return th.replay.action.move(label(action.unit), tileName(action.to))
-    case 'basicAttack':
-      return th.replay.action.attack(label(action.unit), data.skills[BASIC_ATTACK]?.name ?? BASIC_ATTACK, label(action.target))
-    case 'defend':
-      return th.replay.action.defend(label(action.unit))
-    case 'useSkill': {
-      const skill = data.skills[action.skill]?.name ?? action.skill
-      return action.target === undefined
-        ? th.replay.action.skill(label(action.unit), skill)
-        : th.replay.action.attack(label(action.unit), skill, label(action.target))
-    }
-    case 'retreat':
-      return action.to === null
-        ? th.replay.action.stay(label(action.unit))
-        : th.replay.action.retreat(label(action.unit), tileName(action.to))
-    case 'endTurn':
-      return th.replay.action.endTurn(actor)
-    default:
-      // Action types added by later tickets show their type until they get their own text.
-      return th.replay.action.other((action as { type: string }).type)
-  }
 }
