@@ -10,7 +10,12 @@
  * (or a skill button) → the targets the engine allows light up (enemies
  * behind a Unit are marked as blocked, with the reason) → tap one → preview →
  * confirm or cancel. A skill without a target (Pack Howl) previews as soon as
- * it is chosen. Defend is one button. After Hit and Run the tiles of its free
+ * it is chosen. A tile skill (Blink) lights up its destinations: tap one →
+ * preview → confirm. An area skill (Burst) lights up its centres: tap one (a
+ * tile or the Unit on it) → its 3x3 area shows and the enemies it may hit
+ * light up → tap up to 2 in the order they should be attacked (tap a chosen
+ * one again to drop it) → preview per target → confirm; Cancel steps back one
+ * choice at a time. Defend is one button. After Hit and Run the tiles of its free
  * step light up: tap one, or stay. Tapping any other Unit shows its card
  * (statuses with their remaining duration).
  *
@@ -20,9 +25,10 @@
  * the device (a save on the other side's Turn), a hand-over screen covers
  * the Board first, and again when the device must go back.
  */
-import type { Tile } from '@mt/shared'
+import { sameTile, type Tile } from '@mt/shared'
 import {
   applyAction,
+  areaTiles,
   decidingSide,
   legalActions,
   previewAction,
@@ -35,6 +41,7 @@ import {
   type RejectionCode,
   type SkillAvailability,
   type UnitId,
+  type UseSkillAction,
 } from '@mt/engine'
 import type { BattleSessionPort, BattleSnapshot, BoardInput } from '@mt/battle'
 
@@ -131,6 +138,8 @@ type Computed =
   | 'skills'
   | 'preview'
   | 'ready'
+  | 'tileChoices'
+  | 'area'
 
 /** The tiles the legal actions let `unit` go to: Move destinations, placements, or Hit and Run's step. */
 function moveTiles(actions: readonly Action[], unit: UnitId | null): Tile[] {
@@ -139,6 +148,45 @@ function moveTiles(actions: readonly Action[], unit: UnitId | null): Tile[] {
     if ((action.type === 'move' || action.type === 'deploy') && action.unit === unit) return [action.to]
     if (action.type === 'retreat' && action.unit === unit && action.to !== null) return [action.to]
     return []
+  })
+}
+
+/** How a skill is aimed in the UI: at a Unit (or nothing), at a tile (Blink), or at a centre then targets (Burst). */
+type AimKind = 'unit' | 'tile' | 'area'
+
+function aimKind(state: BattleState, skill: string | null): AimKind {
+  const target = skill === null ? undefined : state.skills[skill]?.target
+  return target === 'tile' || target === 'area' ? target : 'unit'
+}
+
+/** The legal uses of `skill` by `unit`. */
+function usesOf(actions: readonly Action[], unit: UnitId | null, skill: string | null): UseSkillAction[] {
+  if (unit === null || skill === null) return []
+  return actions.flatMap((a) => (a.type === 'useSkill' && a.unit === unit && a.skill === skill ? [a] : []))
+}
+
+/** Distinct tiles of the legal uses (Blink's destinations, Burst's centres), in the engine's order. */
+function useTiles(uses: readonly UseSkillAction[]): Tile[] {
+  const tiles: Tile[] = []
+  for (const use of uses) {
+    const tile = use.tile
+    if (tile !== undefined && !tiles.some((t) => sameTile(t, tile))) tiles.push(tile)
+  }
+  return tiles
+}
+
+const sameTargets = (a: readonly UnitId[] | undefined, b: readonly UnitId[]) =>
+  a !== undefined && a.length === b.length && a.every((id, i) => id === b[i])
+
+/** Enemies that may be added next to an area skill's chosen targets around `centre`. */
+function nextAreaTargets(uses: readonly UseSkillAction[], centre: Tile | null, chosen: readonly UnitId[]): UnitId[] {
+  if (centre === null) return []
+  return uses.flatMap((use) => {
+    const targets = use.targets
+    if (use.tile === undefined || !sameTile(use.tile, centre) || targets === undefined) return []
+    if (targets.length !== chosen.length + 1 || !sameTargets(targets.slice(0, chosen.length), chosen)) return []
+    const next = targets[chosen.length]
+    return next === undefined ? [] : [next]
   })
 }
 
@@ -214,18 +262,28 @@ function screenAfter(before: BattleState, after: BattleState, action: Action): H
 }
 
 /** No attack or skill in progress. */
-const NO_AIM = { mode: 'move', pendingTarget: null, pendingSkill: null } as const
+const NO_AIM = { mode: 'move', pendingTarget: null, pendingSkill: null, pendingTile: null, chosenTargets: [] } as const
 
 export function createBattleSession(initial: BattleState): BattleSession {
   const listeners = new Set<() => void>()
 
   /** The action Confirm would send now, from the legal actions only. */
   function readyAction(base: Omit<SessionSnapshot, Computed>, actions: readonly Action[]): Action | null {
-    const { selectedUnit, mode, pendingTarget, pendingSkill } = base
+    const { selectedUnit, mode, pendingTarget, pendingSkill, pendingTile, chosenTargets } = base
     if (selectedUnit === null) return null
     const legal = (match: (a: Action) => boolean) => actions.find(match) ?? null
     if (mode === 'attack' && pendingTarget !== null) {
       return legal((a) => a.type === 'basicAttack' && a.unit === selectedUnit && a.target === pendingTarget)
+    }
+    const kind = aimKind(base.state, pendingSkill)
+    if (mode === 'skill' && kind !== 'unit') {
+      if (pendingTile === null || (kind === 'area' && chosenTargets.length === 0)) return null
+      const tile = pendingTile
+      return (
+        usesOf(actions, selectedUnit, pendingSkill).find(
+          (a) => a.tile !== undefined && sameTile(a.tile, tile) && (kind === 'tile' || sameTargets(a.targets, chosenTargets)),
+        ) ?? null
+      )
     }
     if (mode === 'skill' && pendingSkill !== null) {
       return legal(
@@ -240,12 +298,25 @@ export function createBattleSession(initial: BattleState): BattleSession {
   }
 
   function snapshotOf(base: Omit<SessionSnapshot, Computed>): SessionSnapshot {
-    const { state, selectedUnit, mode, pendingSkill } = base
+    const { state, selectedUnit, mode, pendingSkill, pendingTile, chosenTargets } = base
     const actions = legalActions(state)
     const aimingSkill = mode === 'skill' ? pendingSkill : null
-    const targets = aimTargets(actions, selectedUnit, aimingSkill)
+    const kind = aimKind(state, aimingSkill)
+    const uses = kind === 'unit' ? [] : usesOf(actions, selectedUnit, aimingSkill)
+    const targets =
+      kind === 'area'
+        ? nextAreaTargets(uses, pendingTile, chosenTargets)
+        : kind === 'tile'
+          ? []
+          : aimTargets(actions, selectedUnit, aimingSkill)
     const basicTargets = aimingSkill === null ? targets : aimTargets(actions, selectedUnit, null)
-    const blocked = mode === 'move' ? blockedTargets(state, selectedUnit, null) : blockedTargets(state, selectedUnit, aimingSkill)
+    const blocked =
+      mode === 'move'
+        ? blockedTargets(state, selectedUnit, null)
+        : kind === 'unit'
+          ? blockedTargets(state, selectedUnit, aimingSkill)
+          : []
+    const aimedSkill = aimingSkill === null ? undefined : state.skills[aimingSkill]
     const ready = readyAction(base, actions)
     let preview: ActionPreview | null = null
     if (ready !== null) {
@@ -280,6 +351,9 @@ export function createBattleSession(initial: BattleState): BattleSession {
       skills,
       preview,
       ready,
+      // Burst's centres until one is picked; Blink's destinations all along (tap another to change).
+      tileChoices: kind === 'tile' || (kind === 'area' && pendingTile === null) ? useTiles(uses) : [],
+      area: kind === 'area' && pendingTile !== null && aimedSkill !== undefined ? areaTiles(aimedSkill, pendingTile) : [],
     }
   }
 
@@ -339,6 +413,38 @@ export function createBattleSession(initial: BattleState): BattleSession {
     update({ selectedUnit: own && !toggleOff ? unit : null, ...NO_AIM, inspectedUnit: inspect, rejection: null })
   }
 
+  /** Whether `tile` is a centre the selected Unit may give the area skill being aimed. */
+  function isCentre(tile: Tile): boolean {
+    if (snapshot.mode !== 'skill' || aimKind(snapshot.state, snapshot.pendingSkill) !== 'area') return false
+    const uses = usesOf(legalActions(snapshot.state), snapshot.selectedUnit, snapshot.pendingSkill)
+    return useTiles(uses).some((t) => sameTile(t, tile))
+  }
+
+  /**
+   * A tap on a Unit while aiming an area skill: add it as the next target,
+   * drop it (and those chosen after it) if already chosen, or take its tile
+   * as the centre. `false` when the tap means none of these.
+   */
+  function aimArea(unit: UnitId): boolean {
+    const { state, pendingTile, chosenTargets, targets } = snapshot
+    const tapped = state.units.find((u) => u.id === unit)
+    if (tapped === undefined) return false
+    const index = chosenTargets.indexOf(unit)
+    if (index >= 0) {
+      update({ chosenTargets: chosenTargets.slice(0, index), rejection: null })
+      return true
+    }
+    if (pendingTile !== null && targets.some((t) => sameTile(t, tapped.tile))) {
+      update({ chosenTargets: [...chosenTargets, unit], rejection: null })
+      return true
+    }
+    if (isCentre(tapped.tile)) {
+      update({ pendingTile: tapped.tile, chosenTargets: [], rejection: null })
+      return true
+    }
+    return false
+  }
+
   function input(boardInput: BoardInput): void {
     const { state, selectedUnit, reachable, mode } = snapshot
     if (boardInput.type === 'tapUnit') {
@@ -347,7 +453,9 @@ export function createBattleSession(initial: BattleState): BattleSession {
         update({ inspectedUnit: boardInput.unit === owing ? null : boardInput.unit })
         return
       }
-      if (mode !== 'move') {
+      if (mode === 'skill' && aimKind(state, snapshot.pendingSkill) === 'area') {
+        if (aimArea(boardInput.unit)) return
+      } else if (mode !== 'move') {
         const skill = mode === 'skill' ? snapshot.pendingSkill : null
         if (aimTargets(legalActions(state), selectedUnit, skill).includes(boardInput.unit)) {
           update({ pendingTarget: boardInput.unit, rejection: null })
@@ -363,6 +471,11 @@ export function createBattleSession(initial: BattleState): BattleSession {
       return
     }
     const { tile } = boardInput
+    if (mode === 'skill' && (snapshot.tileChoices.some((t) => sameTile(t, tile)) || isCentre(tile))) {
+      // A destination or centre (another centre after one was picked starts over from it).
+      update({ pendingTile: tile, chosenTargets: [], rejection: null })
+      return
+    }
     const onReachable = reachable.some((t) => t.x === tile.x && t.y === tile.y)
     if (state.pending !== null) {
       if (onReachable && state.pending.kind === 'retreat') dispatch({ type: 'retreat', unit: state.pending.unit, to: tile })
@@ -401,7 +514,7 @@ export function createBattleSession(initial: BattleState): BattleSession {
     endTurn: () => dispatch({ type: 'endTurn' }),
     chooseAttack() {
       if (snapshot.selectedUnit !== null && (snapshot.canAttack || snapshot.blocked.length > 0)) {
-        update({ mode: 'attack', pendingTarget: null, pendingSkill: null, rejection: null })
+        update({ ...NO_AIM, mode: 'attack', rejection: null })
       }
     },
     chooseSkill(skill) {
@@ -409,7 +522,7 @@ export function createBattleSession(initial: BattleState): BattleSession {
       if (snapshot.selectedUnit === null || button === undefined) return
       const blocked = blockedTargets(snapshot.state, snapshot.selectedUnit, skill)
       if (button.usable || blocked.length > 0) {
-        update({ mode: 'skill', pendingSkill: skill, pendingTarget: null, rejection: null })
+        update({ mode: 'skill', pendingSkill: skill, pendingTarget: null, pendingTile: null, chosenTargets: [], rejection: null })
       }
     },
     defend() {
@@ -433,7 +546,10 @@ export function createBattleSession(initial: BattleState): BattleSession {
     },
     cancel() {
       if (snapshot.state.pending !== null) return
-      if (snapshot.pendingTarget !== null) update({ pendingTarget: null, rejection: null })
+      if (snapshot.chosenTargets.length > 0) update({ chosenTargets: snapshot.chosenTargets.slice(0, -1), rejection: null })
+      else if (snapshot.pendingTile !== null) {
+        update({ pendingTile: null, rejection: null })
+      } else if (snapshot.pendingTarget !== null) update({ pendingTarget: null, rejection: null })
       else if (snapshot.mode !== 'move') update({ ...NO_AIM, rejection: null })
       else update({ selectedUnit: null, inspectedUnit: null, rejection: null })
     },

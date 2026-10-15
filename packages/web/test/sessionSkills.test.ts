@@ -59,12 +59,12 @@ describe('BattleSession: skills (rules §13, §15)', () => {
       ['pack_howl', 0, true],
     ])
     s.input({ type: 'tapUnit', unit: 'A.m2' })
-    // Wispling's skills arrive with ticket 09: listed, not usable.
+    // Wispling on g1: every enemy is 6 away, so only Blink can be used.
     expect(s.getSnapshot().skills.map((b) => [b.skill, b.implemented, b.usable])).toEqual([
-      ['element_bolt', false, false],
-      ['burst', false, false],
-      ['hex', false, false],
-      ['blink', false, false],
+      ['element_bolt', true, false],
+      ['burst', true, false],
+      ['hex', true, false],
+      ['blink', true, true],
     ])
   })
 

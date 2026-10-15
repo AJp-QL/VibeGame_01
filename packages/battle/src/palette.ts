@@ -64,6 +64,16 @@ export const REACHABLE = 0xffffff
 /** Enemies the selected Unit can attack, and the one picked for the preview. */
 export const TARGET = 0xff4a3d
 export const PENDING_TARGET = 0xffe14d
+/** Tiles a tile or area skill can be aimed at (Blink's destinations, Burst's centres). */
+export const TILE_CHOICE = 0x7fe0ff
+/** The area of an area skill (Burst) around its chosen centre. */
+export const AREA = 0xff8a3d
+/** Order numbers (1, 2) on the targets picked for Burst, 3x5 pixels. */
+export const ORDER_DIGITS: readonly (readonly string[])[] = [
+  ['.#.', '##.', '.#.', '.#.', '###'],
+  ['##.', '..#', '.#.', '#..', '###'],
+  ['##.', '..#', '.#.', '..#', '##.'],
+]
 /** Enemies in range that line of sight blocks: crossed out, not selectable. */
 export const BLOCKED_TARGET = 0xb0b0b0
 /** Guarded shield icon on a Unit. */

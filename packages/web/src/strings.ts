@@ -205,8 +205,22 @@ export const th = {
   logMiss: 'พลาด',
   logCritical: 'ทอย 20 critical! โดน',
   logNatural1: 'ทอย 1 พลาดเสมอ',
-  logDamage: (target: string, amount: number, dice: string, rolls: readonly number[], modifier: number, hp: number, maxHp: number) =>
-    `${target} เสีย ${amount} HP (${dice}: ${rolls.join(' + ')}${modifier === 0 ? '' : ` ${signed(modifier)}`}) เหลือ HP ${hp}/${maxHp}`,
+  logDamage: (
+    target: string,
+    amount: number,
+    dice: string,
+    rolls: readonly number[],
+    modifier: number,
+    hp: number,
+    maxHp: number,
+    note = '',
+  ) =>
+    `${target} เสีย ${amount} HP (${dice}: ${rolls.join(' + ')}${modifier === 0 ? '' : ` ${signed(modifier)}`}${note ? `, ${note}` : ''}) เหลือ HP ${hp}/${maxHp}`,
+  logDamageStatus: (status: string, bonus: number) => `รวม ${status} ${signed(bonus)}`,
+  logTeleported: (unit: string, skill: string, from: string, to: string) =>
+    `${unit} ใช้ ${skill} เทเลพอร์ตจาก ${from} ไป ${to} (แทนการเดิน)`,
+  logAreaSkill: (unit: string, skill: string, centre: string, targets: string) =>
+    `${unit} ใช้ ${skill} ที่ช่อง ${centre} ใส่ ${targets} ตามลำดับ`,
   logUnitDown: (unit: string) => `${unit} ล้มและออกจาก Board`,
   logDefended: (unit: string) => `${unit} ใช้ Defend`,
   logStatusEnded: (unit: string, status: string) => `${status} ของ ${unit} หมดแล้ว`,
@@ -233,6 +247,16 @@ export const th = {
   skillDamage: (dice: string) => `damage ${dice}`,
   skillAttack: { physical: 'กายภาพ', elemental: 'ธาตุ' },
   skillRetreat: 'ถอยฟรี 1 ช่องหลังโจมตี',
+  skillAreaRange: (range: number, size: number, max: number) =>
+    `ช่องกลางระยะ 0–${range} · พื้นที่ ${size}x${size} ศัตรูไม่เกิน ${max} ตัวที่เลือก ไม่โดนพวกเดียวกัน`,
+  skillTeleport: (range: number) => `เทเลพอร์ต 1–${range} ช่อง ใช้แทนการเดิน ไม่ใช้ Action`,
+  hintChooseCentre: (skill: string) =>
+    `${skill}: แตะช่องกลางของพื้นที่ (ช่องที่สว่างสีฟ้า หรือ Unit บนช่องนั้น) ต้องมีศัตรูในพื้นที่อย่างน้อย 1 ตัว`,
+  hintChooseAreaTargets: (skill: string, max: number) =>
+    `${skill}: แตะศัตรูในพื้นที่ตามลำดับที่จะโจมตี ไม่เกิน ${max} ตัว (ไม่โดนพวกเดียวกัน) แตะช่องสว่างอื่นเพื่อเปลี่ยนช่องกลาง`,
+  hintAreaMore: (skill: string, chosen: number, max: number) =>
+    `${skill}: เลือกแล้ว ${chosen}/${max} ตัว แตะศัตรูอีกตัวเพื่อเพิ่ม แตะตัวที่เลือกแล้วเพื่อเอาออก หรือกดยืนยัน`,
+  hintChooseTile: (skill: string) => `${skill}: แตะช่องว่างที่สว่างสีฟ้าเพื่อเทเลพอร์ต (ใช้แทนการเดิน ไม่ใช้ Action)`,
   skillGives: (status: string) => `ติด ${status}`,
   skillGivesSave: (status: string, stat: string) => `ติด ${status} (save ${stat})`,
   hintChooseSkillTarget: (skill: string) => `แตะเป้าที่ไฮไลต์สีแดงเพื่อดูผลของ ${skill} ก่อนยืนยัน`,
@@ -266,6 +290,11 @@ export const th = {
   previewNoSave: (status: string) => `${status}: ติดทันที ไม่มี save`,
   previewNoDamage: 'ไม่ทำ damage',
   previewEffect: (statuses: string, units: string) => `${statuses} กับ ${units} ไม่ต้องทอย`,
+  previewTeleport: (unit: string, tile: string) => `${unit} เทเลพอร์ตไป ${tile} ใช้แทนการเดิน (ไม่ใช้ Action) ไม่ต้องทอย`,
+  previewArea: (user: string, skill: string, centre: string, count: number) =>
+    `${user} ใช้ ${skill} ที่ช่อง ${centre}: โจมตี ${count} เป้าตามลำดับ ทอยแยกทุกเป้า`,
+  previewAreaTarget: (index: number, target: string) => `เป้าที่ ${index}: ${target}`,
+  previewDamageStatus: (status: string, bonus: number) => `damage ${status} ${signed(bonus)}`,
   previewSaveTitle: (user: string, skill: string, target: string) => `${user} ใช้ ${skill} ใส่ ${target}: ไม่ทอยโจมตี เป้าทอย save`,
   previewAttackBonusStatus: (status: string, bonus: number) => `${status} ${signed(bonus)}`,
   statusesTitle: 'Status',
@@ -382,6 +411,8 @@ export const th = {
       confirmDeployment: (side: string) => `ทีม ${side} ยืนยันการวาง`,
       move: (unit: string, tile: string) => `${unit} เดินไป ${tile}`,
       attack: (unit: string, skill: string, target: string) => `${unit} ใช้ ${skill} ใส่ ${target}`,
+      area: (unit: string, skill: string, tile: string, targets: string) => `${unit} ใช้ ${skill} ที่ช่อง ${tile} ใส่ ${targets} ตามลำดับ`,
+      teleport: (unit: string, skill: string, tile: string) => `${unit} ใช้ ${skill} เทเลพอร์ตไป ${tile}`,
       skill: (unit: string, skill: string) => `${unit} ใช้ ${skill}`,
       retreat: (unit: string, tile: string) => `${unit} ถอยไป ${tile} (Hit and Run)`,
       stay: (unit: string) => `${unit} ไม่ถอย (Hit and Run)`,

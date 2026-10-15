@@ -178,7 +178,14 @@ export type BattleEvent =
   /** A Unit used Defend as its Action (rules §12); `statusApplied` (Guarded) follows. */
   | { readonly type: 'defended'; readonly unit: UnitId }
   /** A Unit used a loadout skill (rules §15); what it does follows. `targets`: the Units it lands on, in order. */
-  | { readonly type: 'skillUsed'; readonly unit: UnitId; readonly skill: string; readonly targets: readonly UnitId[] }
+  | {
+      readonly type: 'skillUsed'
+      readonly unit: UnitId
+      readonly skill: string
+      readonly targets: readonly UnitId[]
+      /** The tile it was aimed at (Burst's centre, Blink's destination), for skills aimed at one. */
+      readonly tile?: Tile
+    }
   /** A save against a status (rules §11): d20 + mod against the user's Save DC; no natural 1 or 20 rule (D-27). */
   | {
       readonly type: 'saveRolled'

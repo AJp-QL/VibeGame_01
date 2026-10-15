@@ -4,13 +4,17 @@
  * down) and turns taps into BoardInput. It keeps view objects only, never
  * game state. Each element tile carries a small corner mark (palette
  * TERRAIN_GLYPHS); statuses show as small icons (Guarded shield, Bleed drop, Rallied arrow); enemies that line of
- * sight blocks are crossed out while choosing a target. It draws only the Units in `snapshot.units`, so Units hidden
+ * sight blocks are crossed out while choosing a target. Tile and area skills
+ * light up the tiles they can be aimed at, Burst's 3x3 area shows around its
+ * centre and its chosen targets carry their order number; Blink plays as a
+ * fade out and in. It draws only the Units in `snapshot.units`, so Units hidden
  * during deployment never appear and cannot be tapped.
  */
 import * as Phaser from 'phaser'
 import { BOARD_SIZE, type Tile } from '@mt/shared'
 import { derivedValues, type BattleState, type UnitId, type UnitState } from '@mt/engine'
 import {
+  AREA,
   BLOCKED_TARGET,
   GLYPH_ALPHA,
   glyphColour,
@@ -22,6 +26,7 @@ import {
   REACHABLE,
   SELECTED,
   OUTLINE,
+  ORDER_DIGITS,
   STATUS_DOT,
   STATUS_ICONS,
   STATUS_NEGATIVE,
@@ -29,6 +34,7 @@ import {
   TARGET,
   TERRAIN_COLOURS,
   TERRAIN_GLYPHS,
+  TILE_CHOICE,
 } from './palette.ts'
 import type { BattleSessionPort, BattleSnapshot, BoardLabels } from './port.ts'
 import { drawUnit } from './silhouettes.ts'
@@ -45,6 +51,8 @@ const RESULT_AT_MS = 2 * LUNGE_MS
 const FALL_AT_MS = RESULT_AT_MS + 350
 const FALL_MS = 300
 const FLOAT_MS = 800
+/** Blink: fade out, appear on the new tile, fade in. */
+const TELEPORT_FADE_MS = 140
 
 /** Units of the side to act that have nothing left to do this Turn. */
 const SPENT_ALPHA = 0.5
@@ -140,7 +148,8 @@ export class BattleScene extends Phaser.Scene {
     for (const unit of snapshot.units) {
       const view = this.unitView(unit)
       const spent = state.phase === 'play' && unit.side === state.sideToAct && !snapshot.canAct.includes(unit.id)
-      view.container.setAlpha(spent ? SPENT_ALPHA : 1)
+      // A running animation (Blink's fade) owns the alpha until it ends.
+      if (!this.animating.has(unit.id)) view.container.setAlpha(spent ? SPENT_ALPHA : 1)
       // Units being placed are not on the Board yet, and are at full HP.
       const maxHp = state.phase === 'play' ? derivedValues(state, unit.id).maxHp : unit.hp
       this.drawHpBar(view.hpBar, unit.hp, maxHp)
@@ -208,6 +217,21 @@ export class BattleScene extends Phaser.Scene {
       g.lineStyle(1, REACHABLE, 0.9)
       g.strokeRect(tile.x * TILE_SIZE + 2.5, tile.y * TILE_SIZE + 2.5, TILE_SIZE - 4, TILE_SIZE - 4)
     }
+    for (const tile of snapshot.area) {
+      g.fillStyle(AREA, 0.25)
+      g.fillRect(tile.x * TILE_SIZE + 1, tile.y * TILE_SIZE + 1, TILE_SIZE - 1, TILE_SIZE - 1)
+    }
+    for (const tile of snapshot.tileChoices) {
+      g.fillStyle(TILE_CHOICE, 0.2)
+      g.fillRect(tile.x * TILE_SIZE + 1, tile.y * TILE_SIZE + 1, TILE_SIZE - 1, TILE_SIZE - 1)
+      g.lineStyle(1, TILE_CHOICE, 0.9)
+      g.strokeRect(tile.x * TILE_SIZE + 2.5, tile.y * TILE_SIZE + 2.5, TILE_SIZE - 4, TILE_SIZE - 4)
+    }
+    if (snapshot.pendingTile !== null) {
+      const tile = snapshot.pendingTile
+      g.lineStyle(2, TILE_CHOICE, 1)
+      g.strokeRect(tile.x * TILE_SIZE + 2, tile.y * TILE_SIZE + 2, TILE_SIZE - 3, TILE_SIZE - 3)
+    }
     for (const tile of snapshot.targets) {
       g.fillStyle(TARGET, 0.3)
       g.fillRect(tile.x * TILE_SIZE + 1, tile.y * TILE_SIZE + 1, TILE_SIZE - 1, TILE_SIZE - 1)
@@ -223,6 +247,19 @@ export class BattleScene extends Phaser.Scene {
       g.lineBetween(left, top, left + size, top + size)
       g.lineBetween(left + size, top, left, top + size)
     }
+    snapshot.chosenTargets.forEach((id, index) => {
+      const unit = snapshot.units.find((u) => u.id === id)
+      const digit = ORDER_DIGITS[index]
+      if (unit === undefined || digit === undefined) return
+      const left = unit.tile.x * TILE_SIZE + 2
+      const top = unit.tile.y * TILE_SIZE + TILE_SIZE - 9
+      g.lineStyle(2, PENDING_TARGET, 1)
+      g.strokeRect(unit.tile.x * TILE_SIZE + 2, unit.tile.y * TILE_SIZE + 2, TILE_SIZE - 3, TILE_SIZE - 3)
+      g.fillStyle(OUTLINE, 1)
+      g.fillRect(left, top, 5, 7)
+      g.fillStyle(PENDING_TARGET, 1)
+      drawPattern(g, digit, left + 1, top + 1)
+    })
     const pending = snapshot.units.find((u) => u.id === snapshot.pendingTarget)
     if (pending !== undefined) {
       g.lineStyle(2, PENDING_TARGET, 1)
@@ -259,6 +296,9 @@ export class BattleScene extends Phaser.Scene {
           })
           break
         }
+        case 'unitTeleported':
+          this.teleport(event.unit, event.to)
+          break
         case 'unitRetreated':
           // Hit and Run's free step: a one-tile walk.
           this.walk(event.unit, [event.to])
@@ -293,6 +333,31 @@ export class BattleScene extends Phaser.Scene {
       this.tweens.add({ targets: view.container, x: step.x, y: step.y, duration: STEP_MS, onComplete: () => next(index + 1) })
     }
     next(0)
+  }
+
+  /** Blink: the Unit fades out where it was and fades in on its new tile; nothing in between. */
+  private teleport(unit: UnitId, to: Tile): void {
+    const view = this.unitViews.get(unit)
+    if (view === undefined) return
+    this.animating.add(unit)
+    const { x, y } = tileCentre(to)
+    this.tweens.add({
+      targets: view.container,
+      alpha: 0,
+      duration: TELEPORT_FADE_MS,
+      onComplete: () => {
+        view.container.setPosition(x, y)
+        this.tweens.add({
+          targets: view.container,
+          alpha: 1,
+          duration: TELEPORT_FADE_MS,
+          onComplete: () => {
+            this.animating.delete(unit)
+            this.render()
+          },
+        })
+      },
+    })
   }
 
   /** Placeholder attack: the attacker hops toward its target and back. */

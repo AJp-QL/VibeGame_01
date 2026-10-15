@@ -5,6 +5,7 @@ import {
   derivedValues,
   legalActions,
   ROUND_LIMIT,
+  type Action,
   type ActionPreview,
   type AttackPreview,
   type BattleEvent,
@@ -513,6 +514,14 @@ function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, cu
   }
   if (snapshot.mode === 'skill' && snapshot.pendingSkill !== null) {
     const skill = skillName(data, snapshot.pendingSkill)
+    const aimed = state.skills[snapshot.pendingSkill]
+    if (aimed?.target === 'tile') return snapshot.preview !== null ? th.hintConfirmSkill(skill) : th.hintChooseTile(skill)
+    if (aimed?.target === 'area') {
+      const max = aimed.area?.maxTargets ?? 1
+      if (snapshot.pendingTile === null) return th.hintChooseCentre(skill)
+      if (snapshot.chosenTargets.length === 0) return th.hintChooseAreaTargets(skill, max)
+      return th.hintAreaMore(skill, snapshot.chosenTargets.length, max)
+    }
     if (snapshot.preview !== null) return th.hintConfirmSkill(skill)
     return snapshot.targets.length > 0 ? th.hintChooseSkillTarget(skill) : th.hintSkillBlocked
   }
@@ -559,7 +568,9 @@ function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; ses
       {snapshot.mode !== 'move' && snapshot.blocked.length > 0 && (
         <BlockedTargets blocked={snapshot.blocked} name={namer(state, data)} />
       )}
-      {snapshot.preview !== null && <PreviewCard preview={snapshot.preview} name={namer(state, data)} data={data} />}
+      {snapshot.preview !== null && (
+        <PreviewCard preview={snapshot.preview} action={snapshot.ready} name={namer(state, data)} data={data} />
+      )}
       {state.pending?.kind === 'inspiration' ? (
         <InspirationPrompt snapshot={snapshot} session={session} data={data} />
       ) : deciding ? (
@@ -818,7 +829,40 @@ function StatusOddsList({ odds, statuses }: { odds: readonly StatusOdds[]; statu
   )
 }
 
-function PreviewCard({ preview, name, data }: { preview: ActionPreview; name: (id: string) => string; data: GameData }) {
+function PreviewCard({
+  preview,
+  action,
+  name,
+  data,
+}: {
+  preview: ActionPreview
+  action: Action | null
+  name: (id: string) => string
+  data: GameData
+}) {
+  if (preview.type === 'effect' && action?.type === 'useSkill' && action.tile !== undefined && data.skills[action.skill]?.effects?.replacesMove === true) {
+    return (
+      <div className="preview" aria-live="polite">
+        <strong>{th.logSkillUsed(name(preview.user), skillName(data, preview.skill), '')}</strong>
+        <div>{th.previewTeleport(name(preview.user), tileName(action.tile))}</div>
+      </div>
+    )
+  }
+  if (preview.type === 'area') {
+    return (
+      <div className="preview" aria-live="polite">
+        <strong>{th.previewArea(name(preview.user), skillName(data, preview.skill), tileName(preview.centre), preview.attacks.length)}</strong>
+        <ol className="area-attacks">
+          {preview.attacks.map((attack, index) => (
+            <li key={attack.target}>
+              <em>{th.previewAreaTarget(index + 1, name(attack.target))}</em>
+              <AttackOdds preview={attack} name={name} data={data} />
+            </li>
+          ))}
+        </ol>
+      </div>
+    )
+  }
   if (preview.type === 'effect') {
     const statuses = preview.statuses.map((id) => statusName(data.statuses, id)).join(', ')
     return (
@@ -839,6 +883,15 @@ function PreviewCard({ preview, name, data }: { preview: ActionPreview; name: (i
   return (
     <div className="preview" aria-live="polite">
       <strong>{th.previewTitle(name(preview.attacker), skillName(data, preview.skill), name(preview.target))}</strong>
+      <AttackOdds preview={preview} name={name} data={data} />
+    </div>
+  )
+}
+
+/** One attack's odds: hit, damage, critical, statuses, roll mode sources and the roll itself. */
+function AttackOdds({ preview, name, data }: { preview: AttackPreview; name: (id: string) => string; data: GameData }) {
+  return (
+    <>
       <div className="preview-numbers">
         <span className="big">{th.previewHit(percent(preview.hitChance))}</span>
         <span className="big">
@@ -859,9 +912,13 @@ function PreviewCard({ preview, name, data }: { preview: ActionPreview; name: (i
       <div className="muted">
         {th.previewRoll(preview.attackBonus, th.defence[preview.defenceKind], preview.defence)}
         {preview.statusAttackBonuses.map((b) => ` (${th.previewAttackBonusStatus(statusName(data.statuses, b.status), b.bonus)})`)}
-        {preview.guardedBonus > 0 && ` ${th.previewGuarded(preview.guardedBonus)}`} · {th.previewRules}
+        {preview.guardedBonus > 0 && ` ${th.previewGuarded(preview.guardedBonus)}`}
+        {(preview.damage?.statusModifiers ?? []).map(
+          (m) => ` (${th.previewDamageStatus(statusName(data.statuses, m.status), m.bonus)})`,
+        )}{' '}
+        · {th.previewRules}
       </div>
-    </div>
+    </>
   )
 }
 
@@ -933,6 +990,9 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
           event.modifier,
           event.hpAfter,
           derivedValues(state, event.target).maxHp,
+          (event.statusModifiers ?? [])
+            .map((m) => th.logDamageStatus(statusName(state.statusTypes, m.status), m.bonus))
+            .join(', '),
         ),
       ]
     case 'unitDown':
@@ -940,8 +1000,13 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
     case 'defended':
       return [th.logDefended(name(event.unit))]
     case 'skillUsed': {
-      // Attack skills say it in their attack roll line; the others say it here.
-      if (data.skills[event.skill]?.attack !== undefined) return []
+      const used = data.skills[event.skill]
+      // Burst: the centre and the order of its targets; each attack follows.
+      if (used?.target === 'area' && event.tile !== undefined) {
+        return [th.logAreaSkill(name(event.unit), skillName(data, event.skill), tileName(event.tile), event.targets.map(name).join(', '))]
+      }
+      // Blink says it in its teleport line; attack skills in their attack roll line; the others here.
+      if (used?.effects?.replacesMove === true || used?.attack !== undefined) return []
       return [th.logSkillUsed(name(event.unit), skillName(data, event.skill), event.targets.filter((t) => t !== event.unit).map(name).join(', '))]
     }
     case 'saveRolled':
@@ -985,6 +1050,8 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
           derivedValues(state, event.unit).maxHp,
         ),
       ]
+    case 'unitTeleported':
+      return [th.logTeleported(name(event.unit), skillName(data, event.skill), tileName(event.from), tileName(event.to))]
     case 'unitRetreated':
       return [th.logRetreated(name(event.unit), tileName(event.from), tileName(event.to))]
     case 'retreatDeclined':

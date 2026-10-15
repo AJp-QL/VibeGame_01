@@ -279,7 +279,7 @@ describe('Burst: Major, elemental 1d6 on up to 2 chosen enemies around a centre 
     // Quillfox first: 12 + 2 = 14 hits Ward 9, 3 + 2 = 5; then Tidewall: 4 + 2 = 6 misses Ward 11.
     const { state, events } = accepted(burst(battle({ dice: { rolls: [12, 3, 4] } }), 'd4', ['B.m2', 'B.m1']))
     expect(types(events)).toEqual(['skillUsed', 'attackRolled', 'damageDealt', 'attackRolled'])
-    expect(events[0]).toEqual({ type: 'skillUsed', unit: 'A.m2', skill: 'burst', targets: ['B.m2', 'B.m1'] })
+    expect(events[0]).toEqual({ type: 'skillUsed', unit: 'A.m2', skill: 'burst', targets: ['B.m2', 'B.m1'], tile: t('d4') })
     expect(events[1]).toMatchObject({ target: 'B.m2', skill: 'burst', defenceKind: 'ward', defence: 9, total: 14, hit: true })
     expect(events[2]).toMatchObject({ target: 'B.m2', dice: { count: 1, sides: 6 }, rolls: [3], modifier: 2, amount: 5 })
     expect(events[3]).toMatchObject({ target: 'B.m1', defence: 11, total: 6, hit: false })
@@ -440,7 +440,7 @@ describe('Blink: Minor, replaces the Move, teleport 1–2 tiles (rules §15.1, D
   it('teleports to an empty tile: no dice, the Move used, the Action left', () => {
     const { state, events } = accepted(applyAction(battle({ dice: { rolls: [] } }), blinkAction(t('f3'))))
     expect(events).toEqual([
-      { type: 'skillUsed', unit: 'A.m2', skill: 'blink', targets: [] },
+      { type: 'skillUsed', unit: 'A.m2', skill: 'blink', targets: [], tile: t('f3') },
       { type: 'unitTeleported', unit: 'A.m2', skill: 'blink', from: t('d2'), to: t('f3') },
     ])
     expect(unit(state, 'A.m2')).toMatchObject({ tile: t('f3'), hasMoved: true, hasActed: false })

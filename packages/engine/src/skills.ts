@@ -270,7 +270,14 @@ export function skillResolution(state: BattleState, action: UseSkillAction): Ski
 function* resolveSkill(state: BattleState, use: SkillUse): SkillResolution {
   const handler = handlerOf(use.skill) ?? {}
   const booked = book(state, use)
-  yield* emit({ type: 'skillUsed', unit: use.user.id, skill: use.skill.id, targets: use.targets.map((t) => t.id) })
+  const tile = use.action.tile
+  yield* emit({
+    type: 'skillUsed',
+    unit: use.user.id,
+    skill: use.skill.id,
+    targets: use.targets.map((t) => t.id),
+    ...(tile !== undefined ? { tile } : {}),
+  })
   const resolved = yield* (handler.resolve ?? resolveGeneric)(booked, use)
   return offerRetreat(resolved, use)
 }
