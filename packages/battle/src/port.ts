@@ -35,6 +35,14 @@ export interface BattleSnapshot {
   readonly blockedTargets: readonly Tile[]
   /** The target picked for the attack being previewed, if any. */
   readonly pendingTarget: UnitId | null
+  /** Tiles a tile or area skill may be aimed at now (Blink's destinations, Burst's centres), from the legal actions. */
+  readonly tileChoices: readonly Tile[]
+  /** The tile picked for a tile or area skill (Blink's destination, Burst's centre), if any. */
+  readonly pendingTile: Tile | null
+  /** The tiles an area skill covers around `pendingTile` (Burst's 3x3), for the overlay. */
+  readonly area: readonly Tile[]
+  /** Targets picked for an area skill, in the order they will be attacked (numbered on the Board). */
+  readonly chosenTargets: readonly UnitId[]
 }
 
 /** A tap or click on the Board. No hover: mobile has none. */

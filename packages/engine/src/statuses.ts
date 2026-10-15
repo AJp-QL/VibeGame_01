@@ -7,10 +7,11 @@
  *
  * What each status does comes from data/statuses (`StatusType.effects`). The
  * effects read here: `startOfTurnDamage` (Bleed), `attackRoll` (Rallied),
- * `defenceFromSource` (Guarded), `immobile` (Pin). The others are read by the
- * tickets that bring their skills: `forcedToAttackSource` and `counterattack`
- * (08), `damageDealt` (09), `attackersRollMode` and `untargetableFrom` (10),
- * `nextAttackRollMode` (11).
+ * `defenceFromSource` (Guarded), `immobile` (Pin), `damageDealt` (Weakened),
+ * and `untargetableFrom` (Hidden) for Burst's targets. The others are read by
+ * the tickets that bring their skills: `forcedToAttackSource` and
+ * `counterattack` (08), `attackersRollMode` and `untargetableFrom` for
+ * single-target aiming (10), `nextAttackRollMode` (11).
  */
 import type { Dice, Side, Skill, Stat, StatusApplication, StatusType } from '@mt/shared'
 import type { BattleEvent } from './battle.ts'
@@ -166,6 +167,30 @@ export function attackRollBonuses(state: BattleState, unit: UnitState): StatusBo
   return typesOf(state, unit).flatMap(({ status, type }) =>
     type.effects.attackRoll === undefined ? [] : [{ status: status.id, bonus: type.effects.attackRoll }],
   )
+}
+
+/**
+ * Amounts statuses add to every damage the Unit deals (Weakened −2, rules
+ * §10.3 step 3, §14.2), counterattacks included; they add up. The minimum
+ * of 1 applies after them.
+ */
+export function damageDealtModifiers(state: BattleState, unit: UnitState): StatusBonus[] {
+  return typesOf(state, unit).flatMap(({ status, type }) =>
+    type.effects.damageDealt === undefined ? [] : [{ status: status.id, bonus: type.effects.damageDealt }],
+  )
+}
+
+/**
+ * The distance from which enemies cannot aim at the Unit (Hidden: 2, rules
+ * §8.2), or `null` when no status hides it.
+ */
+export function untargetableFrom(state: BattleState, unit: UnitState): number | null {
+  let from: number | null = null
+  for (const { type } of typesOf(state, unit)) {
+    const d = type.effects.untargetableFrom
+    if (d !== undefined && (from === null || d < from)) from = d
+  }
+  return from
 }
 
 /** Guard and Ward bonus from statuses (Guarded, rules §12); 0 when none. */

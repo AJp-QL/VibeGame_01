@@ -9,7 +9,7 @@
  */
 import { isOnBoard, sameTile, type Element, type Skill, type SkillTier, type Tile } from '@mt/shared'
 import type { ActionPreview, ApplyResult, Rejection } from './battle.ts'
-import { attackOnce, checkActor, checkEnemyTarget, isRejection, previewAttack } from './combat.ts'
+import { attackOnce, checkActor, checkEnemyTarget, isRejection, previewAttack, type AttackPreview } from './combat.ts'
 import { FANGREL_SKILLS } from './fangrelSkills.ts'
 import { emit } from './resolution.ts'
 import { distance } from './movement.ts'
@@ -275,7 +275,14 @@ export function skillResolution(state: BattleState, action: UseSkillAction): Ski
 function* resolveSkill(state: BattleState, use: SkillUse): SkillResolution {
   const handler = handlerOf(use.skill) ?? {}
   const booked = book(state, use)
-  yield* emit({ type: 'skillUsed', unit: use.user.id, skill: use.skill.id, targets: use.targets.map((t) => t.id) })
+  const tile = use.action.tile
+  yield* emit({
+    type: 'skillUsed',
+    unit: use.user.id,
+    skill: use.skill.id,
+    targets: use.targets.map((t) => t.id),
+    ...(tile !== undefined ? { tile } : {}),
+  })
   const resolved = yield* (handler.resolve ?? resolveGeneric)(booked, use)
   return offerRetreat(resolved, use)
 }
@@ -289,6 +296,23 @@ export interface SavePreview {
   readonly user: UnitId
   readonly target: UnitId
   readonly statuses: readonly StatusOdds[]
+}
+
+/**
+ * A skill that attacks several chosen targets one after another (Burst,
+ * rules §15.1): one attack preview per target, in the order they resolve.
+ * Each is computed on the state before the skill; ticket 11 drops Command
+ * advantage from all but the first (D-04, see wisplingSkills.ts).
+ */
+export interface AreaPreview {
+  readonly type: 'area'
+  readonly skill: string
+  readonly user: UnitId
+  /** The centre of the area. */
+  readonly centre: Tile
+  /** The tiles of the area (centre and its neighbours on the Board), reading order. */
+  readonly area: readonly Tile[]
+  readonly attacks: readonly AttackPreview[]
 }
 
 /** A skill with nothing to roll (Pack Howl): who gets which statuses. */

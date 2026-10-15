@@ -142,6 +142,10 @@ export function createReplayPlayer(initial: BattleState, steps: readonly ReplayS
       targets: [],
       blockedTargets: [],
       pendingTarget: null,
+      tileChoices: [],
+      pendingTile: null,
+      area: [],
+      chosenTargets: [],
       step,
       total: steps.length,
       action: last?.action ?? null,
@@ -204,6 +208,11 @@ export function describeAction(action: Action, actor: Side, state: BattleState, 
       return th.replay.action.defend(label(action.unit))
     case 'useSkill': {
       const skill = data.skills[action.skill]?.name ?? action.skill
+      if (action.tile !== undefined) {
+        return action.targets === undefined
+          ? th.replay.action.teleport(label(action.unit), skill, tileName(action.tile))
+          : th.replay.action.area(label(action.unit), skill, tileName(action.tile), action.targets.map(label).join(', '))
+      }
       return action.target === undefined
         ? th.replay.action.skill(label(action.unit), skill)
         : th.replay.action.attack(label(action.unit), skill, label(action.target))

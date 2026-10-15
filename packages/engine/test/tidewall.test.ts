@@ -541,3 +541,79 @@ describe('Replay with Tidewall\'s skills', () => {
     expect(second.final).toEqual(first.final)
   })
 })
+
+describe('Tidewall with Wispling (ticket 09)', () => {
+  // Fangrel on d4 and Wispling on e4, both next to Tidewall on d5. Wispling 1 Star:
+  // elemental attack +2 against Ward 11, Burst 1d6 + INT mod +2, Guard 11, HP 17.
+  const NEXT = { A: ['a1', 'd4', 'e4'], B: ['a7', 'd5', 'g7'] } as const
+  const burst = (centre: string, targets: UnitId[]): Action => ({
+    type: 'useSkill',
+    unit: 'A.m2',
+    skill: 'burst',
+    tile: tileFromName(centre),
+    targets,
+  })
+
+  it('Burst from distance 1 is answered with a counterattack (D-23)', () => {
+    const state = counteringTidewall({ tiles: NEXT, dice: { rolls: [15, 3, 12, 3, 5] } })
+    const { events } = act(state, burst('d5', ['B.m1']))
+    expect(types(events)).toEqual([
+      'skillUsed',
+      'attackRolled',
+      'damageDealt',
+      'counterattack',
+      'attackRolled',
+      'damageDealt',
+      'statusEnded',
+    ])
+    expect(events[3]).toMatchObject({ unit: 'B.m1', target: 'A.m2' })
+  })
+
+  it('Burst from distance 2 is not', () => {
+    const state = counteringTidewall({ tiles: { A: ['a1', 'g1', 'd3'] }, dice: { rolls: [15, 3] } })
+    const { events } = act(state, burst('d5', ['B.m1']))
+    expect(types(events)).toEqual(['skillUsed', 'attackRolled', 'damageDealt'])
+  })
+
+  it('a Weakened Tidewall\'s counterattack deals 2 less', () => {
+    // Team A's Turn 1: Wispling's Hex (Tidewall saves d20 + 1 against 11; a 3 fails), then Fangrel attacks.
+    let state = counteringTidewall({ tiles: NEXT, dice: { rolls: [3, 15, 4, 12, 3, 5] } })
+    state = act(state, skill('A.m2', 'hex', 'B.m1')).state
+    expect(unit(state, 'B.m1')?.statuses.map((s) => s.id)).toContain('weakened')
+    const { events } = act(state, attack('A.m1', 'B.m1'))
+    expect(events[4]).toMatchObject({ type: 'damageDealt', source: 'B.m1', rolls: [3, 5], modifier: -1, amount: 7 })
+  })
+
+  it('a Taunted Wispling\'s Burst meets the taunt only with the taunter among its targets', () => {
+    // Wispling on d3 (2 tiles from Tidewall), Quillfox on c5 next to Tidewall; Wispling's save: d20 + 1 against 11.
+    let state = tidewallFirst({ tiles: { A: ['a1', 'g1', 'd3'], B: ['a7', 'd5', 'c5'] }, dice: { rolls: [5, 15, 3, 15, 3] } })
+    state = endTurn(act(state, skill('B.m1', 'taunt', 'A.m2')).state).state
+    expect(code(applyAction(state, burst('c5', ['B.m2'])))).toBe('taunted')
+    expect(code(applyAction(state, skill('A.m2', 'element_bolt', 'B.m2')))).toBe('taunted')
+    expect(code(applyAction(state, skill('A.m2', 'hex', 'B.m1')))).toBe('taunted')
+    expect(code(applyAction(state, burst('c5', ['B.m2', 'B.m1'])))).toBe('accepted')
+    expect(code(applyAction(state, skill('A.m2', 'element_bolt', 'B.m1')))).toBe('accepted')
+    const bursts = legalActions(state).filter((a) => a.type === 'useSkill' && a.skill === 'burst')
+    expect(bursts.length).toBeGreaterThan(0)
+    expect(bursts.every((a) => a.type === 'useSkill' && (a.targets ?? []).includes('B.m1'))).toBe(true)
+  })
+
+  it('an attack possible only after Blink still binds the Taunted Unit (rules §14.3 item 1)', () => {
+    // Quillfox (B.m2, a Rend that gives Pin: data change only) pins Wispling on a1; Tidewall taunts it
+    // from d4 and walks to f6. Pinned, Wispling can only Blink: to c3, from where Element Bolt (range 4) reaches f6.
+    let state = tidewallFirst({
+      tiles: { A: ['g1', 'g2', 'a1'], B: ['a7', 'd4', 'a2'] },
+      loadouts: { 'B.m2': ['rend'] },
+      skills: { rend: { applies: [{ status: 'pin', save: 'vit' }] } },
+      dice: { rolls: [15, 1, 1, 5, 15, 3] },
+    })
+    state = act(state, skill('B.m2', 'rend', 'A.m2')).state
+    state = act(state, skill('B.m1', 'taunt', 'A.m2')).state
+    state = endTurn(act(state, move('B.m1', 'f6')).state).state
+    expect(unit(state, 'A.m2')?.statuses.map((s) => s.id).sort()).toEqual(['pin', 'taunted'])
+    expect(code(applyAction(state, defend('A.m2')))).toBe('taunted')
+    expect(code(applyAction(state, skill('A.m2', 'element_bolt', 'B.m2')))).toBe('taunted')
+    state = act(state, { type: 'useSkill', unit: 'A.m2', skill: 'blink', tile: tileFromName('c3') }).state
+    expect(code(applyAction(state, skill('A.m2', 'element_bolt', 'B.m1')))).toBe('accepted')
+  })
+})
