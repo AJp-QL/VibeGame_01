@@ -29,6 +29,7 @@ export function Menu({ data, choice, onChange, onStart }: MenuProps) {
             <input
               type="radio"
               name="scenario"
+              value={scenario.id}
               checked={choice.scenarioId === scenario.id}
               onChange={() => set({ scenarioId: scenario.id })}
             />
@@ -51,6 +52,7 @@ export function Menu({ data, choice, onChange, onStart }: MenuProps) {
                 <input
                   type="radio"
                   name="board"
+                  value={option.id}
                   checked={choice.boardId === option.id}
                   onChange={() => set({ boardId: option.id })}
                 />
@@ -74,6 +76,7 @@ export function Menu({ data, choice, onChange, onStart }: MenuProps) {
             <input
               type="radio"
               name="mode"
+              value={mode}
               disabled={!isModeAvailable(mode)}
               checked={choice.mode === mode}
               onChange={() => set({ mode })}
@@ -96,6 +99,7 @@ export function Menu({ data, choice, onChange, onStart }: MenuProps) {
                 <input
                   type="radio"
                   name="side"
+                  value={side}
                   checked={choice.humanSide === side}
                   onChange={() => set({ humanSide: side })}
                 />
