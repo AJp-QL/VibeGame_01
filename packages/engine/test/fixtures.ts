@@ -6,6 +6,7 @@ import {
   SIDES,
   tileFromName,
   type Element,
+  type ElementWheel,
   type Scenario,
   type ScenarioTeam,
   type Side,
@@ -52,13 +53,18 @@ export interface BattleOptions {
   readonly skills?: Readonly<Record<string, Partial<Skill>>>
   /** Status data changes by status id, on top of data/statuses. */
   readonly statuses?: Readonly<Record<string, Partial<StatusType>>>
+  /** Loadouts by Unit id, instead of the Scenario's (e.g. to give team B a skill that applies Pin). */
+  readonly loadouts?: Readonly<Record<string, readonly string[]>>
+  /** Element wheel instead of data/elements. */
+  readonly elementWheel?: ElementWheel
   readonly dice?: DiceSource
 }
 
 function withEdits(team: ScenarioTeam, side: Side, options: BattleOptions): ScenarioTeam {
-  const edit = <T extends { readonly stats: Stats }>(record: T, id: string): T => ({
+  const edit = <T extends { readonly stats: Stats; readonly skills: readonly string[] }>(record: T, id: string): T => ({
     ...record,
     stats: { ...record.stats, ...options.stats?.[id] },
+    skills: options.loadouts?.[id] ?? record.skills,
   })
   const [m1, m2] = team.monsters
   const monster = (record: typeof m1, id: string) => {
@@ -87,7 +93,7 @@ function setup(dice: DiceSource | undefined, options: BattleOptions = {}) {
     statuses: Object.fromEntries(
       Object.entries(gameData.statuses).map(([id, status]) => [id, { ...status, ...options.statuses?.[id] }]),
     ),
-    elementWheel: gameData.elementWheel,
+    elementWheel: options.elementWheel ?? gameData.elementWheel,
     dice: dice ?? { seed: '0123456789abcdef' },
   }
 }
