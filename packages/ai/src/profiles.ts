@@ -45,7 +45,7 @@ export interface AiProfile {
 export const NO_HEURISTICS: AiHeuristics = { protectTamer: 0, focusFire: 0 }
 
 /** The in-game heuristics' strength. */
-export const GAME_HEURISTICS: AiHeuristics = { protectTamer: 1, focusFire: 0.75 }
+export const GAME_HEURISTICS: AiHeuristics = { protectTamer: 0.5, focusFire: 0.5 }
 
 export const AI_MODES: readonly AiMode[] = ['greedy', 'tamer_rush', 'neutral']
 
