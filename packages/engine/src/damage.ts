@@ -26,9 +26,15 @@ export interface HpLoss {
  * Take `amount` HP off a Unit on the Board. The full amount counts even past
  * the HP left (D-11); HP stops at 0.
  */
-export function loseHp(state: BattleState, unitId: UnitId, amount: number): HpLoss {
-  const unit = findUnit(state, unitId)
+export function loseHp(before: BattleState, unitId: UnitId, amount: number): HpLoss {
+  const unit = findUnit(before, unitId)
   if (unit === undefined) throw new Error(`No Unit "${unitId}" on the Board`)
+  // Rules §19.2, D-11: every HP loss counts in full for the other side's total, Bleed included.
+  const dealer = otherSide(unit.side)
+  const state: BattleState = {
+    ...before,
+    damageDealt: { ...before.damageDealt, [dealer]: before.damageDealt[dealer] + amount },
+  }
   const hpAfter = Math.max(0, unit.hp - amount)
   if (hpAfter > 0) {
     return {
@@ -45,6 +51,6 @@ export function loseHp(state: BattleState, unitId: UnitId, amount: number): HpLo
   const outcome = outcomeAfterDown({ ...state, units, fallen }, down)
   if (outcome !== null) after.push({ type: 'battleEnded', winner: outcome.winner, cause: outcome.cause, round: state.round })
   // A Unit that went down cannot owe a decision any more.
-  const pending = state.pending?.unit === unitId || outcome !== null ? null : state.pending
+  const pending = (state.pending?.kind === 'retreat' && state.pending.unit === unitId) || outcome !== null ? null : state.pending
   return { state: { ...state, units, fallen, outcome, pending }, hpBefore: unit.hp, hpAfter: 0, after }
 }

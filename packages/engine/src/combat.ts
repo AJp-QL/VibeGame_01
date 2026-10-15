@@ -13,14 +13,15 @@
  * `attackOnce`, and Counter after the attack in `attackOnce`.
  */
 import type { Dice, Skill } from '@mt/shared'
-import type { BattleEvent, Rejection } from './battle.ts'
+import type { Rejection } from './battle.ts'
 import { loseHp } from './damage.ts'
 import { derive } from './derived.ts'
 import { rollDice } from './dice.ts'
 import { unitsOnLine } from './lineOfSight.ts'
 import { distance } from './movement.ts'
+import { emit, rollD20, type Resolution } from './resolution.ts'
 import { combineRollMode, rollModeSources, type RollMode, type RollModeSource } from './rollMode.ts'
-import { findUnit, type BattleState, type UnitId, type UnitState } from './state.ts'
+import { findUnit, type BattleState, type PendingDecision, type UnitId, type UnitState } from './state.ts'
 import {
   attackRollBonuses,
   defenceBonus,
@@ -45,9 +46,7 @@ export const DEFEND = 'defend'
 export function checkActor(state: BattleState, unitId: UnitId, uses: 'action' | 'move' = 'action'): UnitState | Rejection {
   if (state.outcome !== null) return { code: 'battle-over', message: 'The Battle is over' }
   if (state.phase !== 'play') return { code: 'wrong-phase', message: 'Not during deployment' }
-  if (state.pending !== null) {
-    return { code: 'decision-pending', message: `${state.pending.unit} must first choose where to step (${state.pending.skill})` }
-  }
+  if (state.pending !== null) return pendingRejection(state.pending)
   const unit = findUnit(state, unitId)
   if (unit === undefined) return { code: 'unknown-unit', message: `No Unit "${unitId}" on the Board` }
   if (unit.side !== state.sideToAct) {
@@ -116,6 +115,17 @@ export function checkAttack(
   const target = checkEnemyTarget(state, attacker, skill, targetId)
   if (isRejection(target)) return target
   return { attacker, target, skill }
+}
+
+/** Any other action while a decision is pending (rules §15.1, §18). */
+export function pendingRejection(pending: PendingDecision): Rejection {
+  return {
+    code: 'decision-pending',
+    message:
+      pending.kind === 'retreat'
+        ? `${pending.unit} must first choose where to step (${pending.skill})`
+        : `Side ${pending.side} must first decide whether to use Inspiration`,
+  }
 }
 
 export function isRejection(value: object): value is Rejection {
@@ -274,44 +284,44 @@ export function previewAttack(state: BattleState, plan: AttackPlan): AttackPrevi
 
 /**
  * One attack against one target (rules §10.5 steps 1–4, dice order §21.4):
- * attack roll → on a hit, damage dice (doubled on a critical) + modifier →
- * HP goes down (a Unit at 0 leaves the Board and the Battle may end) → if
- * the target is still up, the skill's statuses (with their saves). Does not
- * book the Action or activation: the caller does.
+ * attack roll (the attacker's side may reroll it with Inspiration) → on a
+ * hit, damage dice (doubled on a critical) + modifier → HP goes down (a Unit
+ * at 0 leaves the Board and the Battle may end) → if the target is still up,
+ * the skill's statuses (with their saves). Does not book the Action or
+ * activation: the caller does.
  */
-export function attackOnce(
+export function* attackOnce(
   before: BattleState,
   attackerId: UnitId,
   targetId: UnitId,
   skill: Skill,
-): { state: BattleState; events: BattleEvent[]; hit: boolean } {
+): Resolution<{ state: BattleState; hit: boolean }> {
   const attacker = findUnit(before, attackerId)
   const target = findUnit(before, targetId)
   if (attacker === undefined || target === undefined) throw new Error(`Attack between Units not on the Board`)
   const preview = previewAttack(before, { attacker, target, skill })
-  const events: BattleEvent[] = []
 
-  const d20 = rollDice(before.dice, preview.rollMode === 'normal' ? 1 : 2, 20)
-  let state: BattleState = { ...before, dice: d20.stream }
-  const face = keptFace(preview.rollMode, d20.rolls[0] ?? 0, d20.rolls[1] ?? 0)
-  const hit = isHit(face, preview.attackBonus, preview.defence)
-  const critical = face === 20
-  events.push({
-    type: 'attackRolled',
-    attacker: attacker.id,
-    target: target.id,
-    skill: skill.id,
-    rollMode: preview.rollMode,
-    rolls: d20.rolls,
-    natural: face,
-    attackBonus: preview.attackBonus,
-    total: face + preview.attackBonus,
-    defence: preview.defence,
-    defenceKind: preview.defenceKind,
-    hit,
-    critical,
+  const rolled = yield* rollD20(before, attacker.side, preview.rollMode === 'normal' ? 1 : 2, (rolls) => {
+    const face = keptFace(preview.rollMode, rolls[0] ?? 0, rolls[1] ?? 0)
+    return {
+      type: 'attackRolled' as const,
+      attacker: attacker.id,
+      target: target.id,
+      skill: skill.id,
+      rollMode: preview.rollMode,
+      rolls,
+      natural: face,
+      attackBonus: preview.attackBonus,
+      total: face + preview.attackBonus,
+      defence: preview.defence,
+      defenceKind: preview.defenceKind,
+      hit: isHit(face, preview.attackBonus, preview.defence),
+      critical: face === 20,
+    }
   })
-  if (!hit) return { state, events, hit }
+  let state = rolled.state
+  const { hit, critical } = rolled.roll
+  if (!hit) return { state, hit }
 
   const range = critical ? preview.criticalDamage : preview.damage
   if (range !== null) {
@@ -319,7 +329,7 @@ export function attackOnce(
     const sum = damage.rolls.reduce((total, roll) => total + roll, 0)
     const amount = Math.max(MIN_DAMAGE, sum + range.modifier)
     const loss = loseHp({ ...state, dice: damage.stream }, target.id, amount)
-    events.push(
+    yield* emit(
       {
         type: 'damageDealt',
         source: attacker.id,
@@ -339,21 +349,18 @@ export function attackOnce(
 
   // Rules §14.1: statuses stick only if the target is still up after the damage.
   if (state.outcome === null && findUnit(state, target.id) !== undefined) {
-    const given = giveSkillStatuses(state, attacker, target.id, skill)
-    state = given.state
-    events.push(...given.events)
+    state = yield* giveSkillStatuses(state, attacker, target.id, skill)
   }
-  return { state, events, hit }
+  return { state, hit }
 }
 
 /**
  * Basic Attack (rules §10.5): the attacker's Action is used whether it hits
  * or misses, and the attack starts (or continues) its activation (rules §17.4).
  */
-export function resolveAttack(before: BattleState, plan: AttackPlan): { state: BattleState; events: BattleEvent[] } {
+export function* resolveAttack(before: BattleState, plan: AttackPlan): Resolution<BattleState> {
   const { attacker, target, skill } = plan
   const active = activate(before, attacker.id)
   const booked = { ...active, units: active.units.map((u) => (u.id === attacker.id ? { ...u, hasActed: true } : u)) }
-  const { state, events } = attackOnce(booked, attacker.id, target.id, skill)
-  return { state, events }
+  return (yield* attackOnce(booked, attacker.id, target.id, skill)).state
 }

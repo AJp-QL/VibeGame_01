@@ -3,6 +3,7 @@
  * takes a state and returns a new one; nothing is mutated.
  */
 import type { Build, Element, ElementWheel, Movement, Side, Skill, Stats, StatusType, Terrain, Tile } from '@mt/shared'
+import type { Action, BattleEvent } from './battle.ts'
 import type { DiceStream } from './dice.ts'
 
 /** "A.tamer", "A.m1", "A.m2", "B.tamer", … — stable for the whole Battle. */
@@ -55,15 +56,49 @@ export interface UnitStatus {
 }
 
 /**
- * A choice that must be made before any other action. `retreat`: after Hit
- * and Run the user may step up to `steps` tiles to an empty tile, or stay
- * (rules §15.1, D-12).
+ * A choice that must be made before any other action: Hit and Run's step
+ * (`retreat`) or whether to reroll a d20 with Inspiration (`inspiration`).
+ * `side` is the side that decides; it can differ from the side to act (a
+ * save during the other side's Turn, initiative), so Hotseat hands the device over.
  */
-export interface PendingDecision {
+export type PendingDecision = RetreatDecision | InspirationDecision
+
+/** After Hit and Run the Unit may step up to `steps` tiles to an empty tile, or stay (rules §15.1, D-12). */
+export interface RetreatDecision {
   readonly kind: 'retreat'
+  readonly side: Side
   readonly unit: UnitId
   readonly skill: string
   readonly steps: number
+}
+
+/** A d20 roll the deciding side may roll again with Inspiration (rules §18, §21.6): the event that showed it. */
+export type RerollableRoll = Extract<BattleEvent, { type: 'attackRolled' | 'saveRolled' | 'initiativeRolled' }>
+
+/** Use Inspiration on the roll just seen, or keep it. */
+export type InspirationAnswer = 'use' | 'decline'
+
+/**
+ * `side` has just seen `roll` and still has its Inspiration (rules §18,
+ * D-09, D-10): it answers with `useInspiration` or `declineInspiration`
+ * before any other die is rolled. The action is paused part-way: the state
+ * shows what happened up to and including the roll.
+ */
+export interface InspirationDecision {
+  readonly kind: 'inspiration'
+  readonly side: Side
+  readonly roll: RerollableRoll
+  /**
+   * Engine bookkeeping to finish the paused action: it is resolved again from
+   * the state before it (`state`) with the answers given so far, which gives
+   * the same dice, then carries on. `emitted` events were already returned.
+   */
+  readonly resume: {
+    readonly state: BattleState
+    readonly action: Action
+    readonly answers: readonly InspirationAnswer[]
+    readonly emitted: number
+  }
 }
 
 export interface TamerUnit extends UnitBase {
@@ -162,23 +197,37 @@ export interface BattleState {
   readonly statusTypes: Readonly<Record<string, StatusType>>
   /** The element wheel from data/elements (rules §4.1). */
   readonly elementWheel: ElementWheel
-  /** A decision the side to act must make before any other action (Hit and Run's step), or `null`. */
+  /** A decision that must be made before any other action (Hit and Run's step, Inspiration), or `null`. */
   readonly pending: PendingDecision | null
+  /** Sides that still have their Inspiration: one per side per Battle (rules §18). */
+  readonly inspiration: Readonly<Record<Side, boolean>>
+  /**
+   * Total damage each side has dealt this Battle (rules §19.2, D-11): every
+   * HP loss of a Unit counts for the other side, in full even past the HP
+   * left, Bleed included. Healing never takes it back. Decides the turn limit.
+   */
+  readonly damageDealt: Readonly<Record<Side, number>>
   /** Set once the Battle is over; no action is legal after that (rules §19). */
   readonly outcome: BattleOutcome | null
 }
 
-/** Why a Battle ended (rules §19.1). The turn limit (§19.2) is not implemented yet. */
+/** Why a Battle ended (rules §19). */
 export type BattleEndCause =
-  /** The losing side's Tamer reached 0 HP. */
+  /** The losing side's Tamer reached 0 HP (§19.1). */
   | 'tamerDown'
-  /** Every Monster of the losing side reached 0 HP. */
+  /** Every Monster of the losing side reached 0 HP (§19.1). */
   | 'monstersDown'
+  /** Round 10 ended: more total damage dealt wins, equal is a draw (§19.2). */
+  | 'turnLimit'
 
 export interface BattleOutcome {
-  readonly winner: Side
+  /** `null`: a draw (only at the turn limit, equal damage). */
+  readonly winner: Side | null
   readonly cause: BattleEndCause
 }
+
+/** The Battle lasts at most this many Rounds (rules §19.2). */
+export const ROUND_LIMIT = 10
 
 /** A Unit on the Board (not one that has fallen). */
 export function findUnit(state: BattleState, id: UnitId): UnitState | undefined {

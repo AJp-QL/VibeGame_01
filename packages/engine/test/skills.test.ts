@@ -52,7 +52,7 @@ function rejection(result: ApplyResult): string {
 
 /** Answer Hit and Run's step by staying, if it is pending. */
 function stay(state: BattleState): BattleState {
-  return state.pending === null ? state : accepted(applyAction(state, { type: 'retreat', unit: state.pending.unit, to: null })).state
+  return state.pending?.kind !== 'retreat' ? state : accepted(applyAction(state, { type: 'retreat', unit: state.pending.unit, to: null })).state
 }
 
 describe('tiers and cooldowns (rules §13, D-16)', () => {
@@ -514,7 +514,7 @@ describe('Hit and Run: 1d8, then a free step of 1 tile, hit or miss (rules §15.
   it('after the attack the user chooses a step: nothing else is legal until it does', () => {
     const { state, events } = accepted(useSkill(battle({ dice: { rolls: [12, 5] } }), 'A.m1', 'hit_and_run', 'B.m1'))
     expect(events.map((e) => e.type)).toEqual(['skillUsed', 'attackRolled', 'damageDealt'])
-    expect(state.pending).toEqual({ kind: 'retreat', unit: 'A.m1', skill: 'hit_and_run', steps: 1 })
+    expect(state.pending).toEqual({ kind: 'retreat', side: 'A', unit: 'A.m1', skill: 'hit_and_run', steps: 1 })
     const legal = legalActions(state)
     expect(legal.every((a) => a.type === 'retreat')).toBe(true)
     // Every empty neighbour of d4 (d5 holds Tidewall), then staying.
@@ -604,6 +604,8 @@ describe('Replay records and replays skills', () => {
     } as const
     const actions: Action[] = [
       { type: 'useSkill', unit: 'A.m1', skill: 'hit_and_run', target: 'B.m1' },
+      // A Replay's Battle has Inspiration: the attack roll pauses for team A's answer.
+      { type: 'declineInspiration', side: 'A' },
       { type: 'retreat', unit: 'A.m1', to: tileFromName('d3') },
       { type: 'endTurn' },
       { type: 'endTurn' },
@@ -613,7 +615,14 @@ describe('Replay records and replays skills', () => {
     const first = replayBattle(replay, gameData)
     const second = replayBattle(JSON.parse(JSON.stringify(replay)), gameData)
     if (!first.ok || !second.ok) throw new Error('replay failed')
-    expect(first.steps.map((s) => s.events[0]?.type)).toEqual(['skillUsed', 'unitRetreated', 'turnEnded', 'turnEnded', 'skillUsed'])
+    expect(first.steps.map((s) => s.events[0]?.type)).toEqual([
+      'skillUsed',
+      'inspirationDeclined',
+      'unitRetreated',
+      'turnEnded',
+      'turnEnded',
+      'skillUsed',
+    ])
     expect(second.final).toEqual(first.final)
   })
 })

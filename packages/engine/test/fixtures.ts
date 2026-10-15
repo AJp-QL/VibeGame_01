@@ -58,7 +58,16 @@ export interface BattleOptions {
   /** Element wheel instead of data/elements. */
   readonly elementWheel?: ElementWheel
   readonly dice?: DiceSource
+  /**
+   * Which sides start with Inspiration. Default: neither, so tests about
+   * other rules resolve each action without pausing for the decision
+   * (declining draws no dice, so the dice order is the same either way).
+   */
+  readonly inspiration?: Readonly<Record<Side, boolean>>
 }
+
+/** No side has Inspiration: actions never pause to ask (the fixtures' default). */
+export const NO_INSPIRATION: Readonly<Record<Side, boolean>> = { A: false, B: false }
 
 function withEdits(team: ScenarioTeam, side: Side, options: BattleOptions): ScenarioTeam {
   const edit = <T extends { readonly stats: Stats; readonly skills: readonly string[] }>(record: T, id: string): T => ({
@@ -95,6 +104,7 @@ function setup(dice: DiceSource | undefined, options: BattleOptions = {}) {
     ),
     elementWheel: options.elementWheel ?? gameData.elementWheel,
     dice: dice ?? { seed: '0123456789abcdef' },
+    inspiration: options.inspiration ?? NO_INSPIRATION,
   }
 }
 
@@ -126,9 +136,9 @@ export const NEUTRAL_ELEMENTS: Readonly<Record<string, Element>> = {
   'B.m2': 'forest',
 }
 
-/** A Scenario 1 Battle on Crossroads at the start of deployment. */
-export function scenario1Deployment(dice?: DiceSource): BattleState {
-  return createBattle(setup(dice))
+/** A Scenario 1 Battle on Crossroads at the start of deployment (no Inspiration unless asked for). */
+export function scenario1Deployment(dice?: DiceSource, inspiration?: Readonly<Record<Side, boolean>>): BattleState {
+  return createBattle(setup(dice, inspiration === undefined ? {} : { inspiration }))
 }
 
 type Applied = Extract<ApplyResult, { ok: true }>
@@ -143,8 +153,12 @@ function applied(result: ApplyResult): Applied {
  * actions: returns the result of team B's Confirm, whose events hold the
  * reveal, the initiative rolls and the first Turn.
  */
-export function deployBothSides(dice: DiceSource, scenario: Scenario = scenario1): Applied {
-  let state = createBattle(setup(dice, { scenario }))
+export function deployBothSides(
+  dice: DiceSource,
+  scenario: Scenario = scenario1,
+  inspiration: Readonly<Record<Side, boolean>> = NO_INSPIRATION,
+): Applied {
+  let state = createBattle(setup(dice, { scenario, inspiration }))
   for (const side of SIDES) {
     ;[`${side}.tamer`, `${side}.m1`, `${side}.m2`].forEach((unit, i) => {
       const to = tileFromName(DEFAULT_TILES[side][i]!)

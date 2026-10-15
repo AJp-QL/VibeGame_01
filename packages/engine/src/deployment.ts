@@ -6,8 +6,9 @@
  * initiative is rolled and the first Turn starts. Deployment uses no dice.
  */
 import { BOARD_SIZE, isOnBoard, sameTile, tileName, type Side, type Tile } from '@mt/shared'
-import type { Action, ApplyResult, BattleEvent, RejectionCode } from './battle.ts'
+import type { Action, ApplyResult, Rejection, RejectionCode } from './battle.ts'
 import { rollInitiative } from './initiative.ts'
+import { emit, type Resolution } from './resolution.ts'
 import type { BattleState, Deployment, UnitId, UnitState, UnitTemplate } from './state.ts'
 import { startTurn, TEAM_SIZE } from './turns.ts'
 
@@ -90,55 +91,42 @@ export function applyDeploy(state: BattleState, unitId: UnitId, to: Tile): Apply
 
 /**
  * Confirm the side's placements. After team A, team B places. After both,
- * reveal every placement, roll initiative and start the first Turn.
+ * reveal every placement, roll initiative (with its Inspiration decisions)
+ * and start the first Turn. Returns the resolution, or why not.
  */
-export function applyConfirmDeployment(state: BattleState): ApplyResult {
+export function confirmDeploymentResolution(state: BattleState): Resolution<BattleState> | Rejection {
   const deployment = inDeployment(state)
-  if (deployment === undefined) return reject(state, 'wrong-phase', 'Deployment is over')
+  if (deployment === undefined) return { code: 'wrong-phase', message: 'Deployment is over' }
   const side = state.sideToAct
   if (!allPlaced(deployment, side)) {
-    return reject(state, 'deployment-incomplete', `Side ${side} must place all ${TEAM_SIZE} Units first`)
+    return { code: 'deployment-incomplete', message: `Side ${side} must place all ${TEAM_SIZE} Units first` }
   }
-  const confirmed = { ...deployment.confirmed, [side]: true }
-  const events: BattleEvent[] = [{ type: 'deploymentConfirmed', side }]
-  const waiting = otherSide(side)
-  if (!confirmed[waiting]) {
-    return {
-      ok: true,
-      state: { ...state, sideToAct: waiting, deployment: { ...deployment, confirmed } },
-      events,
-    }
-  }
-  return reveal(state, deployment, events)
+  return confirm(state, deployment, side)
 }
 
-function reveal(state: BattleState, deployment: Deployment, events: BattleEvent[]): ApplyResult {
+function* confirm(state: BattleState, deployment: Deployment, side: Side): Resolution<BattleState> {
+  const confirmed = { ...deployment.confirmed, [side]: true }
+  yield* emit({ type: 'deploymentConfirmed', side })
+  const waiting = otherSide(side)
+  if (!confirmed[waiting]) return { ...state, sideToAct: waiting, deployment: { ...deployment, confirmed } }
+
   const units = deployment.roster.map((template) => placeUnit(template, deployment.placements[template.side][template.id]))
-  events.push({ type: 'deploymentRevealed', placements: units.map((u) => ({ unit: u.id, tile: u.tile })) })
+  yield* emit({ type: 'deploymentRevealed', placements: units.map((u) => ({ unit: u.id, tile: u.tile })) })
+  // Placements are revealed before initiative: while an Inspiration decision is pending the Board shows.
+  const revealed: BattleState = { ...state, phase: 'play', units, deployment: null }
+  const rolled = yield* rollInitiative(deployment.roster, revealed)
+  const { initiative } = rolled
+  yield* emit({ type: 'initiativeDecided', firstSide: initiative.firstSide })
 
-  const { initiative, dice } = rollInitiative(deployment.roster, state.dice)
-  for (const rolls of initiative.rolls) {
-    events.push({ type: 'initiativeRolled', rolls, tie: rolls.A.total === rolls.B.total })
-  }
-  events.push({ type: 'initiativeDecided', firstSide: initiative.firstSide })
-
-  const revealed: BattleState = {
-    ...state,
-    phase: 'play',
-    units,
-    deployment: null,
-    initiative,
-    firstSide: initiative.firstSide,
-    dice,
-  }
-  const started = startTurn(revealed, initiative.firstSide, initiative.firstSide)
-  events.push({
+  const decided: BattleState = { ...rolled.state, initiative, firstSide: initiative.firstSide }
+  const started = startTurn(decided, initiative.firstSide, initiative.firstSide)
+  yield* emit({
     type: 'turnStarted',
     side: started.sideToAct,
     turn: started.turnNumber[started.sideToAct],
     round: started.round,
   })
-  return { ok: true, state: started, events }
+  return started
 }
 
 /** A Unit template on its tile. */

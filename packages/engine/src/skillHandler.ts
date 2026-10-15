@@ -22,11 +22,17 @@
  *   (one action per possible target) does not fit (tiles, ordered targets).
  * - `resolve`: what happens, replacing the generic resolution (Blink,
  *   Attune, First Aid). Activation, the Action/Move and the cooldown are
- *   already booked in the state it receives.
+ *   already booked in the state it receives. It is a generator (see
+ *   resolution.ts): `yield* emit(...)` its events, `yield* attackOnce(...)`
+ *   for each attack and `yield* giveSkillStatuses(...)` for statuses, and
+ *   roll any other d20 Inspiration may reroll with `yield* rollD20(...)`, so
+ *   the Inspiration decision comes for free. Damage and other dice use
+ *   `rollDice` and are never offered.
  * - `preview`: the odds, replacing the generic preview.
  */
 import type { Skill } from '@mt/shared'
-import type { ActionPreview, BattleEvent, Rejection } from './battle.ts'
+import type { ActionPreview, Rejection } from './battle.ts'
+import type { Resolution } from './resolution.ts'
 import type { UseSkillAction } from './skills.ts'
 import type { BattleState, UnitState } from './state.ts'
 
@@ -39,10 +45,8 @@ export interface SkillUse {
   readonly targets: readonly UnitState[]
 }
 
-export interface SkillResolution {
-  readonly state: BattleState
-  readonly events: BattleEvent[]
-}
+/** A skill's resolution: yields its events (and Inspiration decisions), returns the state after it. */
+export type SkillResolution = Resolution<BattleState>
 
 export interface SkillHandler {
   readonly targets?: (state: BattleState, user: UnitState, skill: Skill, action: UseSkillAction) => readonly UnitState[] | Rejection

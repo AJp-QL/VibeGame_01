@@ -16,7 +16,8 @@ import type { Dice, Side, Skill, Stat, StatusApplication, StatusType } from '@mt
 import type { BattleEvent } from './battle.ts'
 import { loseHp } from './damage.ts'
 import { derive, statMod } from './derived.ts'
-import { rollDice, rollDie } from './dice.ts'
+import { rollDice } from './dice.ts'
+import { emit, rollD20, type Resolution } from './resolution.ts'
 import { findUnit, type BattleState, type StatusId, type UnitId, type UnitState, type UnitStatus } from './state.ts'
 
 /** The definition of a status; unknown ids are a data error (loadGameData checks them). */
@@ -112,46 +113,45 @@ export function statusOdds(user: UnitState, target: UnitState, skill: Skill): St
 /**
  * The statuses of `skill` landing on `targetId` (rules §10.5 step 4, §11):
  * each one with a save makes the target roll d20 + mod against the user's
- * Save DC (one d20 per save, in the order of `skill.applies`); it sticks
- * only on a failed save. Statuses without a save just stick.
+ * Save DC (one d20 per save, in the order of `skill.applies`), which the
+ * target's side may reroll with Inspiration; it sticks only on a failed
+ * save. Statuses without a save just stick.
  */
-export function giveSkillStatuses(
+export function* giveSkillStatuses(
   before: BattleState,
   user: UnitState,
   targetId: UnitId,
   skill: Skill,
-): { state: BattleState; events: BattleEvent[] } {
+): Resolution<BattleState> {
   let state = before
-  const events: BattleEvent[] = []
   for (const application of skill.applies ?? []) {
     const target = findUnit(state, targetId)
     if (target === undefined) break
     if (application.save !== undefined) {
       const odds = saveOdds(user, target, skill, application.save)
-      const roll = rollDie(state.dice, 20)
-      state = { ...state, dice: roll.stream }
-      const total = roll.value + odds.modifier
-      const saved = total >= odds.dc
-      events.push({
-        type: 'saveRolled',
+      const stat = application.save
+      // The target's side owns the save's d20 and may reroll it with Inspiration (rules §11, §18).
+      const saving = yield* rollD20(state, target.side, 1, ([roll = 0]) => ({
+        type: 'saveRolled' as const,
         unit: target.id,
         source: user.id,
         skill: skill.id,
         status: application.status,
-        stat: application.save,
-        roll: roll.value,
+        stat,
+        roll,
         modifier: odds.modifier,
-        total,
+        total: roll + odds.modifier,
         dc: odds.dc,
-        saved,
-      })
-      if (saved) continue
+        saved: roll + odds.modifier >= odds.dc,
+      }))
+      state = saving.state
+      if (saving.roll.saved) continue
     }
     const given = applyStatus(state, target.id, application, user.id)
     state = given.state
-    events.push(given.event)
+    yield* emit(given.event)
   }
-  return { state, events }
+  return state
 }
 
 // ------------------------------------------------------ what statuses change

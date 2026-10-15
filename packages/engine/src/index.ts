@@ -4,7 +4,8 @@
  *
  * Seam A — the interface every other package and every rules test goes through:
  *   createBattle(setup)           → BattleState
- *   legalActions(state)           → Action[] for the side to act ([] once the Battle is over)
+ *   legalActions(state)           → Action[] for the side that must act now ([] once the Battle is over)
+ *   decidingSide(state)           → that side: a pending decision's side (Inspiration, Hit and Run's step), else the side to act
  *   previewAction(state, action)  → exact odds and damage ranges, without rolling or changing state
  *   applyAction(state, action)    → { ok, state, events } | { ok: false, state, rejection }
  *   derivedValues(state, unitId)  → values computed from the Unit's data
@@ -16,6 +17,7 @@
 export {
   applyAction,
   createBattle,
+  decidingSide,
   derivedValues,
   legalActions,
   previewAction,
@@ -44,6 +46,7 @@ export { elementBeats, type RollEffect, type RollMode, type RollModeSource } fro
 export type { DerivedValues } from './derived.ts'
 export { isInStartZone, START_ZONE_ROWS, unitsVisibleTo } from './deployment.ts'
 export { distance } from './movement.ts'
+export { ROUND_LIMIT } from './state.ts'
 export type {
   Activations,
   BattleEndCause,
@@ -54,7 +57,11 @@ export type {
   Initiative,
   InitiativeRoll,
   MonsterUnit,
+  InspirationAnswer,
+  InspirationDecision,
   PendingDecision,
+  RerollableRoll,
+  RetreatDecision,
   StatusId,
   TamerUnit,
   UnitId,

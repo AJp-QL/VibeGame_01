@@ -23,22 +23,24 @@ import {
   checkAttack,
   DEFEND,
   isRejection,
+  pendingRejection,
   previewAttack,
   resolveAttack,
   type AttackPreview,
 } from './combat.ts'
-import { applyConfirmDeployment, applyDeploy, deploymentActions, placeUnit } from './deployment.ts'
+import { applyDeploy, confirmDeploymentResolution, deploymentActions, placeUnit } from './deployment.ts'
 import { diceStream, type DiceSource } from './dice.ts'
 import { derive, type DerivedValues } from './derived.ts'
 import { pathTo, reachableTiles } from './movement.ts'
+import { runResolution, type Resolution } from './resolution.ts'
 import type { RollMode } from './rollMode.ts'
 import {
   applyRetreat,
-  applyUseSkill,
   legalRetreats,
   legalSkillUses,
   loadoutOf,
   previewSkill,
+  skillResolution,
   type EffectPreview,
   type RetreatAction,
   type SavePreview,
@@ -48,9 +50,13 @@ import {
 import {
   findAnyUnit,
   findUnit,
+  otherSide,
+  ROUND_LIMIT,
   type BattleEndCause,
   type BattleState,
   type InitiativeRoll,
+  type InspirationAnswer,
+  type RerollableRoll,
   type StatusId,
   type UnitId,
   type UnitState,
@@ -77,6 +83,10 @@ export type Action =
   | UseSkillAction
   /** After Hit and Run: step to an empty tile within reach, or `to: null` to stay (rules §15.1, D-12). */
   | RetreatAction
+  /** The deciding side rerolls the d20 it just saw with its Inspiration (rules §18): the new roll stands. */
+  | { readonly type: 'useInspiration'; readonly side: Side }
+  /** The deciding side keeps the d20 it just saw and its Inspiration (rules §18). */
+  | { readonly type: 'declineInspiration'; readonly side: Side }
   /** End the current Turn; the other side starts its Turn (rules §17.4). */
   | { readonly type: 'endTurn' }
 
@@ -100,8 +110,17 @@ export type BattleEvent =
       readonly type: 'deploymentRevealed'
       readonly placements: readonly { readonly unit: UnitId; readonly tile: Tile }[]
     }
-  /** One pair of initiative rolls, team A's d20 first (rules §17.2, §21.4). `tie` means both roll again. */
-  | { readonly type: 'initiativeRolled'; readonly rolls: Readonly<Record<Side, InitiativeRoll>>; readonly tie: boolean }
+  /**
+   * One pair of initiative rolls, team A's d20 first (rules §17.2, §21.4).
+   * `tie` means both roll again. `rerolled`: the pair after that side rolled
+   * its d20 again with Inspiration (the other side's roll is unchanged).
+   */
+  | {
+      readonly type: 'initiativeRolled'
+      readonly rolls: Readonly<Record<Side, InitiativeRoll>>
+      readonly tie: boolean
+      readonly rerolled?: Side
+    }
   | { readonly type: 'initiativeDecided'; readonly firstSide: Side }
   | {
       readonly type: 'unitMoved'
@@ -128,6 +147,8 @@ export type BattleEvent =
       readonly defenceKind: 'guard' | 'ward'
       readonly hit: boolean
       readonly critical: boolean
+      /** The roll made again with Inspiration (rules §18): this one stands. */
+      readonly rerolled?: true
     }
   | {
       /** Damage rolled and taken off the target's HP (rules §10.3). */
@@ -164,6 +185,8 @@ export type BattleEvent =
       readonly dc: number
       /** `true`: the status does not stick. */
       readonly saved: boolean
+      /** The roll made again with Inspiration (rules §18): this one stands. */
+      readonly rerolled?: true
     }
   /**
    * A Unit gained a status (rules §14.1). `refreshed`: it already had it and
@@ -190,10 +213,30 @@ export type BattleEvent =
   | { readonly type: 'unitRetreated'; readonly unit: UnitId; readonly from: Tile; readonly to: Tile }
   /** The Unit chose to stay instead of Hit and Run's step. */
   | { readonly type: 'retreatDeclined'; readonly unit: UnitId }
+  /**
+   * `side` saw its own d20 (`roll`, the event just before) and still has
+   * Inspiration: the action pauses until it answers (rules §18, D-10).
+   * `side` may differ from the side to act (a save, initiative).
+   */
+  | { readonly type: 'inspirationOffered'; readonly side: Side; readonly roll: RerollableRoll }
+  /** The side used its Inspiration: the roll is made again (the next roll event, `rerolled: true`). */
+  | { readonly type: 'inspirationUsed'; readonly side: Side }
+  /** The side kept the roll and its Inspiration. */
+  | { readonly type: 'inspirationDeclined'; readonly side: Side }
   /** A Unit reached 0 HP and left the Board (rules §10.4). */
   | { readonly type: 'unitDown'; readonly unit: UnitId; readonly tile: Tile }
-  /** The Battle is over (rules §19.1); nothing more can happen. */
-  | { readonly type: 'battleEnded'; readonly winner: Side; readonly cause: BattleEndCause; readonly round: number }
+  /**
+   * The Battle is over (rules §19); nothing more can happen. `winner` is
+   * `null` for a draw (turn limit, equal damage). At the turn limit
+   * `damageDealt` holds the totals that decided it (§19.2).
+   */
+  | {
+      readonly type: 'battleEnded'
+      readonly winner: Side | null
+      readonly cause: BattleEndCause
+      readonly round: number
+      readonly damageDealt?: Readonly<Record<Side, number>>
+    }
   | { readonly type: 'turnEnded'; readonly side: Side; readonly turn: number }
   | { readonly type: 'turnStarted'; readonly side: Side; readonly turn: number; readonly round: number }
 
@@ -222,9 +265,9 @@ export type RejectionCode =
   | 'out-of-range'
   /** Units stand on the line from the attacker to a target 2 or more tiles away (rules §7). */
   | 'no-line-of-sight'
-  /** A decision must be made first (Hit and Run's step): only `retreat` is legal. */
+  /** A decision must be made first (Hit and Run's step, Inspiration): only its answers are legal. */
   | 'decision-pending'
-  /** `retreat` when there is no step to choose, or by another Unit. */
+  /** An answer (`retreat`, `useInspiration`, `declineInspiration`) when there is no such decision, or by another Unit or side. */
   | 'no-decision'
   /** The skill is not in the Unit's loadout. */
   | 'not-in-loadout'
@@ -265,6 +308,11 @@ export interface BattleSetup {
   readonly elementWheel: ElementWheel
   /** Dice Seed for play, or scripted roll results for tests. */
   readonly dice: DiceSource
+  /**
+   * Whether each side starts with its Inspiration (rules §18: both do, the
+   * default). For rules tests about something else and tools; play leaves it out.
+   */
+  readonly inspiration?: Readonly<Record<Side, boolean>>
   /**
    * Skip deployment and initiative: start Round 1 with the Units already on
    * these tiles (Tamer, Monster 1, Monster 2 per side; anywhere on the Board)
@@ -353,6 +401,8 @@ export function createBattle(setup: BattleSetup): BattleState {
     statusTypes: setup.statuses,
     elementWheel: setup.elementWheel,
     pending: null,
+    inspiration: setup.inspiration ?? { A: true, B: true },
+    damageDealt: { A: 0, B: 0 },
     outcome: null,
   }
   return setup.preset === undefined ? deploying : startFromPreset(deploying, roster, setup.preset)
@@ -381,13 +431,30 @@ function startFromPreset(
 // ------------------------------------------------------------------- query
 
 /**
- * Every legal action for the side to act. Deployment: placements, then
- * Confirm once all of the side's Units are placed. Play: Moves, then Basic
- * Attacks, then skills, then Defends, End Turn last; while a decision is
- * pending (Hit and Run's step), only its answers. None once the Battle is over.
+ * The side that must act now: the side of a pending decision (which can be
+ * the side whose Turn it is not: a save, initiative), otherwise the side to
+ * act. Hotseat hands the device to this side.
+ */
+export function decidingSide(state: BattleState): Side {
+  return state.pending?.side ?? state.sideToAct
+}
+
+/**
+ * Every legal action for the side that must act now (`decidingSide`).
+ * Deployment: placements, then Confirm once all of the side's Units are
+ * placed. Play: Moves, then Basic Attacks, then skills, then Defends, End
+ * Turn last. While a decision is pending, only its answers: Hit and Run's
+ * steps, or use then decline Inspiration. None once the Battle is over.
  */
 export function legalActions(state: BattleState): Action[] {
   if (state.outcome !== null) return []
+  if (state.pending?.kind === 'inspiration') {
+    const { side } = state.pending
+    return [
+      { type: 'useInspiration', side },
+      { type: 'declineInspiration', side },
+    ]
+  }
   if (state.phase === 'deployment') return deploymentActions(state)
   if (state.pending !== null) return legalRetreats(state)
   const actions: Action[] = []
@@ -444,19 +511,22 @@ export function derivedValues(state: BattleState, unitId: UnitId): DerivedValues
 /** Apply an action: new state + ordered events, or a rejection with the state unchanged. */
 export function applyAction(state: BattleState, action: Action): ApplyResult {
   if (state.outcome !== null) return reject(state, 'battle-over', 'The Battle is over')
+  if (action.type === 'useInspiration' || action.type === 'declineInspiration') {
+    return answerInspiration(state, action.side, action.type === 'useInspiration' ? 'use' : 'decline')
+  }
+  if (state.pending?.kind === 'inspiration') return { ok: false, state, rejection: pendingRejection(state.pending) }
+  const resolution = resolutionOf(state, action)
+  if (resolution !== null) {
+    if (isRejection(resolution)) return { ok: false, state, rejection: resolution }
+    return runResolution(state, action, resolution)
+  }
   switch (action.type) {
     case 'deploy':
       return applyDeploy(state, action.unit, action.to)
-    case 'confirmDeployment':
-      return applyConfirmDeployment(state)
     case 'move':
       return applyMove(state, action.unit, action.to)
-    case 'basicAttack':
-      return applyBasicAttack(state, action.unit, action.target)
     case 'defend':
       return applyDefend(state, action.unit)
-    case 'useSkill':
-      return applyUseSkill(state, action)
     case 'retreat':
       return applyRetreat(state, action)
     case 'endTurn':
@@ -464,6 +534,42 @@ export function applyAction(state: BattleState, action: Action): ApplyResult {
     default:
       return reject(state, 'unknown-action', `Unknown action ${JSON.stringify(action)}`)
   }
+}
+
+/**
+ * Actions that may roll a d20 Inspiration rerolls (rules §18, §21.6) are
+ * resolved as generators (resolution.ts): their resolution if legal, or why
+ * not; `null` for the other actions. The same state and action always give
+ * the same resolution, which is what lets a paused action be finished later.
+ */
+function resolutionOf(state: BattleState, action: Action): Resolution<BattleState> | Rejection | null {
+  switch (action.type) {
+    case 'confirmDeployment':
+      return confirmDeploymentResolution(state)
+    case 'basicAttack': {
+      const plan = checkAttack(state, action.unit, BASIC_ATTACK, action.target)
+      return isRejection(plan) ? plan : resolveAttack(state, plan)
+    }
+    case 'useSkill':
+      return skillResolution(state, action)
+    default:
+      return null
+  }
+}
+
+/**
+ * Answer a pending Inspiration decision (rules §18): resolve the paused
+ * action again from the state before it with every answer so far (same
+ * dice, same rolls) and carry on until it ends or pauses at the next decision.
+ */
+function answerInspiration(state: BattleState, side: Side, answer: InspirationAnswer): ApplyResult {
+  const pending = state.pending
+  if (pending?.kind !== 'inspiration') return reject(state, 'no-decision', 'No Inspiration decision is pending')
+  if (pending.side !== side) return reject(state, 'no-decision', `Side ${pending.side} decides, not side ${side}`)
+  const { resume } = pending
+  const resolution = resolutionOf(resume.state, resume.action)
+  if (resolution === null || isRejection(resolution)) throw new Error('A paused action can no longer be resolved')
+  return runResolution(resume.state, resume.action, resolution, [...resume.answers, answer], resume.emitted)
 }
 
 function reject(state: BattleState, code: RejectionCode, message: string): ApplyResult {
@@ -490,12 +596,6 @@ function applyMove(state: BattleState, unitId: UnitId, to: Tile): ApplyResult {
   }
 }
 
-function applyBasicAttack(state: BattleState, unitId: UnitId, targetId: UnitId): ApplyResult {
-  const plan = checkAttack(state, unitId, BASIC_ATTACK, targetId)
-  if (isRejection(plan)) return { ok: false, state, rejection: plan }
-  return { ok: true, ...resolveAttack(state, plan) }
-}
-
 /**
  * Defend (rules §12): uses the Unit's Action and gives what data/skills/defend
  * gives (Guarded, Guard and Ward +2, until the start of its side's next
@@ -516,23 +616,27 @@ function applyDefend(state: BattleState, unitId: UnitId): ApplyResult {
 }
 
 /**
- * End the Turn (rules §17.4): statuses on the ending side count down, then
+ * End the Turn (rules §17.4): statuses on the ending side count down; if
+ * that ends Round 10, the turn limit decides the Battle (§19.2). Otherwise
  * the other side's Turn starts: Guarded (and the like) end, then Bleed ticks
  * in Unit order, which may end the Battle.
  */
 function applyEndTurn(state: BattleState): ApplyResult {
+  if (state.pending !== null) return { ok: false, state, rejection: pendingRejection(state.pending) }
   if (state.phase !== 'play' || state.firstSide === null) {
     return reject(state, 'wrong-phase', 'No Turn to end during deployment')
   }
-  if (state.pending !== null) {
-    return reject(state, 'decision-pending', `${state.pending.unit} must first choose where to step (${state.pending.skill})`)
-  }
   const ending = state.sideToAct
-  const next: Side = ending === 'A' ? 'B' : 'A'
+  const next = otherSide(ending)
   const counted = countDownStatuses(state, ending)
   const rested: BattleState = {
     ...counted.state,
     units: counted.state.units.map((u) => (u.hasMoved || u.hasActed ? { ...u, hasMoved: false, hasActed: false } : u)),
+  }
+  const ended: BattleEvent[] = [{ type: 'turnEnded', side: ending, turn: state.turnNumber[ending] }, ...counted.events]
+  if (ending !== state.firstSide && state.round >= ROUND_LIMIT) {
+    const over = turnLimit(rested)
+    return { ok: true, state: over.state, events: [...ended, over.event] }
   }
   const started = startTurn(rested, next, state.firstSide)
   const upkeep = endOwnTurnStartStatuses(started, next)
@@ -541,12 +645,24 @@ function applyEndTurn(state: BattleState): ApplyResult {
     ok: true,
     state: ticks.state,
     events: [
-      { type: 'turnEnded', side: ending, turn: state.turnNumber[ending] },
-      ...counted.events,
+      ...ended,
       { type: 'turnStarted', side: next, turn: started.turnNumber[next], round: started.round },
       ...upkeep.events,
       ...ticks.events,
     ],
+  }
+}
+
+/**
+ * Round 10 is over with no winner (rules §19.2, §17.4 end of Turn step 5):
+ * the side with more total damage dealt wins; equal totals are a draw.
+ */
+function turnLimit(state: BattleState): { state: BattleState; event: BattleEvent } {
+  const { A, B } = state.damageDealt
+  const winner: Side | null = A === B ? null : A > B ? 'A' : 'B'
+  return {
+    state: { ...state, outcome: { winner, cause: 'turnLimit' } },
+    event: { type: 'battleEnded', winner, cause: 'turnLimit', round: state.round, damageDealt: state.damageDealt },
   }
 }
 
@@ -568,7 +684,8 @@ export type PreviewResult =
  * Preview an action (spec "ดูตัวอย่าง action"): exact hit and critical chances
  * and damage ranges, computed without rolling. Never changes the state and
  * never draws from the dice stream (rules §21.1). An illegal action is
- * rejected with the same reason applyAction would give.
+ * rejected with the same reason applyAction would give. Inspiration is left
+ * out: the odds are those of the roll as made, before any reroll.
  */
 export function previewAction(state: BattleState, action: Action): PreviewResult {
   if (action.type === 'basicAttack') {

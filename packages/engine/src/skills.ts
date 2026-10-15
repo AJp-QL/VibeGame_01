@@ -8,9 +8,10 @@
  * without one is shown but never offered.
  */
 import { isOnBoard, sameTile, type Element, type Skill, type SkillTier, type Tile } from '@mt/shared'
-import type { ActionPreview, ApplyResult, BattleEvent, Rejection } from './battle.ts'
+import type { ActionPreview, ApplyResult, Rejection } from './battle.ts'
 import { attackOnce, checkActor, checkEnemyTarget, isRejection, previewAttack } from './combat.ts'
 import { FANGREL_SKILLS } from './fangrelSkills.ts'
+import { emit } from './resolution.ts'
 import { distance } from './movement.ts'
 import { QUILLFOX_SKILLS } from './quillfoxSkills.ts'
 import type { SkillHandler, SkillHandlers, SkillResolution, SkillUse } from './skillHandler.ts'
@@ -239,36 +240,39 @@ function book(state: BattleState, use: SkillUse): BattleState {
  * stopping once the user is down or the Battle is over), or the skill's
  * statuses on each target (saves where the data asks for one).
  */
-function resolveGeneric(before: BattleState, use: SkillUse): SkillResolution {
+function* resolveGeneric(before: BattleState, use: SkillUse): SkillResolution {
   let state = before
-  const events: BattleEvent[] = []
   for (const target of use.targets) {
     if (state.outcome !== null || findUnit(state, use.user.id) === undefined) break
     if (findUnit(state, target.id) === undefined) continue
     if (use.skill.attack !== undefined) {
-      const attacked = attackOnce(state, use.user.id, target.id, use.skill)
-      state = attacked.state
-      events.push(...attacked.events)
+      state = (yield* attackOnce(state, use.user.id, target.id, use.skill)).state
     } else {
       const user = findUnit(state, use.user.id) ?? use.user
-      const given = giveSkillStatuses(state, user, target.id, use.skill)
-      state = given.state
-      events.push(...given.events)
+      state = yield* giveSkillStatuses(state, user, target.id, use.skill)
     }
   }
-  return { state, events }
+  return state
 }
 
-/** Use a skill: book it, `skillUsed`, resolve, then offer Hit and Run's step if the skill has one. */
-export function applyUseSkill(state: BattleState, action: UseSkillAction): ApplyResult {
+/**
+ * Use a skill: the resolution of a legal `useSkill` (book it, `skillUsed`,
+ * resolve, then offer Hit and Run's step if the skill has one), or why it is
+ * not legal. Inspiration decisions on its d20s come first; the step is
+ * offered only once the skill has resolved completely.
+ */
+export function skillResolution(state: BattleState, action: UseSkillAction): SkillResolution | Rejection {
   const use = checkSkillUse(state, action)
-  if (isRejection(use)) return { ok: false, state, rejection: use }
+  if (isRejection(use)) return use
+  return resolveSkill(state, use)
+}
+
+function* resolveSkill(state: BattleState, use: SkillUse): SkillResolution {
   const handler = handlerOf(use.skill) ?? {}
   const booked = book(state, use)
-  const used: BattleEvent = { type: 'skillUsed', unit: use.user.id, skill: use.skill.id, targets: use.targets.map((t) => t.id) }
-  const resolved = (handler.resolve ?? resolveGeneric)(booked, use)
-  const after = offerRetreat(resolved.state, use)
-  return { ok: true, state: after, events: [used, ...resolved.events] }
+  yield* emit({ type: 'skillUsed', unit: use.user.id, skill: use.skill.id, targets: use.targets.map((t) => t.id) })
+  const resolved = yield* (handler.resolve ?? resolveGeneric)(booked, use)
+  return offerRetreat(resolved, use)
 }
 
 // --------------------------------------------------------------- preview
@@ -358,13 +362,13 @@ function offerRetreat(state: BattleState, use: SkillUse): BattleState {
   if (steps === undefined || state.outcome !== null) return state
   const user = findUnit(state, use.user.id)
   if (user === undefined || isImmobile(state, user) || retreatTiles(state, user, steps).length === 0) return state
-  return { ...state, pending: { kind: 'retreat', unit: user.id, skill: use.skill.id, steps } }
+  return { ...state, pending: { kind: 'retreat', side: user.side, unit: user.id, skill: use.skill.id, steps } }
 }
 
 /** Every legal answer to the pending step: each tile in reading order, then staying. */
 export function legalRetreats(state: BattleState): RetreatAction[] {
   const pending = state.pending
-  if (pending === null || state.outcome !== null) return []
+  if (pending?.kind !== 'retreat' || state.outcome !== null) return []
   const unit = findUnit(state, pending.unit)
   if (unit === undefined) return []
   return [
@@ -381,6 +385,9 @@ export function applyRetreat(state: BattleState, action: RetreatAction): ApplyRe
   const reject = (code: Rejection['code'], message: string): ApplyResult => ({ ok: false, state, rejection: { code, message } })
   if (state.phase !== 'play') return reject('wrong-phase', 'No step during deployment')
   const pending = state.pending
+  if (pending?.kind === 'inspiration') {
+    return reject('decision-pending', `Side ${pending.side} must first decide whether to use Inspiration`)
+  }
   if (pending === null) return reject('no-decision', 'There is no step to choose now')
   if (action.unit !== pending.unit) return reject('no-decision', `${pending.unit} chooses the step, not ${action.unit}`)
   const unit = findUnit(state, pending.unit)
