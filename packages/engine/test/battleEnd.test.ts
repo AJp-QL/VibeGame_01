@@ -11,11 +11,14 @@ import {
   type BattleState,
   type UnitId,
 } from '../src/index.ts'
-import { scenario1Battle } from './fixtures.ts'
+import { NEUTRAL_ELEMENTS, scenario1Battle as withElements, type BattleOptions } from './fixtures.ts'
 
 // Team A's Monsters get POW 30 (mod +10) so a few hits are enough:
 // a critical deals 2d8 + 10, up to 26.
 const STRONG = { 'A.m1': { pow: 30 }, 'A.m2': { pow: 30 } } as const
+
+/** Neutral elements so every roll here is one d20 (element and terrain have their own tests). */
+const scenario1Battle = (options: BattleOptions) => withElements({ elements: NEUTRAL_ELEMENTS, ...options })
 
 function accepted(result: ApplyResult): { state: BattleState; events: readonly BattleEvent[] } {
   if (!result.ok) throw new Error(result.rejection.message)

@@ -70,10 +70,18 @@ function playBattle(header: ReplayHeader, data: GameData = gameData, maxActions 
     const confirm = legal.find((a) => a.type === 'confirmDeployment')
     const attacks = legal.filter((a) => a.type === 'basicAttack')
     const moves = legal.filter((a) => a.type === 'move' || a.type === 'deploy')
+    const defends = legal.filter((a) => a.type === 'defend')
     const endTurn = legal.find((a) => a.type === 'endTurn')
+    const roll = pick([0, 1, 2, 3, 4])
     const action =
       confirm ??
-      (attacks.length > 0 ? pick(attacks) : moves.length > 0 && pick([0, 1, 2, 3]) !== 0 ? pick(moves) : endTurn ?? pick(legal))
+      (attacks.length > 0
+        ? pick(attacks)
+        : roll === 1 && defends.length > 0
+          ? pick(defends)
+          : moves.length > 0 && roll !== 0
+            ? pick(moves)
+            : (endTurn ?? pick(legal)))
     const result = applyAction(state, action)
     if (!result.ok) throw new Error(`legal action rejected: ${result.rejection.message}`)
     state = result.state
@@ -116,6 +124,7 @@ describe('Replay of a Battle', () => {
   it('replays Battles through deployment and initiative to the same final state, for many Dice Seeds, Scenarios and Boards', () => {
     let ended = 0
     let played = 0
+    let defended = 0
     for (const diceSeed of SEEDS) {
       for (const scenarioId of ['scenario_1', 'scenario_2']) {
         for (const boardId of ['crossroads', 'shallows']) {
@@ -129,10 +138,12 @@ describe('Replay of a Battle', () => {
           expect(result.final.initiative).not.toBeNull()
           played++
           if (game.final.outcome !== null) ended++
+          defended += game.actions.filter((a) => a.type === 'defend').length
         }
       }
     }
     expect(played).toBe(SEEDS.length * 4)
+    expect(defended).toBeGreaterThan(0)
     // Most of these Battles run to a winner, so whole Battles are covered, not just openings.
     expect(ended).toBeGreaterThan(played / 2)
   })

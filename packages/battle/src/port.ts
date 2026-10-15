@@ -31,6 +31,8 @@ export interface BattleSnapshot {
   readonly reachable: readonly Tile[]
   /** Tiles of the Units the selected Unit can attack now, from the engine's legal actions. */
   readonly targets: readonly Tile[]
+  /** Tiles of enemies in range that line of sight blocks: shown as not selectable. */
+  readonly blockedTargets: readonly Tile[]
   /** The target picked for the attack being previewed, if any. */
   readonly pendingTarget: UnitId | null
 }

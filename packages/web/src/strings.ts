@@ -5,8 +5,8 @@
  * Guard/Ward. An English table can be added later with the same shape (spec:
  * English UI is out of scope).
  */
-import type { Element, Side } from '@mt/shared'
-import type { BattleEndCause, RejectionCode } from '@mt/engine'
+import type { Element, Side, Terrain } from '@mt/shared'
+import type { BattleEndCause, RejectionCode, StatusId } from '@mt/engine'
 import type { Mode } from './battleChoice.ts'
 
 /** "+2", "0", "−1" (true minus sign). */
@@ -27,12 +27,17 @@ export const th = {
   hintSelect: (side: Side) =>
     `แตะ Unit ของทีม ${side} เพื่อดูช่องที่เดินได้และศัตรูที่โจมตีได้ เล่นทีละ Unit ตามลำดับที่เลือกเอง`,
   hintMove: 'แตะช่องที่สว่างเพื่อเดิน หรือแตะ Unit เดิมอีกครั้งเพื่อยกเลิก',
-  hintMoveOrAttack: 'แตะช่องที่สว่างเพื่อเดิน หรือกด "โจมตี" เพื่อเลือกเป้า',
-  hintAttackOnly: 'Unit นี้เดินแล้ว กด "โจมตี" เพื่อเลือกเป้าได้',
+  hintMoveOrAttack: 'แตะช่องที่สว่างเพื่อเดิน กด "โจมตี" เพื่อเลือกเป้า หรือกด "ป้องกัน"',
+  hintMoveOrDefend: 'แตะช่องที่สว่างเพื่อเดิน หรือกด "ป้องกัน" (Guard และ Ward +2 จนถึง Turn ถัดไปของทีมตัวเอง)',
+  hintAttackOnly: 'Unit นี้เดินแล้ว กด "โจมตี" เพื่อเลือกเป้า หรือกด "ป้องกัน" ได้',
+  hintDefendOnly: 'Unit นี้เดินแล้ว ยังกด "ป้องกัน" ได้',
   hintAlreadyMoved: 'Unit นี้เดินไปแล้วใน Turn นี้',
   hintNothingLeft: 'Unit นี้เดินและใช้ Action ไปแล้วใน Turn นี้',
   hintChooseTarget: 'แตะศัตรูที่ไฮไลต์สีแดงเพื่อดูโอกาสโดนก่อนยืนยัน',
   hintConfirm: 'ดูโอกาสโดนและ damage แล้วกดยืนยัน หรือแตะศัตรูตัวอื่นเพื่อเปลี่ยนเป้า',
+  hintAllBlocked: 'ศัตรูในระยะถูก Unit อื่นขวางแนวเล็งทั้งหมด (ช่องที่ขีดกากบาท) ลองเดินไปตำแหน่งอื่นก่อน',
+  blockedTitle: 'เลือกไม่ได้: ถูกขวางแนวเล็ง (line of sight)',
+  blockedBy: (target: string, blockers: string) => `${target}: ${blockers} ขวางอยู่`,
   hintBattleOver: 'Battle จบแล้ว',
   hintSwitchEnds: (unit: string) => `ถ้าเริ่มเล่น Unit อื่น ${unit} จะเล่นต่อใน Turn นี้ไม่ได้`,
   hintActivationOver: 'Unit นี้เล่นจบแล้วใน Turn นี้ เพราะเริ่มเล่น Unit อื่นไปแล้ว',
@@ -44,6 +49,7 @@ export const th = {
   keepPlaying: 'กลับไปเล่นต่อ',
 
   attack: 'โจมตี',
+  defend: 'ป้องกัน',
   confirmAttack: 'ยืนยันโจมตี',
   cancel: 'ยกเลิก',
   playAgain: 'เล่นอีกครั้ง (ตั้งค่าเดิม)',
@@ -105,6 +111,10 @@ export const th = {
   move: (tiles: number) => `Move ${tiles} ช่อง`,
   hp: (hp: number, maxHp: number) => `HP ${hp}/${maxHp}`,
   defences: (guard: number, ward: number) => `Guard ${guard} / Ward ${ward}`,
+  defencesGuarded: (guard: number, ward: number, bonus: number) =>
+    `Guard ${guard} / Ward ${ward} (Guarded +${bonus} จนถึงเริ่ม Turn ถัดไปของทีมตัวเอง)`,
+  standingOn: (terrain: string) => `ยืนบนช่อง${terrain}`,
+  guardedTag: (bonus: number) => `Guarded +${bonus}`,
   attackBonus: (bonus: number) => `โจมตี ${signed(bonus)}`,
   down: 'ล้ม',
   element: {
@@ -121,6 +131,22 @@ export const th = {
     aquatic: 'Aquatic',
   },
   defence: { guard: 'Guard', ward: 'Ward' },
+  terrain: {
+    normal: 'ปกติ',
+    forest: 'ป่า',
+    water: 'น้ำ',
+    mountain: 'ภูเขา',
+    desert: 'ทะเลทราย',
+    light: 'แสง',
+    dark: 'มืด',
+  } satisfies Record<Terrain, string>,
+
+  legendTitle: 'Terrain และธาตุ',
+  legendWheel: 'ธาตุ: ป่า > น้ำ > ภูเขา > ทะเลทราย > ป่า และแสงกับมืดชนะกันและกัน ธาตุที่ชนะได้ advantage ธาตุที่แพ้ได้ disadvantage (Tamer ไม่มีธาตุ)',
+  legendTerrain:
+    'Monster ที่ยืนบนช่องธาตุเดียวกับตัวเองโจมตีด้วย advantage บนช่องธาตุที่ชนะธาตุตัวเองโจมตีด้วย disadvantage Tamer และ Flying ไม่ได้รับผล Aquatic นับช่องน้ำเป็นธาตุตัวเอง terrain ไม่บังแนวเล็ง',
+  legendProtection: 'Tamer ที่มี Monster ฝ่ายเดียวกันยืนติด: ศัตรูโจมตี Tamer ด้วย disadvantage ทุกระยะ',
+  legendLineOfSight: 'โจมตีจากระยะ 2 ขึ้นไป: Unit ใดก็ตามที่อยู่บนเส้นระหว่างผู้โจมตีกับเป้าจะบัง ยกเว้นผู้โจมตีเป็น Flying',
 
   hpTitle: 'HP ของ Unit บน Board',
 
@@ -131,6 +157,21 @@ export const th = {
   previewDamage: (min: number, max: number) => `damage ${min}–${max}`,
   previewCritical: (percent: string, min: number, max: number) => `โอกาส critical ${percent} (damage ${min}–${max})`,
   previewRules: 'ทอย 20 = critical โดนเสมอ, ทอย 1 พลาดเสมอ',
+  previewGuarded: (bonus: number) => `(รวม Guarded +${bonus})`,
+  rollEffect: { advantage: 'Advantage', disadvantage: 'Disadvantage' },
+  previewNoSources: 'ไม่มี advantage หรือ disadvantage: ทอย d20 ลูกเดียว',
+  previewNet: {
+    advantage: 'ผลรวม: advantage ทอย d20 2 ลูกเอาค่าสูง',
+    disadvantage: 'ผลรวม: disadvantage ทอย d20 2 ลูกเอาค่าต่ำ',
+    cancelled: 'ผลรวม: advantage กับ disadvantage หักล้างกัน ทอย d20 ลูกเดียว',
+  },
+  sourceElementWins: (attacker: string, target: string) => `ธาตุ${attacker}ชนะธาตุ${target}ของเป้า`,
+  sourceElementLoses: (attacker: string, target: string) => `ธาตุ${target}ของเป้าชนะธาตุ${attacker}`,
+  sourceTerrainMatch: (terrain: string) => `ยืนบนช่อง${terrain} ตรงกับธาตุตัวเอง`,
+  sourceTerrainAquatic: 'ยืนบนช่องน้ำ: Aquatic นับช่องน้ำเป็นธาตุตัวเอง',
+  sourceTerrainWeak: (terrain: string, own: string) => `ยืนบนช่อง${terrain} ซึ่งชนะธาตุ${own}ของตัวเอง`,
+  sourceTamerProtected: (protectors: string) =>
+    `เป้าเป็น Tamer ที่ได้รับการป้องกัน (${protectors} ยืนติด) Command หักล้างไม่ได้`,
 
   boardMiss: 'พลาด',
   boardCritical: 'critical!',
@@ -163,6 +204,11 @@ export const th = {
   logDamage: (target: string, amount: number, dice: string, rolls: readonly number[], modifier: number, hp: number, maxHp: number) =>
     `${target} เสีย ${amount} HP (${dice}: ${rolls.join(' + ')}${modifier === 0 ? '' : ` ${signed(modifier)}`}) เหลือ HP ${hp}/${maxHp}`,
   logUnitDown: (unit: string) => `${unit} ล้มและออกจาก Board`,
+  logDefended: (unit: string) => `${unit} ใช้ Defend`,
+  logGuarded: (unit: string, bonus: number) =>
+    `${unit} ติด Guarded: Guard และ Ward +${bonus} จนถึงเริ่ม Turn ถัดไปของทีมตัวเอง`,
+  logStatusEnded: (unit: string, status: string) => `${status} ของ ${unit} หมดแล้ว`,
+  status: { guarded: 'Guarded' } satisfies Record<StatusId, string>,
   logBattleEnded: (winner: Side, round: number) => `Battle จบใน Round ${round}: ทีม ${winner} ชนะ`,
 
   cause: {
@@ -190,6 +236,7 @@ export const th = {
     'unknown-skill': 'ไม่พบ skill นี้',
     'not-an-enemy': 'โจมตีได้เฉพาะ Unit ของอีกทีม',
     'out-of-range': 'เป้าอยู่นอกระยะ',
+    'no-line-of-sight': 'มี Unit ขวางแนวเล็ง (line of sight) จึงโจมตีเป้านี้ไม่ได้',
   } satisfies Record<RejectionCode, string>,
 
   battleMenu: {
@@ -238,6 +285,7 @@ export const th = {
       confirmDeployment: (side: string) => `ทีม ${side} ยืนยันการวาง`,
       move: (unit: string, tile: string) => `${unit} เดินไป ${tile}`,
       attack: (unit: string, skill: string, target: string) => `${unit} ใช้ ${skill} ใส่ ${target}`,
+      defend: (unit: string) => `${unit} ป้องกัน (Defend)`,
       endTurn: (side: string) => `ทีม ${side} จบ Turn`,
       other: (type: string) => `action "${type}"`,
     },

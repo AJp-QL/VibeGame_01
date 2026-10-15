@@ -7,7 +7,9 @@
  * may see comes from `unitsVisibleTo`.
  *
  * Attack flow (no hover anywhere): tap a Unit → its Moves show; press Attack
- * → enemies in range light up → tap one → preview → confirm or cancel.
+ * → enemies in range light up (those behind a Unit are marked as blocked,
+ * with the reason) → tap one → preview → confirm or cancel. Defend is one
+ * button: the selected Unit uses its Action to become Guarded.
  */
 import type { Tile } from '@mt/shared'
 import {
@@ -34,6 +36,14 @@ export type HotseatScreen = 'board' | 'handoff' | 'initiative'
 /** What the selected Unit is about to do: Move (default) or pick an attack target. */
 export type SelectionMode = 'move' | 'attack'
 
+/** An enemy in range that the selected Unit cannot attack because Units stand in the way (rules §7). */
+export interface BlockedTarget {
+  readonly unit: UnitId
+  readonly tile: Tile
+  /** The Units on the line, from the engine's rejection. */
+  readonly blockedBy: readonly UnitId[]
+}
+
 export interface SessionSnapshot extends BattleSnapshot {
   /** Why the last attempted action was refused, if it was. */
   readonly rejection: RejectionCode | null
@@ -45,6 +55,10 @@ export interface SessionSnapshot extends BattleSnapshot {
   readonly mode: SelectionMode
   /** The selected Unit has at least one enemy it can attack now. */
   readonly canAttack: boolean
+  /** Enemies in range of the selected Unit that line of sight blocks, from the engine. */
+  readonly blocked: readonly BlockedTarget[]
+  /** The selected Unit may use Defend now (it is in the legal actions). */
+  readonly canDefend: boolean
   /** Odds of the attack on `pendingTarget`, from the engine. */
   readonly preview: AttackPreview | null
 }
@@ -57,8 +71,10 @@ export interface BattleSession extends BattleSessionPort {
   /** Close the hand-off or initiative screen. */
   continueHotseat(): void
   endTurn(): void
-  /** Show the enemies the selected Unit can attack. */
+  /** Show the enemies the selected Unit can attack, and those line of sight blocks. */
   chooseAttack(): void
+  /** The selected Unit uses Defend as its Action. */
+  defend(): void
   /** Carry out the previewed attack. */
   confirmAttack(): void
   /** Step back: drop the previewed target, then leave attack mode, then the selection. */
@@ -66,7 +82,16 @@ export interface BattleSession extends BattleSessionPort {
 }
 
 /** Derived from the engine on every change; never stored on its own. */
-type Computed = 'units' | 'canAct' | 'reachable' | 'targets' | 'canAttack' | 'preview'
+type Computed =
+  | 'units'
+  | 'canAct'
+  | 'reachable'
+  | 'targets'
+  | 'blockedTargets'
+  | 'canAttack'
+  | 'blocked'
+  | 'canDefend'
+  | 'preview'
 
 /** The tiles the legal actions let `unit` go to: Move destinations, or placements during deployment. */
 function moveTiles(actions: readonly Action[], unit: UnitId | null): Tile[] {
@@ -80,6 +105,22 @@ function moveTiles(actions: readonly Action[], unit: UnitId | null): Tile[] {
 function attackTargets(actions: readonly Action[], unit: UnitId | null): UnitId[] {
   if (unit === null) return []
   return actions.flatMap((action) => (action.type === 'basicAttack' && action.unit === unit ? [action.target] : []))
+}
+
+/**
+ * Enemies in range of `unit` that the engine refuses only because of line of
+ * sight. The engine checks range before line of sight, so this rejection
+ * means the target is in range.
+ */
+function blockedTargets(state: BattleState, unit: UnitId | null): BlockedTarget[] {
+  if (unit === null || state.phase !== 'play') return []
+  const side = state.units.find((u) => u.id === unit)?.side
+  return state.units.flatMap((target) => {
+    if (target.side === side) return []
+    const result = previewAction(state, { type: 'basicAttack', unit, target: target.id })
+    if (result.ok || result.rejection.code !== 'no-line-of-sight') return []
+    return [{ unit: target.id, tile: target.tile, blockedBy: result.rejection.blockedBy ?? [] }]
+  })
 }
 
 /** Units of the side to act that have at least one legal action. */
@@ -114,6 +155,7 @@ export function createBattleSession(initial: BattleState): BattleSession {
     const { state, selectedUnit, mode, pendingTarget } = base
     const actions = legalActions(state)
     const targets = attackTargets(actions, selectedUnit)
+    const blocked = blockedTargets(state, selectedUnit)
     let preview: AttackPreview | null = null
     if (selectedUnit !== null && pendingTarget !== null) {
       const result = previewAction(state, { type: 'basicAttack', unit: selectedUnit, target: pendingTarget })
@@ -132,7 +174,10 @@ export function createBattleSession(initial: BattleState): BattleSession {
               return unit ? [unit.tile] : []
             })
           : [],
+      blockedTargets: mode === 'attack' ? blocked.map((b) => b.tile) : [],
       canAttack: targets.length > 0,
+      blocked,
+      canDefend: actions.some((a) => a.type === 'defend' && a.unit === selectedUnit),
       preview,
     }
   }
@@ -192,6 +237,11 @@ export function createBattleSession(initial: BattleState): BattleSession {
         update({ pendingTarget: boardInput.unit, rejection: null })
         return
       }
+      if (mode === 'attack' && snapshot.blocked.some((b) => b.unit === boardInput.unit)) {
+        // Not selectable: say why instead of dropping the selection.
+        update({ pendingTarget: null, rejection: 'no-line-of-sight' })
+        return
+      }
       selectUnit(boardInput.unit)
       return
     }
@@ -223,9 +273,13 @@ export function createBattleSession(initial: BattleState): BattleSession {
     },
     endTurn: () => dispatch({ type: 'endTurn' }),
     chooseAttack() {
-      if (snapshot.selectedUnit !== null && snapshot.canAttack) {
+      if (snapshot.selectedUnit !== null && (snapshot.canAttack || snapshot.blocked.length > 0)) {
         update({ mode: 'attack', pendingTarget: null, rejection: null })
       }
+    },
+    defend() {
+      const { selectedUnit } = snapshot
+      if (selectedUnit !== null) dispatch({ type: 'defend', unit: selectedUnit })
     },
     confirmAttack() {
       const { selectedUnit, pendingTarget } = snapshot

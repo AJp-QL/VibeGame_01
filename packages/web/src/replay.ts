@@ -136,6 +136,7 @@ export function createReplayPlayer(initial: BattleState, steps: readonly ReplayS
       selectedUnit: null,
       reachable: [],
       targets: [],
+      blockedTargets: [],
       pendingTarget: null,
       step,
       total: steps.length,

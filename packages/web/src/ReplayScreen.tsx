@@ -123,6 +123,8 @@ function describeAction(action: Action, actor: Side, state: BattleState, data: G
       return th.replay.action.move(label(action.unit), tileName(action.to))
     case 'basicAttack':
       return th.replay.action.attack(label(action.unit), data.skills[BASIC_ATTACK]?.name ?? BASIC_ATTACK, label(action.target))
+    case 'defend':
+      return th.replay.action.defend(label(action.unit))
     case 'endTurn':
       return th.replay.action.endTurn(actor)
     default:
