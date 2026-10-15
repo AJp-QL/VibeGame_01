@@ -5,6 +5,8 @@
     { "path": "packages/shared/test" },
     { "path": "packages/engine" },
     { "path": "packages/engine/test" },
+    { "path": "packages/ai" },
+    { "path": "packages/ai/test" },
     { "path": "packages/battle" },
     { "path": "packages/web" },
     { "path": "packages/web/test" },
