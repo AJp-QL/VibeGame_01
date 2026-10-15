@@ -32,6 +32,14 @@ export interface AiProfile {
   readonly name: string
   readonly mode: AiMode
   readonly heuristics: AiHeuristics
+  /**
+   * Reproduce sim.py's cache quirk (sim-parity only): when sim.py values Hit
+   * and Run's step it computes the position value of each neighbouring tile
+   * with the Unit still on the attack tile, and caches it; when the plan
+   * later reaches that tile as a destination it reuses that value. In-game
+   * profiles compute every position value with the Unit on the tile.
+   */
+  readonly simQuirks: boolean
 }
 
 export const NO_HEURISTICS: AiHeuristics = { protectTamer: 0, focusFire: 0 }
@@ -43,16 +51,16 @@ export const AI_MODES: readonly AiMode[] = ['greedy', 'tamer_rush', 'neutral']
 
 /** Sim-parity profiles: sim.py's AI as is (ticket 16 compares against sim v4 with these). */
 export const SIM_PROFILES: Readonly<Record<AiMode, AiProfile>> = {
-  greedy: { name: 'sim:greedy', mode: 'greedy', heuristics: NO_HEURISTICS },
-  tamer_rush: { name: 'sim:tamer_rush', mode: 'tamer_rush', heuristics: NO_HEURISTICS },
-  neutral: { name: 'sim:neutral', mode: 'neutral', heuristics: NO_HEURISTICS },
+  greedy: { name: 'sim:greedy', mode: 'greedy', heuristics: NO_HEURISTICS, simQuirks: true },
+  tamer_rush: { name: 'sim:tamer_rush', mode: 'tamer_rush', heuristics: NO_HEURISTICS, simQuirks: true },
+  neutral: { name: 'sim:neutral', mode: 'neutral', heuristics: NO_HEURISTICS, simQuirks: true },
 }
 
 /** In-game profiles: sim.py's modes plus protecting the Tamer and focusing fire. */
 export const GAME_PROFILES: Readonly<Record<AiMode, AiProfile>> = {
-  greedy: { name: 'game:greedy', mode: 'greedy', heuristics: GAME_HEURISTICS },
-  tamer_rush: { name: 'game:tamer_rush', mode: 'tamer_rush', heuristics: GAME_HEURISTICS },
-  neutral: { name: 'game:neutral', mode: 'neutral', heuristics: GAME_HEURISTICS },
+  greedy: { name: 'game:greedy', mode: 'greedy', heuristics: GAME_HEURISTICS, simQuirks: false },
+  tamer_rush: { name: 'game:tamer_rush', mode: 'tamer_rush', heuristics: GAME_HEURISTICS, simQuirks: false },
+  neutral: { name: 'game:neutral', mode: 'neutral', heuristics: GAME_HEURISTICS, simQuirks: false },
 }
 
 /** What the web game plays with. */

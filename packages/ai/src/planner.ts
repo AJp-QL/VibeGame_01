@@ -125,29 +125,37 @@ function counterEv(ctx: Ctx, st: BattleState, unit: UnitState, enemy: UnitState)
 
 // ------------------------------------------------------------- position
 
-/** sim.py `pos_value` of `unit` as it stands in `st` (cached per plan by tile). */
-function posValue(ctx: Ctx, st: BattleState, unit: UnitState): number {
+/**
+ * sim.py `pos_value` of `unit` standing on `at`, with the other Units as in
+ * `st` (cached per plan by tile). Normally `unit` stands on `at` in `st`; with
+ * sim.py's quirk (Hit and Run's step) it is still on its attack tile.
+ */
+function posValue(ctx: Ctx, st: BattleState, unit: UnitState, at: Tile = unit.tile): number {
+  const cacheKey = `${unit.id}@${at.x},${at.y}`
+  const cached = ctx.posValues.get(cacheKey)
+  if (cached !== undefined) return cached
   const h = ctx.profile.heuristics
-  const hidden = hiddenOn(ctx, st, unit, unit.tile)
-  let v = -ctx.pen(st, unit, ctx.threat(st, unit, 0, hidden))
+  const hidden = hiddenOn(ctx, st, unit, at)
+  let v = -ctx.pen(st, unit, ctx.threat(st, unit, 0, hidden, at))
   const enemies = enemiesOf(st, unit)
   if (unit.kind === 'tamer') {
     const monsters = alliesOf(st, unit).filter((m) => m.kind === 'monster')
-    if (monsters.some((m) => distance(m.tile, unit.tile) <= 3)) v += 0.3
-    if (h.protectTamer > 0 && monsters.some((m) => distance(m.tile, unit.tile) === 1)) v += h.protectTamer
+    if (monsters.some((m) => distance(m.tile, at) <= 3)) v += 0.3
+    if (h.protectTamer > 0 && monsters.some((m) => distance(m.tile, at) === 1)) v += h.protectTamer
   } else {
-    v += 0.8 * ctx.terrainMod(st, unit, unit.tile)
+    v += 0.8 * ctx.terrainMod(st, unit, at)
     const tamer = tamerOf(st, unit.side)
     if (tamer !== undefined) v -= ctx.pen(st, tamer, ctx.threat(st, tamer)) * (1 + h.protectTamer)
     const r = ctx.maxRange(unit)
     if (ctx.profile.mode === 'tamer_rush') {
       const enemyTamer = enemies.find((e) => e.kind === 'tamer')
-      if (enemyTamer !== undefined) v -= 0.5 * Math.max(0, distance(unit.tile, enemyTamer.tile) - r)
+      if (enemyTamer !== undefined) v -= 0.5 * Math.max(0, distance(at, enemyTamer.tile) - r)
     } else if (enemies.length > 0) {
-      const dmin = Math.min(...enemies.map((e) => distance(unit.tile, e.tile)))
+      const dmin = Math.min(...enemies.map((e) => distance(at, e.tile)))
       v -= 0.25 * Math.max(0, dmin - r)
     }
   }
+  ctx.posValues.set(cacheKey, v)
   return v
 }
 
@@ -346,8 +354,13 @@ function bestStep(ctx: Ctx, st: BattleState, unit: UnitState, pv0: number): { ti
   for (const d of NEIGHBOURS) {
     const q = { x: unit.tile.x + d.x, y: unit.tile.y + d.y }
     if (!isOnBoard(q) || st.units.some((u) => sameTile(u.tile, q))) continue
-    const moved = withUnitAt(st, unit.id, q)
-    const dv = posValue(ctx, moved, findUnit(moved, unit.id) ?? unit) - pv0
+    let value: number
+    if (ctx.profile.simQuirks) value = posValue(ctx, st, unit, q)
+    else {
+      const moved = withUnitAt(st, unit.id, q)
+      value = posValue(ctx, moved, findUnit(moved, unit.id) ?? unit)
+    }
+    const dv = value - pv0
     if (dv > gain) {
       best = q
       gain = dv
@@ -371,10 +384,10 @@ function areaCandidates(ctx: Ctx, st: BattleState, unit: UnitState, skill: Skill
       if (inArea.length === 0) continue
       const scored: { v: number; e: UnitState }[] = []
       for (const e of inArea) {
-        const p = legalPreview(st, { type: 'useSkill', unit: unit.id, skill: skill.id, tile: centre, targets: [e.id] })
-        if (p?.type !== 'area') continue
-        const first = p.attacks[0]
-        if (first !== undefined) scored.push({ v: attackValue(ctx, st, unit, e, skill, first), e })
+        // Hittable from here (Taunted aside: the whole choice is checked below).
+        const single = previewAction(st, { type: 'useSkill', unit: unit.id, skill: skill.id, tile: centre, targets: [e.id] })
+        if (!single.ok && single.rejection.code !== 'taunted') continue
+        scored.push({ v: attackValue(ctx, st, unit, e, skill, ctx.preview(st, unit, e, skill.id)), e })
       }
       if (scored.length === 0) continue
       const key = scored.map((s) => s.e.id).join(',')
@@ -465,16 +478,48 @@ interface Dest {
   readonly move: Action | null
 }
 
-/** Where `unit` can end its Move: staying, walking (engine order), then Blink tiles not reachable on foot (reading order). */
+/**
+ * sim.py's order of tiles around `from` (`reachable`): breadth first,
+ * neighbours in reading order, through tiles a Unit could pass. Only the
+ * order of equal-valued plans depends on it (the first one wins, as in sim.py);
+ * which tiles are reachable is the engine's `legalActions`.
+ */
+function simOrder(st: BattleState, unit: UnitState): Map<number, number> {
+  const passOver = unit.kind === 'monster' && unit.movement === 'flying'
+  const occupied = new Set(st.units.filter((u) => u.id !== unit.id).map((u) => u.tile.y * 7 + u.tile.x))
+  const order = new Map<number, number>([[unit.tile.y * 7 + unit.tile.x, 0]])
+  let frontier: Tile[] = [unit.tile]
+  while (frontier.length > 0) {
+    const next: Tile[] = []
+    for (const p of frontier) {
+      for (const d of NEIGHBOURS) {
+        const q = { x: p.x + d.x, y: p.y + d.y }
+        const k = q.y * 7 + q.x
+        if (!isOnBoard(q) || order.has(k)) continue
+        order.set(k, order.size)
+        if (!occupied.has(k) || passOver) next.push(q)
+      }
+    }
+    frontier = next
+  }
+  return order
+}
+
+/** Where `unit` can end its Move: staying, walking, then Blink tiles not reachable on foot (reading order), as sim.py. */
 function destinations(st: BattleState, unit: UnitState, legal: readonly Action[]): Dest[] {
-  const dests: Dest[] = [{ tile: unit.tile, move: null }]
+  const walks: Dest[] = []
   const blinks: Dest[] = []
   for (const action of legal) {
-    if (action.type === 'move' && action.unit === unit.id) dests.push({ tile: action.to, move: action })
+    if (action.type === 'move' && action.unit === unit.id) walks.push({ tile: action.to, move: action })
     else if (action.type === 'useSkill' && action.unit === unit.id && action.tile !== undefined && st.skills[action.skill]?.effects?.replacesMove === true) {
       blinks.push({ tile: action.tile, move: action })
     }
   }
+  const order = simOrder(st, unit)
+  const rank = (t: Tile) => order.get(t.y * 7 + t.x) ?? 999
+  walks.sort((a, b) => rank(a.tile) - rank(b.tile))
+  blinks.sort((a, b) => a.tile.y - b.tile.y || a.tile.x - b.tile.x)
+  const dests: Dest[] = [{ tile: unit.tile, move: null }, ...walks]
   for (const b of blinks) if (!dests.some((d) => sameTile(d.tile, b.tile))) dests.push(b)
   return dests
 }
@@ -490,7 +535,13 @@ interface Scored {
  * sim.py `plan`: the best activation of `unit` from the real state, and its
  * gain over staying put. `legal` is `legalActions(ctx.base)`.
  */
-export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[]): Plan {
+export interface PlanDebug {
+  pv: Record<string, number>
+  cands: [number, string, string, string][]
+}
+
+export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[], debug?: PlanDebug): Plan {
+  ctx.beginPlan()
   const st = ctx.base
   const origin = unit.tile
   const dests = destinations(st, unit, legal)
@@ -553,6 +604,13 @@ export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[]): P
 
   let best: Scored | undefined
   for (const s of pool) if (best === undefined || s.score > best.score) best = s
+  if (debug !== undefined) {
+    for (const [k, v] of pv) debug.pv[k] = v
+    debug.cands = [...pool]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 12)
+      .map((s) => [Math.round(s.score * 1e4) / 1e4, s.order, key(s.dest.tile), s.candidate === null ? 'none' : debugKey(s.candidate.action)])
+  }
   const pvOrigin = pv.get(key(origin)) ?? 0
   if (best === undefined) {
     return { unit: unit.id, order: 'mf', dest: origin, move: null, action: null, retreat: null, command: null, gain: 0 }
@@ -567,6 +625,19 @@ export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[]): P
     retreat: best.candidate?.retreat ?? null,
     command: unit.kind === 'tamer' ? (cmdAt.get(key(dest.tile)) ?? null) : null,
     gain: best.score - pvOrigin,
+  }
+}
+
+function debugKey(action: Action): string {
+  switch (action.type) {
+    case 'basicAttack':
+      return `basic_attack>${action.target}`
+    case 'useSkill':
+      if (action.targets !== undefined) return `${action.skill}@${action.tile?.x},${action.tile?.y}>${[...action.targets].sort().join('+')}`
+      if (action.element !== undefined) return `${action.skill}@${action.tile?.x},${action.tile?.y}:${action.element}`
+      return action.target !== undefined ? `${action.skill}>${action.target}` : action.skill
+    default:
+      return action.type
   }
 }
 

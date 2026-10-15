@@ -53,6 +53,8 @@ export class Ctx {
   private readonly damageSkillsCache = new Map<UnitId, readonly DamageSkill[]>()
   private readonly threats = new Map<string, number>()
   private readonly bestEvs = new Map<string, number>()
+  /** Position values of the plan being made, by Unit and tile (sim.py's `('pv', uid, d)` cache). */
+  readonly posValues = new Map<string, number>()
 
   constructor(profile: AiProfile, side: Side, base: BattleState, done: ReadonlySet<UnitId>) {
     this.profile = profile
@@ -60,6 +62,12 @@ export class Ctx {
     this.base = base
     this.done = done
     this.tamerWeight = profile.mode === 'tamer_rush' ? 5 : profile.mode === 'neutral' ? 1 : 2
+  }
+
+  /** Start planning one Unit's activation: sim.py clears its caches per plan (`self._tc = {}`). */
+  beginPlan(): void {
+    this.posValues.clear()
+    if (this.profile.simQuirks) this.threats.clear()
   }
 
   // ------------------------------------------------------------ units
@@ -212,18 +220,19 @@ export class Ctx {
    * sim.py `threat`: expected damage the enemies could deal `unit` (standing
    * where it is in `st`) on their next Turn, each enemy's best ready attack
    * within its move + reach. `extraDefence`: as if Guarded by that much;
-   * `hidden`: only enemies that can come next to it count.
+   * `hidden`: only enemies that can come next to it count. `at`: the tile
+   * reach is measured to (sim.py quirk: it can differ from where the Unit is).
    */
-  threat(st: BattleState, unit: UnitState, extraDefence = 0, hidden = false): number {
+  threat(st: BattleState, unit: UnitState, extraDefence = 0, hidden = false, at: Tile = unit.tile): number {
     const prot = protectedNow(st, unit)
-    const key = `${unit.id}@${unit.tile.x}${unit.tile.y}:${extraDefence}:${hidden ? 1 : 0}:${prot ? 1 : 0}`
+    const key = `${unit.id}@${at.x}${at.y}:${extraDefence}:${hidden ? 1 : 0}:${prot ? 1 : 0}`
     const cached = this.threats.get(key)
     if (cached !== undefined) return cached
     let total = 0
     for (const enemy of st.units) {
       if (enemy.side === unit.side) continue
       const mv = moveRangeNow(st, enemy)
-      const dd = distance(enemy.tile, unit.tile)
+      const dd = distance(enemy.tile, at)
       if (dd > mv + this.maxRange(enemy)) continue
       if (hidden && dd > mv + 1) continue
       let best = 0
