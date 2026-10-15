@@ -1,5 +1,6 @@
 import { useState, useSyncExternalStore } from 'react'
 import {
+  COUNTERATTACK,
   createBattle,
   decidingSide,
   derivedValues,
@@ -18,7 +19,7 @@ import {
 } from '@mt/engine'
 import { diceText, skillSummary, statName, statusDurationText, statusEffectText, statusName } from './skillText.ts'
 import { GLYPH_ALPHA, glyphColour, TERRAIN_COLOURS, TERRAIN_GLYPHS } from '@mt/battle'
-import { DataError, tileName, type GameData, type Side, type Terrain } from '@mt/shared'
+import { DataError, isOnBoard, tileName, type GameData, type Side, type Terrain } from '@mt/shared'
 import { BattleView } from './BattleView.tsx'
 import { loadBundledGameData } from './gameData.ts'
 import { Menu, type ReplayNotice } from './Menu.tsx'
@@ -178,6 +179,7 @@ function namer(state: BattleState, data: GameData): (id: string) => string {
 }
 
 function skillName(data: GameData, id: string): string {
+  if (id === COUNTERATTACK) return th.counterattackName
   return data.skills[id]?.name ?? id
 }
 
@@ -989,6 +991,18 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
       return [th.logRetreated(name(event.unit), tileName(event.from), tileName(event.to))]
     case 'retreatDeclined':
       return [th.logRetreatDeclined(name(event.unit))]
+    case 'unitPushed':
+      return [th.logPushed(name(event.unit), name(event.by), tileName(event.from), tileName(event.to))]
+    case 'pushBlocked':
+      return [
+        th.logPushBlocked(
+          name(event.unit),
+          isOnBoard(event.tile) ? tileName(event.tile) : '',
+          event.blockedBy === 'offBoard' ? null : name(event.blockedBy),
+        ),
+      ]
+    case 'counterattack':
+      return [th.logCounterattack(name(event.unit), name(event.target), diceText(event.dice))]
     case 'inspirationOffered':
       // The prompt shows the offer; the log records the answer.
       return []

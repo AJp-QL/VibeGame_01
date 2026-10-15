@@ -185,16 +185,21 @@ export function checkSkillUse(state: BattleState, action: UseSkillAction): Skill
 /** Every legal skill use of the side to act, Unit by Unit, loadout order, then target in Unit order. */
 export function legalSkillUses(state: BattleState): UseSkillAction[] {
   if (state.phase !== 'play' || state.pending !== null || state.outcome !== null) return []
+  return state.units.flatMap((user) => (user.side === state.sideToAct ? skillUsesOf(state, user) : []))
+}
+
+/**
+ * Every skill use of one Unit that passes `checkSkillUse`, loadout order.
+ * Taunted is not applied here (taunt.ts filters on top of it).
+ */
+export function skillUsesOf(state: BattleState, user: UnitState): UseSkillAction[] {
   const uses: UseSkillAction[] = []
-  for (const user of state.units) {
-    if (user.side !== state.sideToAct) continue
-    for (const id of user.skills) {
-      const skill = state.skills[id]
-      const handler = skill === undefined ? undefined : handlerOf(skill)
-      if (skill === undefined || handler === undefined) continue
-      const candidates = handler.uses?.(state, user, skill) ?? genericCandidates(state, user, skill)
-      for (const action of candidates) if (!isRejection(checkSkillUse(state, action))) uses.push(action)
-    }
+  for (const id of user.skills) {
+    const skill = state.skills[id]
+    const handler = skill === undefined ? undefined : handlerOf(skill)
+    if (skill === undefined || handler === undefined) continue
+    const candidates = handler.uses?.(state, user, skill) ?? genericCandidates(state, user, skill)
+    for (const action of candidates) if (!isRejection(checkSkillUse(state, action))) uses.push(action)
   }
   return uses
 }

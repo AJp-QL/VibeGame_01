@@ -10,6 +10,7 @@
 import type { Side } from '@mt/shared'
 import type { Rejection } from './battle.ts'
 import type { Activations, BattleState, UnitId, UnitState } from './state.ts'
+import { tauntDuty } from './taunt.ts'
 
 /** Units per side: Tamer + 2 Monsters (rules §17.1). */
 export const TEAM_SIZE = 3
@@ -63,9 +64,17 @@ export function activationBlocker(state: BattleState, unit: UnitState): Rejectio
   return null
 }
 
-/** Make `unitId` the Unit playing now, starting its activation if it has not started. */
+/**
+ * Make `unitId` the Unit playing now, starting its activation if it has not
+ * started. `state` is the state before the Move or Action that starts it: a
+ * Taunted Unit's case (rules §14.3) is decided from it and kept for the activation.
+ */
 export function activate(state: BattleState, unitId: UnitId): BattleState {
-  const { current, started } = state.activations
+  const { current, started, tauntDuty: _previous, ...rest } = state.activations
   if (current === unitId) return state
-  return { ...state, activations: { ...state.activations, current: unitId, started: [...started, unitId] } }
+  const duty = tauntDuty(state, unitId)
+  return {
+    ...state,
+    activations: { ...rest, current: unitId, started: [...started, unitId], ...(duty === undefined ? {} : { tauntDuty: duty }) },
+  }
 }
