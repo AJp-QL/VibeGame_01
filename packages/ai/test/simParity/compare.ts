@@ -12,6 +12,8 @@ export interface Comparison {
   readonly sameUnit: boolean
   readonly sameDest: boolean
   readonly sameAction: boolean
+  /** Same Command (when, target, option) and same Hit and Run step. */
+  readonly sameExtras: boolean
   readonly debug: Readonly<Record<string, PlanDebug>>
 }
 
@@ -59,7 +61,12 @@ export function compareDecision(d: SimDecision): Comparison {
   const sameUnit = best.unit === d.plan.unit
   const sameDest = sameUnit && d.plan.dest !== undefined && sameTile(best.dest, d.plan.dest)
   const sameAction = sameUnit && actionKey(best.action) === simActionKey(d)
-  return { decision: d, ours: best, gains, sameUnit, sameDest, sameAction, debug }
+  const simCommand = d.plan.command ?? null
+  const sameCommand = JSON.stringify(simCommand) === JSON.stringify(best.command)
+  const simRetreat = d.plan.action?.retreat ?? null
+  const sameRetreat = d.plan.order !== 'mf' || d.plan.action?.skill !== 'hit_and_run' || JSON.stringify(simRetreat) === JSON.stringify(best.retreat)
+  const sameOrder = d.plan.order === best.order
+  return { decision: d, ours: best, gains, sameUnit, sameDest, sameAction, sameExtras: sameCommand && sameRetreat && sameOrder, debug }
 }
 
 export function describe(c: Comparison, verbose = false): string {

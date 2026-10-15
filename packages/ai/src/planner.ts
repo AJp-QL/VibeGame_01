@@ -233,11 +233,19 @@ function actionsOf(ctx: Ctx, st: BattleState, unit: UnitState, moveFirst: boolea
         if (distance(here, enemy.tile) > skill.range) continue
         const action: Action =
           skillId === BASIC_ATTACK ? { type: 'basicAttack', unit: unit.id, target: enemy.id } : { ...base, target: enemy.id }
-        const p = legalPreview(st, action)
+        const result = previewAction(st, action)
+        const hasStep = skill.effects?.retreat !== undefined && moveFirst && moveRangeNow(st, unit) > 0
+        if (!result.ok) {
+          // sim.py values attacks a Taunted Unit may not make before filtering them out; the
+          // only lasting effect is Hit and Run's step filling its position cache (sim quirk).
+          if (result.rejection.code === 'taunted' && hasStep && ctx.profile.simQuirks) bestStep(ctx, st, unit, pv0())
+          continue
+        }
+        const p = result.preview
         if (p?.type !== 'attack') continue
         let value = attackValue(ctx, st, unit, enemy, skill, p)
         let retreat: Tile | null | undefined
-        if (skill.effects?.retreat !== undefined && moveFirst && moveRangeNow(st, unit) > 0) {
+        if (hasStep) {
           const step = bestStep(ctx, st, unit, pv0())
           retreat = step.tile
           value += step.gain

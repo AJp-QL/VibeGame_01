@@ -13,7 +13,7 @@ it.skipIf(process.env.AI_PROBE === undefined)('probe sim decisions', () => {
     if (c.sameUnit) unit++
     if (c.sameAction) action++
     if (c.sameDest) dest++
-    if (c.sameUnit && c.sameAction && c.sameDest) all++
+    if (c.sameUnit && c.sameAction && c.sameDest && c.sameExtras) all++
     else lines.push(`#${i} ` + describeComparison(c, true))
   }
   const n = decisions.length
