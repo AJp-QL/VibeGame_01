@@ -39,5 +39,6 @@ build ได้โฟลเดอร์ static ที่ `packages/web/dist` (`b
 
 ## สถานะ
 - ticket 03 (walking skeleton): หน้า Battle เดียว แสดง Scenario 1 บน Crossroads เลือก Unit แล้วเดิน และจบ Turn ได้ มี log จากรายการเหตุการณ์ และแสดงเวอร์ชัน
+- ticket 04: deployment แบบ Hotseat (ทีม A วาง → ยืนยัน → หน้าส่งเครื่องปิด Board → ทีม B วาง → ยืนยัน → เปิดเผยพร้อมกัน), หน้าผลทอย initiative และฝั่งที่เริ่มก่อน, ป้ายบอก "2 จาก 3 Unit" ใน Turn แรก, Unit ที่เล่นต่อไม่ได้แสดงจางลง และคำเตือนก่อนจบ Turn ถ้ายังมี Unit ที่ไม่ได้ทำอะไร (`idleUnits` ใน `src/session.ts`)
 - ticket 05: เลือก Unit → กด "โจมตี" → แตะเป้าที่ไฮไลต์ → เห็น preview (% โอกาสโดน, ช่วง damage, % critical) → ยืนยันหรือยกเลิก, HP ทุก Unit (รายการ Unit และแถบบน Board), log ครบทุกเหตุการณ์, หน้าสรุปผล (ผู้ชนะ, สาเหตุ, Round) และเริ่ม Battle ใหม่
-- ยังไม่มีเมนูและ deployment
+- ยังไม่มีเมนู

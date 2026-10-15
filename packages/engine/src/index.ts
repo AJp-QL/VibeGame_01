@@ -8,6 +8,7 @@
  *   previewAction(state, action)  → exact odds and damage ranges, without rolling or changing state
  *   applyAction(state, action)    → { ok, state, events } | { ok: false, state, rejection }
  *   derivedValues(state, unitId)  → values computed from the Unit's data
+ *   unitsVisibleTo(state, side)   → the Units a side may see (deployment is hidden)
  */
 export {
   applyAction,
@@ -32,15 +33,22 @@ export {
   type RollMode,
 } from './combat.ts'
 export type { DerivedValues } from './derived.ts'
+export { isInStartZone, START_ZONE_ROWS, unitsVisibleTo } from './deployment.ts'
 export { distance } from './movement.ts'
 export type {
+  Activations,
   BattleEndCause,
   BattleOutcome,
+  BattlePhase,
   BattleState,
+  Deployment,
+  Initiative,
+  InitiativeRoll,
   MonsterUnit,
   TamerUnit,
   UnitId,
   UnitState,
+  UnitTemplate,
 } from './state.ts'
 
 // Dice stream (rules §21.5): exported for the AI's separate stream, tests and tools.

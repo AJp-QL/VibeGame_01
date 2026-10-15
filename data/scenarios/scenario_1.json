@@ -24,8 +24,7 @@
           "stats": { "pow": 8, "agi": 12, "vit": 8, "int": 14, "sen": 12, "spi": 12 },
           "skills": ["element_bolt", "burst", "hex", "blink"]
         }
-      ],
-      "startingTiles": ["d1", "c2", "e2"]
+      ]
     },
     "B": {
       "tamer": {
@@ -48,8 +47,7 @@
           "stats": { "pow": 12, "agi": 12, "vit": 10, "int": 8, "sen": 14, "spi": 8 },
           "skills": ["long_shot", "pin", "mark", "camouflage"]
         }
-      ],
-      "startingTiles": ["d7", "e6", "c6"]
+      ]
     }
   }
 }

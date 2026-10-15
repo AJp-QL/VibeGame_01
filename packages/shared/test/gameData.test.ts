@@ -121,17 +121,11 @@ describe('malformed data is rejected', () => {
     expect(paths).toEqual(expect.arrayContaining(['board', 'teams.B.monsters.0.species']))
   })
 
-  it('rejects starting tiles that are off the Board or shared by two Units', () => {
+  it('rejects fixed starting tiles: Units are placed in deployment (rules §17.1)', () => {
     const scenario = scenario1()
-    scenario.teams.A.startingTiles = ['d1', 'c2', 'h2']
-    expect(issuesOf(withFile('scenarios/scenario_1.json', scenario)).map((i) => i.path)).toContain(
-      'teams.A.startingTiles.2',
-    )
-
-    const shared = scenario1()
-    shared.teams.B.startingTiles = ['d7', 'e6', 'd1']
-    expect(issuesOf(withFile('scenarios/scenario_1.json', shared)).map((i) => i.path)).toContain(
-      'teams.B.startingTiles',
+    scenario.teams.A.startingTiles = ['d1', 'c2', 'e2']
+    expect(issuesOf(withFile('scenarios/scenario_1.json', scenario))).toContainEqual(
+      expect.objectContaining({ file: 'scenarios/scenario_1.json', path: 'teams.A' }),
     )
   })
 

@@ -7,7 +7,7 @@
  * the engine (rules §3.2) and never stored.
  */
 import * as z from 'zod'
-import { BOARD_SIZE, isTileName } from './tiles.ts'
+import { BOARD_SIZE } from './tiles.ts'
 
 // ---------------------------------------------------------------- elements
 
@@ -206,11 +206,6 @@ export interface ScenarioTeam {
   readonly tamer: Tamer
   /** Monster slot 1 and slot 2, in Unit order (rules §21.4). */
   readonly monsters: readonly [Monster, Monster]
-  /**
-   * Fixed tiles for Tamer, Monster 1, Monster 2 (in that order).
-   * Temporary until deployment (ticket 04) lets players place Units.
-   */
-  readonly startingTiles: readonly [string, string, string]
 }
 
 export interface Scenario {
@@ -221,14 +216,9 @@ export interface Scenario {
   readonly teams: Readonly<Record<Side, ScenarioTeam>>
 }
 
-const tileName = z.string().refine(isTileName, 'tile must be a1–g7')
-
 const ScenarioTeamSchema = z.strictObject({
   tamer: TamerSchema,
   monsters: z.tuple([MonsterSchema, MonsterSchema]),
-  startingTiles: z
-    .tuple([tileName, tileName, tileName])
-    .refine((tiles) => new Set(tiles).size === tiles.length, 'starting tiles must be distinct'),
 })
 
 export const ScenarioSchema: z.ZodType<Scenario> = z.strictObject({

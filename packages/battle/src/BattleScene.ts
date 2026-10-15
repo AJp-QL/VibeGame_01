@@ -2,11 +2,12 @@
  * The Phaser scene that draws the Board and its Units from the session's
  * snapshot, animates the engine's events (Moves, attacks, damage, Units going
  * down) and turns taps into BoardInput. It keeps view objects only, never
- * game state.
+ * game state. It draws only the Units in `snapshot.units`, so Units hidden
+ * during deployment never appear and cannot be tapped.
  */
 import * as Phaser from 'phaser'
 import { BOARD_SIZE, type Tile } from '@mt/shared'
-import { derivedValues, type BattleState, type UnitId } from '@mt/engine'
+import { derivedValues, type BattleState, type UnitId, type UnitState } from '@mt/engine'
 import {
   GRID_LINE,
   HP_BAR_BACK,
@@ -33,6 +34,9 @@ const RESULT_AT_MS = 2 * LUNGE_MS
 const FALL_AT_MS = RESULT_AT_MS + 350
 const FALL_MS = 300
 const FLOAT_MS = 800
+
+/** Units of the side to act that have nothing left to do this Turn. */
+const SPENT_ALPHA = 0.5
 
 export interface BattleSceneData {
   readonly session: BattleSessionPort
@@ -71,14 +75,6 @@ export class BattleScene extends Phaser.Scene {
     const snapshot = this.session.getSnapshot()
     this.drawBoard(snapshot.state)
     this.highlights = this.add.graphics()
-    for (const unit of [...snapshot.state.units, ...snapshot.state.fallen]) {
-      const container = this.add.container(0, 0)
-      const g = this.add.graphics()
-      drawUnit(g, unit)
-      const hpBar = this.add.graphics()
-      container.add([g, hpBar])
-      this.unitViews.set(unit.id, { container, hpBar })
-    }
     this.shownRevision = snapshot.revision
     this.render()
 
@@ -114,21 +110,38 @@ export class BattleScene extends Phaser.Scene {
       this.animateEvents(snapshot)
     }
     const { state } = snapshot
-    for (const unit of state.units) {
-      const view = this.unitViews.get(unit.id)
-      if (view === undefined) continue
-      this.drawHpBar(view.hpBar, unit.hp, derivedValues(state, unit.id).maxHp)
+    // A Unit that went down (rules §10.4) stays visible only while its fall plays.
+    const shown = new Set(snapshot.units.map((u) => u.id))
+    for (const [id, view] of this.unitViews) view.container.setVisible(shown.has(id) || this.animating.has(id))
+    for (const unit of snapshot.units) {
+      const view = this.unitView(unit)
+      const spent = state.phase === 'play' && unit.side === state.sideToAct && !snapshot.canAct.includes(unit.id)
+      view.container.setAlpha(spent ? SPENT_ALPHA : 1)
+      // Units being placed are not on the Board yet, and are at full HP.
+      const maxHp = state.phase === 'play' ? derivedValues(state, unit.id).maxHp : unit.hp
+      this.drawHpBar(view.hpBar, unit.hp, maxHp)
       if (this.animating.has(unit.id)) continue
       const { x, y } = tileCentre(unit.tile)
       view.container.setPosition(x, y)
     }
-    // A Unit that went down is off the Board (rules §10.4) once its fall has played.
     for (const unit of state.fallen) {
       const view = this.unitViews.get(unit.id)
-      if (view === undefined) continue
-      this.drawHpBar(view.hpBar, 0, 1)
-      if (!this.animating.has(unit.id)) view.container.setVisible(false)
+      if (view !== undefined) this.drawHpBar(view.hpBar, 0, 1)
     }
+  }
+
+  /** The view of a Unit, created the first time the Unit is shown. */
+  private unitView(unit: UnitState): UnitView {
+    const existing = this.unitViews.get(unit.id)
+    if (existing !== undefined) return existing
+    const container = this.add.container(0, 0)
+    const g = this.add.graphics()
+    drawUnit(g, unit)
+    const hpBar = this.add.graphics()
+    container.add([g, hpBar])
+    const view = { container, hpBar }
+    this.unitViews.set(unit.id, view)
+    return view
   }
 
   private drawHpBar(g: Phaser.GameObjects.Graphics, hp: number, maxHp: number): void {
@@ -156,12 +169,12 @@ export class BattleScene extends Phaser.Scene {
       g.lineStyle(1, TARGET, 1)
       g.strokeRect(tile.x * TILE_SIZE + 2.5, tile.y * TILE_SIZE + 2.5, TILE_SIZE - 4, TILE_SIZE - 4)
     }
-    const pending = snapshot.state.units.find((u) => u.id === snapshot.pendingTarget)
+    const pending = snapshot.units.find((u) => u.id === snapshot.pendingTarget)
     if (pending !== undefined) {
       g.lineStyle(2, PENDING_TARGET, 1)
       g.strokeRect(pending.tile.x * TILE_SIZE + 2, pending.tile.y * TILE_SIZE + 2, TILE_SIZE - 3, TILE_SIZE - 3)
     }
-    const selected = snapshot.state.units.find((u) => u.id === snapshot.selectedUnit)
+    const selected = snapshot.units.find((u) => u.id === snapshot.selectedUnit)
     if (selected !== undefined) {
       g.lineStyle(2, SELECTED, 1)
       g.strokeRect(selected.tile.x * TILE_SIZE + 2, selected.tile.y * TILE_SIZE + 2, TILE_SIZE - 3, TILE_SIZE - 3)
@@ -293,7 +306,7 @@ export class BattleScene extends Phaser.Scene {
   private onTap(pointer: Phaser.Input.Pointer): void {
     const tile = { x: Math.floor(pointer.x / TILE_SIZE), y: Math.floor(pointer.y / TILE_SIZE) }
     if (tile.x < 0 || tile.y < 0 || tile.x >= BOARD_SIZE || tile.y >= BOARD_SIZE) return
-    const unit = this.session.getSnapshot().state.units.find((u) => u.tile.x === tile.x && u.tile.y === tile.y)
+    const unit = this.session.getSnapshot().units.find((u) => u.tile.x === tile.x && u.tile.y === tile.y)
     this.session.input(unit ? { type: 'tapUnit', unit: unit.id } : { type: 'tapTile', tile })
   }
 }

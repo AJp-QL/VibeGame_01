@@ -1,0 +1,163 @@
+/**
+ * Deployment (rules §17.1): before the first Turn each side places its Tamer
+ * and 2 Monsters on empty tiles of its own start zone (the back 2 rows, 14
+ * tiles, any terrain), hidden from the other side. Team A places first, then
+ * team B. When both have confirmed, the placements are revealed together,
+ * initiative is rolled and the first Turn starts. Deployment uses no dice.
+ */
+import { BOARD_SIZE, isOnBoard, sameTile, tileName, type Side, type Tile } from '@mt/shared'
+import type { Action, ApplyResult, BattleEvent, RejectionCode } from './battle.ts'
+import { rollInitiative } from './initiative.ts'
+import type { BattleState, Deployment, UnitId, UnitState, UnitTemplate } from './state.ts'
+import { startTurn, TEAM_SIZE } from './turns.ts'
+
+/** Rows (`y`) of each side's start zone: team A rows 1–2, team B rows 6–7 (rules §2.1, §17.1). */
+export const START_ZONE_ROWS: Readonly<Record<Side, readonly number[]>> = {
+  A: [0, 1],
+  B: [BOARD_SIZE - 2, BOARD_SIZE - 1],
+}
+
+export function isInStartZone(side: Side, tile: Tile): boolean {
+  return isOnBoard(tile) && START_ZONE_ROWS[side].includes(tile.y)
+}
+
+const otherSide = (side: Side): Side => (side === 'A' ? 'B' : 'A')
+
+function reject(state: BattleState, code: RejectionCode, message: string): ApplyResult {
+  return { ok: false, state, rejection: { code, message } }
+}
+
+function inDeployment(state: BattleState): Deployment | undefined {
+  return state.phase === 'deployment' && state.deployment !== null ? state.deployment : undefined
+}
+
+/** Deploy actions for every Unit of the side placing, then Confirm once all are placed. */
+export function deploymentActions(state: BattleState): Action[] {
+  const deployment = inDeployment(state)
+  if (deployment === undefined) return []
+  const side = state.sideToAct
+  const placed = deployment.placements[side]
+  const taken = Object.values(placed)
+  const free: Tile[] = []
+  for (const y of START_ZONE_ROWS[side]) {
+    for (let x = 0; x < BOARD_SIZE; x++) {
+      if (!taken.some((t) => t.x === x && t.y === y)) free.push({ x, y })
+    }
+  }
+  const actions: Action[] = []
+  for (const unit of deployment.roster) {
+    if (unit.side !== side) continue
+    for (const to of free) actions.push({ type: 'deploy', unit: unit.id, to })
+  }
+  if (allPlaced(deployment, side)) actions.push({ type: 'confirmDeployment' })
+  return actions
+}
+
+function allPlaced(deployment: Deployment, side: Side): boolean {
+  return deployment.roster.every((unit) => unit.side !== side || deployment.placements[side][unit.id] !== undefined)
+}
+
+/** Place (or re-place) one Unit of the side placing on an empty tile of its start zone. */
+export function applyDeploy(state: BattleState, unitId: UnitId, to: Tile): ApplyResult {
+  const deployment = inDeployment(state)
+  if (deployment === undefined) return reject(state, 'wrong-phase', 'Deployment is over')
+  const unit = deployment.roster.find((u) => u.id === unitId)
+  if (unit === undefined) return reject(state, 'unknown-unit', `No Unit "${unitId}"`)
+  const side = state.sideToAct
+  if (unit.side !== side) {
+    return reject(state, 'not-your-turn', `${unitId} belongs to side ${unit.side}; side ${side} is placing`)
+  }
+  if (!isOnBoard(to)) return reject(state, 'off-board', `(${to.x}, ${to.y}) is not on the Board`)
+  if (!isInStartZone(side, to)) {
+    return reject(state, 'outside-start-zone', `${tileName(to)} is not in side ${side}'s start zone`)
+  }
+  const placed = deployment.placements[side]
+  const occupant = Object.entries(placed).find(([, tile]) => sameTile(tile, to))
+  if (occupant !== undefined) {
+    return reject(state, 'tile-occupied', `${tileName(to)} is taken by ${occupant[0]}`)
+  }
+
+  const from = placed[unitId] ?? null
+  return {
+    ok: true,
+    state: {
+      ...state,
+      deployment: { ...deployment, placements: { ...deployment.placements, [side]: { ...placed, [unitId]: to } } },
+    },
+    events: [{ type: 'unitPlaced', side, unit: unitId, from, to, hiddenFrom: otherSide(side) }],
+  }
+}
+
+/**
+ * Confirm the side's placements. After team A, team B places. After both,
+ * reveal every placement, roll initiative and start the first Turn.
+ */
+export function applyConfirmDeployment(state: BattleState): ApplyResult {
+  const deployment = inDeployment(state)
+  if (deployment === undefined) return reject(state, 'wrong-phase', 'Deployment is over')
+  const side = state.sideToAct
+  if (!allPlaced(deployment, side)) {
+    return reject(state, 'deployment-incomplete', `Side ${side} must place all ${TEAM_SIZE} Units first`)
+  }
+  const confirmed = { ...deployment.confirmed, [side]: true }
+  const events: BattleEvent[] = [{ type: 'deploymentConfirmed', side }]
+  const waiting = otherSide(side)
+  if (!confirmed[waiting]) {
+    return {
+      ok: true,
+      state: { ...state, sideToAct: waiting, deployment: { ...deployment, confirmed } },
+      events,
+    }
+  }
+  return reveal(state, deployment, events)
+}
+
+function reveal(state: BattleState, deployment: Deployment, events: BattleEvent[]): ApplyResult {
+  const units = deployment.roster.map((template) => placeUnit(template, deployment.placements[template.side][template.id]))
+  events.push({ type: 'deploymentRevealed', placements: units.map((u) => ({ unit: u.id, tile: u.tile })) })
+
+  const { initiative, dice } = rollInitiative(deployment.roster, state.dice)
+  for (const rolls of initiative.rolls) {
+    events.push({ type: 'initiativeRolled', rolls, tie: rolls.A.total === rolls.B.total })
+  }
+  events.push({ type: 'initiativeDecided', firstSide: initiative.firstSide })
+
+  const revealed: BattleState = {
+    ...state,
+    phase: 'play',
+    units,
+    deployment: null,
+    initiative,
+    firstSide: initiative.firstSide,
+    dice,
+  }
+  const started = startTurn(revealed, initiative.firstSide, initiative.firstSide)
+  events.push({
+    type: 'turnStarted',
+    side: started.sideToAct,
+    turn: started.turnNumber[started.sideToAct],
+    round: started.round,
+  })
+  return { ok: true, state: started, events }
+}
+
+/** A Unit template on its tile. */
+export function placeUnit(template: UnitTemplate, tile: Tile | undefined): UnitState {
+  if (tile === undefined) throw new Error(`${template.id} has no tile`)
+  return { ...template, tile }
+}
+
+/**
+ * The Units `viewer` may see. In play that is every Unit (no fog of war,
+ * rules §2.1). During deployment it is only the viewer's own placed Units:
+ * the other side's placements stay hidden until both sides confirm.
+ */
+export function unitsVisibleTo(state: BattleState, viewer: Side): UnitState[] {
+  const deployment = inDeployment(state)
+  if (deployment === undefined) return [...state.units]
+  const placed = deployment.placements[viewer]
+  return deployment.roster.flatMap((template) => {
+    const tile = template.side === viewer ? placed[template.id] : undefined
+    return tile === undefined ? [] : [placeUnit(template, tile)]
+  })
+}

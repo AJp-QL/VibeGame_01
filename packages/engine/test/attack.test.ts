@@ -11,7 +11,7 @@ import {
   type BattleState,
   type UnitId,
 } from '../src/index.ts'
-import { scenario1Battle, type BattleOptions } from './fixtures.ts'
+import { scenario1Battle, scenario1Deployment, type BattleOptions } from './fixtures.ts'
 
 // Board for most tests: Fangrel (A.m1, d4) next to Tidewall (B.m1, d5);
 // everyone else far apart. Every Scenario 1 Guard is 11 (rules §20.2).
@@ -282,6 +282,36 @@ describe('illegal attacks are rejected with a reason and the state unchanged', (
       expect(state).toEqual(before)
     })
   }
+
+  it('attacking during deployment: wrong-phase', () => {
+    const deploying = scenario1Deployment()
+    const action: Action = { type: 'basicAttack', unit: 'A.m1', target: 'B.m1' }
+    expect(applyAction(deploying, action)).toMatchObject({ ok: false, rejection: { code: 'wrong-phase' } })
+    expect(previewAction(deploying, action)).toMatchObject({ ok: false, rejection: { code: 'wrong-phase' } })
+  })
+
+  it('attacking after another Unit started its activation: activation-over (rules §17.4)', () => {
+    let s = accepted(applyAction(state, { type: 'move', unit: 'A.m1', to: tileFromName('c4') })).state
+    s = accepted(applyAction(s, { type: 'move', unit: 'A.tamer', to: tileFromName('b1') })).state
+    expect(attack(s, 'A.m1', 'B.m1')).toMatchObject({ ok: false, rejection: { code: 'activation-over' } })
+  })
+
+  it('attacking with a third Unit on the first Turn of the side that starts: activation-limit (rules §17.3)', () => {
+    let s = accepted(applyAction(state, { type: 'move', unit: 'A.tamer', to: tileFromName('b1') })).state
+    s = accepted(applyAction(s, { type: 'move', unit: 'A.m2', to: tileFromName('f1') })).state
+    expect(attack(s, 'A.m1', 'B.m1')).toMatchObject({ ok: false, rejection: { code: 'activation-limit' } })
+    expect(legalActions(s).some((a) => a.type === 'basicAttack')).toBe(false)
+  })
+
+  it('an attack starts the Unit\'s activation: it can still Move after, but an earlier Unit cannot resume', () => {
+    const attacked = accepted(attack(battle({ dice: { rolls: [8] } }), 'A.m1', 'B.m1')).state
+    expect(attacked.activations).toMatchObject({ current: 'A.m1', started: ['A.m1'] })
+    const moved = accepted(applyAction(attacked, { type: 'move', unit: 'A.m2', to: tileFromName('f1') })).state
+    expect(applyAction(moved, { type: 'move', unit: 'A.m1', to: tileFromName('c3') })).toMatchObject({
+      ok: false,
+      rejection: { code: 'activation-over' },
+    })
+  })
 
   it('attacking twice in one Turn: already-acted, state unchanged', () => {
     const snapshot = structuredClone(acted)

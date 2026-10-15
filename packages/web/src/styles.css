@@ -119,40 +119,171 @@ body {
   color: var(--muted);
 }
 
+.limit {
+  color: var(--accent);
+  font-size: 0.875rem;
+}
+
+.primary,
+.secondary,
+.roster-unit {
+  font: inherit;
+  min-height: 44px;
+  padding: 8px 20px;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.primary {
+  font-weight: 600;
+  background: var(--accent);
+  color: #15161a;
+}
+
+.primary:disabled {
+  background: #4a4a44;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.secondary {
+  background: transparent;
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--muted);
+}
+
+.primary:active:not(:disabled),
+.secondary:active {
+  transform: translateY(1px);
+}
+
+.roster {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.roster-unit {
+  padding: 6px 12px;
+  text-align: left;
+  background: #2c2f38;
+  color: var(--text);
+  border-left: 4px solid currentColor;
+}
+
+.roster-unit.side-A {
+  border-left-color: var(--side-a);
+}
+
+.roster-unit.side-B {
+  border-left-color: var(--side-b);
+}
+
+.roster-unit[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.roster-unit span {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.warning {
+  border-left: 4px solid var(--accent);
+  padding-left: 12px;
+}
+
+.warning p {
+  margin: 4px 0 8px;
+}
+
 .buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.buttons button,
-.result button {
-  font: inherit;
+/* Hotseat screens. The hand-off cover is opaque so nothing of the Board
+   shows while the device changes hands. */
+.cover {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--bg);
+}
+
+.cover.see-through {
+  background: rgb(21 22 26 / 0.7);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 420px;
+}
+
+.dialog p {
+  margin: 0 0 12px;
+}
+
+.initiative h3 {
+  margin: 0 0 4px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.initiative ul {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+.initiative .tie {
+  color: var(--muted);
+}
+
+.initiative .first {
   font-weight: 600;
-  min-height: 44px;
-  padding: 8px 20px;
-  border: 1px solid var(--muted);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
+  font-size: 1.125rem;
 }
 
-.buttons button.primary,
-.result button.primary {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #15161a;
+.log ul,
+.log ol {
+  margin: 0;
+  padding-left: 20px;
+  max-height: 12em;
+  overflow-y: auto;
 }
 
-.buttons button:disabled {
+.log .empty,
+.meta,
+.app-footer {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.app-footer {
+  margin-top: auto;
+  padding: 12px 0;
+}
+
+.error pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---- ticket 05: attack buttons, preview, HP list, result ---- */
+
+.secondary:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.buttons button:active:not(:disabled),
-.result button:active {
-  transform: translateY(1px);
 }
 
 .buttons .end-turn {
@@ -203,7 +334,7 @@ body {
   margin: 0 0 8px;
 }
 
-.roster ul {
+.hp-list {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -212,7 +343,7 @@ body {
   gap: 4px 16px;
 }
 
-.roster li {
+.hp-list li {
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -220,44 +351,24 @@ body {
   border-left: 4px solid currentColor;
 }
 
-.roster li.side-A {
+.hp-list li.side-A {
   border-color: var(--side-a);
 }
 
-.roster li.side-B {
+.hp-list li.side-B {
   border-color: var(--side-b);
 }
 
-.roster li.down {
+.hp-list li.down {
   color: var(--muted);
   text-decoration: line-through;
 }
 
-.roster .team {
+.hp-list .team {
   color: var(--muted);
 }
 
 .log ol {
-  margin: 0;
   padding-left: 28px;
   max-height: 14em;
-  overflow-y: auto;
-}
-
-.log .empty,
-.meta,
-.app-footer {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
-.app-footer {
-  margin-top: auto;
-  padding: 12px 0;
-}
-
-.error pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }

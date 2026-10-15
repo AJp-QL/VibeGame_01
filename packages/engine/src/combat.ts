@@ -16,6 +16,7 @@ import { derive } from './derived.ts'
 import { rollDie, type DiceStream } from './dice.ts'
 import { distance } from './movement.ts'
 import { findUnit, type BattleOutcome, type BattleState, type UnitId, type UnitState } from './state.ts'
+import { activate, activationBlocker } from './turns.ts'
 
 export const BASIC_ATTACK = 'basic_attack'
 
@@ -28,7 +29,9 @@ export interface AttackPlan {
 }
 
 /**
- * Whether `attackerId` may use `skillId` on `targetId` now (rules §8.1, §17.4).
+ * Whether `attackerId` may use `skillId` on `targetId` now (rules §8.1, §17.4):
+ * in play, the attacker's side to act, its activation open (or able to start)
+ * and its Action unused, the target an enemy on the Board within range.
  * Returns the plan, or why not. Shared by legalActions, applyAction and
  * previewAction so all three always agree.
  */
@@ -39,6 +42,7 @@ export function checkAttack(
   targetId: UnitId,
 ): AttackPlan | Rejection {
   if (state.outcome !== null) return { code: 'battle-over', message: 'The Battle is over' }
+  if (state.phase !== 'play') return { code: 'wrong-phase', message: 'No attack during deployment' }
   const attacker = findUnit(state, attackerId)
   if (attacker === undefined) return { code: 'unknown-unit', message: `No Unit "${attackerId}" on the Board` }
   if (attacker.side !== state.sideToAct) {
@@ -47,6 +51,8 @@ export function checkAttack(
       message: `${attackerId} belongs to side ${attacker.side}; side ${state.sideToAct} is to act`,
     }
   }
+  const blocker = activationBlocker(state, attacker)
+  if (blocker !== null) return blocker
   if (attacker.hasActed) return { code: 'already-acted', message: `${attackerId} already used its Action this Turn` }
   const skill = state.skills[skillId]
   if (skill === undefined) return { code: 'unknown-skill', message: `No skill "${skillId}"` }
@@ -233,10 +239,12 @@ function outcomeAfterDown(state: BattleState, down: UnitState): BattleOutcome | 
  * Resolve one attack against one target (rules §10.5, dice order §21.4):
  * attack roll → on a hit, damage dice (doubled on a critical) + modifier →
  * HP goes down → a Unit at 0 HP leaves the Board → the Battle may end.
- * The attacker's Action is used whether it hits or misses.
+ * The attacker's Action is used whether it hits or misses, and the attack
+ * starts (or continues) its activation (rules §17.4).
  */
-export function resolveAttack(state: BattleState, plan: AttackPlan): { state: BattleState; events: BattleEvent[] } {
+export function resolveAttack(before: BattleState, plan: AttackPlan): { state: BattleState; events: BattleEvent[] } {
   const { attacker, target, skill } = plan
+  const state = activate(before, attacker.id)
   const preview = previewAttack(state, plan)
   const events: BattleEvent[] = []
 

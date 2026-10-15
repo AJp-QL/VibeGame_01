@@ -113,7 +113,6 @@ export function loadGameData(files: Readonly<Record<string, unknown>>): GameData
     if (boards[scenario.board] === undefined) {
       issues.push({ file, path: 'board', message: `unknown board "${scenario.board}"` })
     }
-    const seen = new Set<string>()
     for (const side of SIDES) {
       const team = scenario.teams[side]
       team.monsters.forEach((monster, index) => {
@@ -125,12 +124,6 @@ export function loadGameData(files: Readonly<Record<string, unknown>>): GameData
           })
         }
       })
-      for (const tile of team.startingTiles) {
-        if (seen.has(tile)) {
-          issues.push({ file, path: `teams.${side}.startingTiles`, message: `tile ${tile} used twice` })
-        }
-        seen.add(tile)
-      }
     }
   }
 
