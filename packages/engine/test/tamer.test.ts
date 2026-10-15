@@ -44,11 +44,11 @@ const endTurns = (state: BattleState, count: number) => {
   return state
 }
 
-function battle(tiles: BattleOptions['tiles'], options: BattleOptions = {}): BattleState {
+function battle(tiles: NonNullable<BattleOptions['tiles']>, options: BattleOptions = {}): BattleState {
   return scenario1Battle({ tiles, elements: NEUTRAL_ELEMENTS, ...options })
 }
 /** Team A's second Turn (Round 2): the first one on which it may Command. No dice used. */
-const secondTurn = (tiles: BattleOptions['tiles'], options: BattleOptions = {}) => endTurns(battle(tiles, options), 2)
+const secondTurn = (tiles: NonNullable<BattleOptions['tiles']>, options: BattleOptions = {}) => endTurns(battle(tiles, options), 2)
 
 const command = (target: UnitId, option: CommandOption, unitId: UnitId = 'A.tamer'): Action => ({
   type: 'command',

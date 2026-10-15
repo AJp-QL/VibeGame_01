@@ -11,7 +11,7 @@
  * `untargetableFrom` (Hidden: single-target aiming in combat.ts, Burst's
  * targets in wisplingSkills.ts) and `attackersRollMode` (Marked, read by
  * rollMode.ts). The others are read by the tickets that bring their skills:
- * `forcedToAttackSource` and `counterattack` (08), `nextAttackRollMode` (11).
+ * `forcedToAttackSource` and `counterattack` (08); `nextAttackRollMode` (Off-balance) is read in rollMode.ts (11).
  *
  * Statuses that end by their own conditions (rules §8.2, §14.1): after the
  * holder's attack roll (`untilBroken` and `untilAttackRoll` durations:
