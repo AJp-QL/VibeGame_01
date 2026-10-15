@@ -21,7 +21,15 @@ type Tiles = readonly [string, string, string]
 
 function battle(scenario: Scenario, board: Board, tiles?: Readonly<Record<Side, Tiles>>, firstSide: Side = 'A') {
   const dice: DiceSource = { seed: '0123456789abcdef' }
-  const common = { scenario, board, species: gameData.species, skills: gameData.skills, dice }
+  const common = {
+    scenario,
+    board,
+    species: gameData.species,
+    skills: gameData.skills,
+    statuses: gameData.statuses,
+    elementWheel: gameData.elementWheel,
+    dice,
+  }
   if (tiles === undefined) return createBattle(common)
   const place = (side: Side) => {
     const [tamer, m1, m2] = tiles[side].map(tileFromName)

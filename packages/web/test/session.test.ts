@@ -29,6 +29,8 @@ function newSession(options: Partial<Pick<BattleSetup, 'dice' | 'preset' | 'skil
       board: data.boards.crossroads!,
       species: data.species,
       skills: options.skills ?? data.skills,
+      statuses: data.statuses,
+      elementWheel: data.elementWheel,
       dice: options.dice ?? { seed: '0123456789abcdef' },
       ...(options.preset ? { preset: options.preset } : {}),
     }),

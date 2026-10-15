@@ -7,7 +7,7 @@
  * later) and Command (ticket 11) join `rollModeSources`; Defend gives no
  * advantage or disadvantage, it raises Guard and Ward (§12).
  */
-import type { Element, Terrain } from '@mt/shared'
+import type { Element, ElementWheel, Terrain } from '@mt/shared'
 import { distance } from './movement.ts'
 import { terrainAt, type BattleState, type UnitId, type UnitState } from './state.ts'
 
@@ -55,28 +55,22 @@ export type RollModeSource =
       readonly cancellableByCommand: false
     }
 
-/** Element wheel (rules §4.1): forest > water > mountain > desert > forest; light and dark beat each other. */
-const BEATS: Readonly<Record<Element, Element>> = {
-  forest: 'water',
-  water: 'mountain',
-  mountain: 'desert',
-  desert: 'forest',
-  light: 'dark',
-  dark: 'light',
+/**
+ * Whether element `a` beats element `b` on the element wheel from data/elements
+ * (rules §4.1: forest > water > mountain > desert > forest; light and dark beat each other).
+ */
+export function elementBeats(wheel: ElementWheel, a: Element, b: Element): boolean {
+  return wheel.beats[a].includes(b)
 }
 
-/** Whether element `a` beats element `b` on the wheel. */
-export function elementBeats(a: Element, b: Element): boolean {
-  return BEATS[a] === b
-}
-
-function elementSources(attacker: UnitState, target: UnitState): RollModeSource[] {
+function elementSources(state: BattleState, attacker: UnitState, target: UnitState): RollModeSource[] {
   // Rules §4.2: no element effect when either side is a Tamer.
   if (attacker.kind !== 'monster' || target.kind !== 'monster') return []
   const sources: RollModeSource[] = []
   const pair = { attackerElement: attacker.element, targetElement: target.element }
-  if (elementBeats(attacker.element, target.element)) sources.push({ kind: 'element', effect: 'advantage', ...pair })
-  if (elementBeats(target.element, attacker.element)) sources.push({ kind: 'element', effect: 'disadvantage', ...pair })
+  const wheel = state.elementWheel
+  if (elementBeats(wheel, attacker.element, target.element)) sources.push({ kind: 'element', effect: 'advantage', ...pair })
+  if (elementBeats(wheel, target.element, attacker.element)) sources.push({ kind: 'element', effect: 'disadvantage', ...pair })
   return sources
 }
 
@@ -90,7 +84,7 @@ function terrainSources(state: BattleState, attacker: UnitState): RollModeSource
   const aquatic = attacker.movement === 'aquatic' && terrain === 'water' && own !== 'water'
   const base = { kind: 'terrain', terrain, attackerElement: own, aquatic } as const
   if (terrain === own || aquatic) return [{ ...base, effect: 'advantage' }]
-  if (elementBeats(terrain, own)) return [{ ...base, effect: 'disadvantage' }]
+  if (elementBeats(state.elementWheel, terrain, own)) return [{ ...base, effect: 'disadvantage' }]
   return []
 }
 
@@ -111,7 +105,7 @@ function tamerProtectionSources(state: BattleState, target: UnitState): RollMode
  */
 export function rollModeSources(state: BattleState, attacker: UnitState, target: UnitState): RollModeSource[] {
   return [
-    ...elementSources(attacker, target),
+    ...elementSources(state, attacker, target),
     ...terrainSources(state, attacker),
     ...tamerProtectionSources(state, target),
   ]

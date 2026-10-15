@@ -172,6 +172,8 @@ function replaySetup(replay: Replay, data: GameData): BattleSetup {
     board,
     species: data.species,
     skills: data.skills,
+    statuses: data.statuses,
+    elementWheel: data.elementWheel,
     dice: { seed: replay.diceSeed },
     ...(replay.preset !== undefined ? { preset: replay.preset } : {}),
   }

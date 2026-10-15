@@ -2,7 +2,7 @@
  * Battle state: plain, immutable, serialisable data. Every engine function
  * takes a state and returns a new one; nothing is mutated.
  */
-import type { Build, Element, Movement, Side, Skill, Stats, Terrain, Tile } from '@mt/shared'
+import type { Build, Element, ElementWheel, Movement, Side, Skill, Stats, StatusType, Terrain, Tile } from '@mt/shared'
 import type { DiceStream } from './dice.ts'
 
 /** "A.tamer", "A.m1", "A.m2", "B.tamer", … — stable for the whole Battle. */
@@ -23,22 +23,48 @@ interface UnitBase {
   readonly hasActed: boolean
   /** Statuses on the Unit now (rules §14), at most one of each. Empty for a Unit that fell. */
   readonly statuses: readonly UnitStatus[]
+  /**
+   * Loadout skills used so far: skill id → the Turn number of the Unit's side
+   * (rules §17.3) in which it was last used. Cooldowns count from it (rules §13.2).
+   */
+  readonly skillsUsed: Readonly<Record<string, number>>
+}
+
+/** A status id from data/statuses, e.g. "bleed", "rallied", "guarded". */
+export type StatusId = string
+
+/**
+ * A status on a Unit (rules §14). What it does comes from its StatusType in
+ * data/statuses (`BattleState.statusTypes`); the instance holds only what
+ * differs per Unit. Fields that do not apply are left out, so Guarded from
+ * Defend is exactly `{ id: 'guarded', bonus: 2 }`.
+ */
+export interface UnitStatus {
+  readonly id: StatusId
+  /** Guarded: the Guard and Ward bonus its source gave (Defend +2, rules §12). */
+  readonly bonus?: number
+  /** Statuses that last a number of Turns: countdowns left (rules §14.1). */
+  readonly turnsLeft?: number
+  /**
+   * Given during the holder's own side's Turn: the end of that Turn does not
+   * count down (D-02), so "N Turns" = the rest of this Turn + N more.
+   */
+  readonly skipCountdown?: true
+  /** The Unit that applied it, for statuses that track it (Taunted: the taunter). */
+  readonly source?: UnitId
 }
 
 /**
- * Guarded (rules §12, §14.2): Guard and Ward + `bonus` until the start of the
- * next Turn of the Unit's side. Several sources do not add up; the higher
- * bonus is kept (phase 1 has one source: Defend, +2).
+ * A choice that must be made before any other action. `retreat`: after Hit
+ * and Run the user may step up to `steps` tiles to an empty tile, or stay
+ * (rules §15.1, D-12).
  */
-export interface GuardedStatus {
-  readonly id: 'guarded'
-  readonly bonus: number
+export interface PendingDecision {
+  readonly kind: 'retreat'
+  readonly unit: UnitId
+  readonly skill: string
+  readonly steps: number
 }
-
-/** A status on a Unit. Only Guarded so far; the status framework (ticket 07) adds the rest. */
-export type UnitStatus = GuardedStatus
-
-export type StatusId = UnitStatus['id']
 
 export interface TamerUnit extends UnitBase {
   readonly kind: 'tamer'
@@ -132,6 +158,12 @@ export interface BattleState {
   readonly dice: DiceStream
   /** Skill definitions from data/skills, by id. */
   readonly skills: Readonly<Record<string, Skill>>
+  /** Status definitions from data/statuses, by id. */
+  readonly statusTypes: Readonly<Record<string, StatusType>>
+  /** The element wheel from data/elements (rules §4.1). */
+  readonly elementWheel: ElementWheel
+  /** A decision the side to act must make before any other action (Hit and Run's step), or `null`. */
+  readonly pending: PendingDecision | null
   /** Set once the Battle is over; no action is legal after that (rules §19). */
   readonly outcome: BattleOutcome | null
 }
@@ -162,7 +194,11 @@ export function terrainAt(state: BattleState, tile: Tile): Terrain | undefined {
   return state.terrain[tile.y]?.[tile.x]
 }
 
-/** Guard and Ward bonus from Guarded, 0 when the Unit is not Guarded (rules §10.2). */
-export function guardedBonus(unit: UnitState): number {
-  return unit.statuses.reduce((bonus, status) => (status.id === 'guarded' ? Math.max(bonus, status.bonus) : bonus), 0)
+/** The state with `unit` in place of the Unit with the same id. */
+export function replaceUnit(state: BattleState, unit: UnitState): BattleState {
+  return { ...state, units: state.units.map((u) => (u.id === unit.id ? unit : u)) }
+}
+
+export function otherSide(side: Side): Side {
+  return side === 'A' ? 'B' : 'A'
 }

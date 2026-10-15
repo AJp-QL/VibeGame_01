@@ -60,5 +60,13 @@ export function battleSetup(data: GameData, choice: BattleChoice, diceSeed: stri
   if (scenario === undefined) throw new Error(`Unknown Scenario "${choice.scenarioId}"`)
   if (board === undefined) throw new Error(`Unknown Board "${choice.boardId}"`)
   if (!isModeAvailable(choice.mode)) throw new Error(`Mode "${choice.mode}" is not available yet`)
-  return { scenario, board, species: data.species, skills: data.skills, dice: { seed: diceSeed } }
+  return {
+    scenario,
+    board,
+    species: data.species,
+    skills: data.skills,
+    statuses: data.statuses,
+    elementWheel: data.elementWheel,
+    dice: { seed: diceSeed },
+  }
 }

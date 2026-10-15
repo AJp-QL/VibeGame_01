@@ -32,7 +32,7 @@ const unit = (state: BattleState, id: UnitId) => state.units.find((u) => u.id ==
 
 function preview(state: BattleState, attacker: UnitId, target: UnitId): AttackPreview {
   const result = previewAction(state, { type: 'basicAttack', unit: attacker, target })
-  if (!result.ok || result.preview === null) throw new Error('expected an attack preview')
+  if (!result.ok || result.preview?.type !== 'attack') throw new Error('expected an attack preview')
   return result.preview
 }
 

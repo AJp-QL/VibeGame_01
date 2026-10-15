@@ -1,36 +1,96 @@
 /**
  * Attacks (rules §8, §10, §19.1): who can be targeted, the attack roll,
- * damage, Units going down, the Battle ending, and the exact odds a preview
- * shows. Integer arithmetic only; dice come from the Battle's stream in the
- * order of rules §21.4.
+ * damage, statuses on a hit, Units going down, the Battle ending, and the
+ * exact odds a preview shows. Integer arithmetic only; dice come from the
+ * Battle's stream in the order of rules §21.4.
  *
- * Line of sight (§7), advantage/disadvantage from element, terrain and
- * Tamer protection (§4, §5, §9, in rollMode.ts) and Guarded (§12) are here.
- * Not yet (ticket 07 and later): Hidden, Taunted, Marked, Off-balance,
- * Command, Weakened, Cover, Counter, Inspiration. Each has its slot below:
- * targeting in `checkAttack`, roll mode sources in `rollModeSources`,
- * defence bonuses in `defenceOf`, damage adjustments in `damageModifier`.
+ * Line of sight (§7), advantage/disadvantage from element, terrain and Tamer
+ * protection (§4, §5, §9, in rollMode.ts), Guarded (§12) and Rallied (§14)
+ * are here. Each later rule has its slot: targeting (Hidden, Taunted) in
+ * `checkEnemyTarget`, roll mode sources (Marked, Off-balance, Command) in
+ * `rollModeSources`, defence bonuses in `defenceOf`, damage adjustments
+ * (Weakened) in `damageModifier`, Cover where `loseHp` is called in
+ * `attackOnce`, and Counter after the attack in `attackOnce`.
  */
-import type { Dice, Side, Skill } from '@mt/shared'
+import type { Dice, Skill } from '@mt/shared'
 import type { BattleEvent, Rejection } from './battle.ts'
+import { loseHp } from './damage.ts'
 import { derive } from './derived.ts'
-import { rollDie, type DiceStream } from './dice.ts'
+import { rollDice } from './dice.ts'
 import { unitsOnLine } from './lineOfSight.ts'
 import { distance } from './movement.ts'
 import { combineRollMode, rollModeSources, type RollMode, type RollModeSource } from './rollMode.ts'
+import { findUnit, type BattleState, type UnitId, type UnitState } from './state.ts'
 import {
-  findUnit,
-  guardedBonus,
-  type BattleOutcome,
-  type BattleState,
-  type UnitId,
-  type UnitState,
-} from './state.ts'
+  attackRollBonuses,
+  defenceBonus,
+  giveSkillStatuses,
+  statusOdds,
+  type Chance,
+  type StatusBonus,
+  type StatusOdds,
+} from './statuses.ts'
 import { activate, activationBlocker } from './turns.ts'
 
 export const BASIC_ATTACK = 'basic_attack'
+export const DEFEND = 'defend'
 
 // ------------------------------------------------------------- targeting
+
+/**
+ * Why `unitId` cannot act now, or the Unit (rules §17.4): Battle going on, in
+ * play, no decision pending, its side to act, its activation open (or able
+ * to start) and the part of its activation it would use (Action or Move) unused.
+ */
+export function checkActor(state: BattleState, unitId: UnitId, uses: 'action' | 'move' = 'action'): UnitState | Rejection {
+  if (state.outcome !== null) return { code: 'battle-over', message: 'The Battle is over' }
+  if (state.phase !== 'play') return { code: 'wrong-phase', message: 'Not during deployment' }
+  if (state.pending !== null) {
+    return { code: 'decision-pending', message: `${state.pending.unit} must first choose where to step (${state.pending.skill})` }
+  }
+  const unit = findUnit(state, unitId)
+  if (unit === undefined) return { code: 'unknown-unit', message: `No Unit "${unitId}" on the Board` }
+  if (unit.side !== state.sideToAct) {
+    return { code: 'not-your-turn', message: `${unitId} belongs to side ${unit.side}; side ${state.sideToAct} is to act` }
+  }
+  const blocker = activationBlocker(state, unit)
+  if (blocker !== null) return blocker
+  if (uses === 'action' && unit.hasActed) {
+    return { code: 'already-acted', message: `${unitId} already used its Action this Turn` }
+  }
+  if (uses === 'move' && unit.hasMoved) return { code: 'already-moved', message: `${unitId} already moved this Turn` }
+  return unit
+}
+
+/**
+ * Whether `user` may aim `skill` at the enemy `targetId` (rules §8.1): an
+ * enemy on the Board at distance 1 to the skill's range and, at distance 2 or
+ * more, in line of sight unless the user is Flying (§7).
+ */
+export function checkEnemyTarget(state: BattleState, user: UnitState, skill: Skill, targetId: UnitId): UnitState | Rejection {
+  const target = findUnit(state, targetId)
+  if (target === undefined) return { code: 'unknown-unit', message: `No Unit "${targetId}" on the Board` }
+  if (target.side === user.side) {
+    return { code: 'not-an-enemy', message: `${targetId} is on the same side as ${user.id}` }
+  }
+  const d = distance(user.tile, target.tile)
+  if (d < 1 || d > skill.range) {
+    return { code: 'out-of-range', message: `${targetId} is ${d} tiles away; ${skill.name} reaches ${skill.range}` }
+  }
+  // Rules §7.1: checked from distance 2; a Flying user sees over Units (a Flying target can still be blocked).
+  if (d >= 2 && !isFlying(user)) {
+    const blockers = unitsOnLine(state, user.tile, target.tile)
+    if (blockers.length > 0) {
+      const ids = blockers.map((u) => u.id)
+      return {
+        code: 'no-line-of-sight',
+        message: `${ids.join(', ')} ${ids.length === 1 ? 'stands' : 'stand'} between ${user.id} and ${targetId}`,
+        blockedBy: ids,
+      }
+    }
+  }
+  return target
+}
 
 export interface AttackPlan {
   readonly attacker: UnitState
@@ -39,12 +99,9 @@ export interface AttackPlan {
 }
 
 /**
- * Whether `attackerId` may use `skillId` on `targetId` now (rules §8.1, §17.4):
- * in play, the attacker's side to act, its activation open (or able to start)
- * and its Action unused, the target an enemy on the Board within range and,
- * at distance 2 or more, in line of sight unless the attacker is Flying (§7).
- * Returns the plan, or why not. Shared by legalActions, applyAction and
- * previewAction so all three always agree.
+ * Whether `attackerId` may use the attack `skillId` (Basic Attack) on
+ * `targetId` now. Returns the plan, or why not. Shared by legalActions,
+ * applyAction and previewAction so all three always agree.
  */
 export function checkAttack(
   state: BattleState,
@@ -52,50 +109,20 @@ export function checkAttack(
   skillId: string,
   targetId: UnitId,
 ): AttackPlan | Rejection {
-  if (state.outcome !== null) return { code: 'battle-over', message: 'The Battle is over' }
-  if (state.phase !== 'play') return { code: 'wrong-phase', message: 'No attack during deployment' }
-  const attacker = findUnit(state, attackerId)
-  if (attacker === undefined) return { code: 'unknown-unit', message: `No Unit "${attackerId}" on the Board` }
-  if (attacker.side !== state.sideToAct) {
-    return {
-      code: 'not-your-turn',
-      message: `${attackerId} belongs to side ${attacker.side}; side ${state.sideToAct} is to act`,
-    }
-  }
-  const blocker = activationBlocker(state, attacker)
-  if (blocker !== null) return blocker
-  if (attacker.hasActed) return { code: 'already-acted', message: `${attackerId} already used its Action this Turn` }
+  const attacker = checkActor(state, attackerId)
+  if (isRejection(attacker)) return attacker
   const skill = state.skills[skillId]
   if (skill === undefined) return { code: 'unknown-skill', message: `No skill "${skillId}"` }
-  const target = findUnit(state, targetId)
-  if (target === undefined) return { code: 'unknown-unit', message: `No Unit "${targetId}" on the Board` }
-  if (target.side === attacker.side) {
-    return { code: 'not-an-enemy', message: `${targetId} is on the same side as ${attackerId}` }
-  }
-  const d = distance(attacker.tile, target.tile)
-  if (d < 1 || d > skill.range) {
-    return { code: 'out-of-range', message: `${targetId} is ${d} tiles away; ${skill.name} reaches ${skill.range}` }
-  }
-  // Rules §7.1: checked from distance 2; a Flying attacker sees over Units (a Flying target can still be blocked).
-  if (d >= 2 && !isFlying(attacker)) {
-    const blockers = unitsOnLine(state, attacker.tile, target.tile)
-    if (blockers.length > 0) {
-      const ids = blockers.map((u) => u.id)
-      return {
-        code: 'no-line-of-sight',
-        message: `${ids.join(', ')} ${ids.length === 1 ? 'stands' : 'stand'} between ${attackerId} and ${targetId}`,
-        blockedBy: ids,
-      }
-    }
-  }
+  const target = checkEnemyTarget(state, attacker, skill, targetId)
+  if (isRejection(target)) return target
   return { attacker, target, skill }
 }
 
-export function isRejection(value: AttackPlan | Rejection): value is Rejection {
+export function isRejection(value: object): value is Rejection {
   return 'code' in value
 }
 
-function isFlying(unit: UnitState): boolean {
+export function isFlying(unit: UnitState): boolean {
   return unit.kind === 'monster' && unit.movement === 'flying'
 }
 
@@ -116,19 +143,20 @@ function isHit(face: number, attackBonus: number, defence: number): boolean {
 }
 
 /** Guard for physical attacks, Ward for elemental ones (rules §10.1), plus Guarded (§10.2, §12). */
-function defenceOf(skill: Skill, target: UnitState): { kind: 'guard' | 'ward'; value: number; bonus: number } {
+function defenceOf(state: BattleState, skill: Skill, target: UnitState): { kind: 'guard' | 'ward'; value: number; bonus: number } {
   const values = derive(target)
-  const bonus = guardedBonus(target)
-  return skill.attack === 'physical'
-    ? { kind: 'guard', value: values.guard + bonus, bonus }
-    : { kind: 'ward', value: values.ward + bonus, bonus }
+  const bonus = defenceBonus(state, target)
+  return skill.attack === 'elemental'
+    ? { kind: 'ward', value: values.ward + bonus, bonus }
+    : { kind: 'guard', value: values.guard + bonus, bonus }
 }
 
 // ----------------------------------------------------------------- damage
 
-/** The dice this attacker rolls for this skill, before a critical doubles them. */
-function damageDice(skill: Skill, attacker: UnitState): Dice {
-  return attacker.kind === 'tamer' && skill.tamerDamage !== undefined ? skill.tamerDamage : skill.damage
+/** The dice this attacker rolls for this skill before a critical doubles them; `null` when it deals no damage (Mark). */
+function damageDice(skill: Skill, attacker: UnitState): Dice | null {
+  if (attacker.kind === 'tamer' && skill.tamerDamage !== undefined) return skill.tamerDamage
+  return skill.damage ?? null
 }
 
 /**
@@ -163,11 +191,7 @@ function damageRange(dice: Dice, modifier: number): DamageRange {
 
 // ---------------------------------------------------------------- preview
 
-/** An exact probability: numerator / denominator (rules §21.1). */
-export interface Chance {
-  readonly numerator: number
-  readonly denominator: number
-}
+export type { Chance } from './statuses.ts'
 
 /** What one attack would do, computed without rolling (rules §21.1). */
 export interface AttackPreview {
@@ -180,7 +204,10 @@ export interface AttackPreview {
   readonly rollMode: RollMode
   /** Every source of advantage or disadvantage on this roll, before cancelling (rules §5.1). */
   readonly rollModeSources: readonly RollModeSource[]
+  /** Everything added to the d20: SEN mod + proficiency, plus `statusAttackBonuses`. */
   readonly attackBonus: number
+  /** The part of `attackBonus` that statuses give (Rallied +1, rules §10.2). */
+  readonly statusAttackBonuses: readonly StatusBonus[]
   /** Guard or Ward of the target, Guarded bonus included. */
   readonly defence: number
   readonly defenceKind: 'guard' | 'ward'
@@ -190,10 +217,12 @@ export interface AttackPreview {
   readonly hitChance: Chance
   /** Chance of a natural 20 on the d20 that counts. */
   readonly criticalChance: Chance
-  /** Damage range on an ordinary hit. */
-  readonly damage: DamageRange
-  /** Damage range on a critical (dice doubled). */
-  readonly criticalDamage: DamageRange
+  /** Damage range on an ordinary hit; `null` for an attack without damage (Mark). */
+  readonly damage: DamageRange | null
+  /** Damage range on a critical (dice doubled); `null` without damage. */
+  readonly criticalDamage: DamageRange | null
+  /** Statuses a hit gives (if the target is still up), each with the chance the target fails its save. */
+  readonly statuses: readonly StatusOdds[]
 }
 
 /** Count the d20 outcomes (1 die, or every ordered pair of 2) whose kept face passes `test`. */
@@ -214,8 +243,9 @@ export function previewAttack(state: BattleState, plan: AttackPlan): AttackPrevi
   const { attacker, target, skill } = plan
   const sources = rollModeSources(state, attacker, target)
   const mode = combineRollMode(sources)
-  const attackBonus = derive(attacker).attackBonus
-  const defence = defenceOf(skill, target)
+  const bonuses = attackRollBonuses(state, attacker)
+  const attackBonus = derive(attacker).attackBonus + bonuses.reduce((sum, b) => sum + b.bonus, 0)
+  const defence = defenceOf(state, skill, target)
   const atDistance = distance(attacker.tile, target.tile)
   const dice = damageDice(skill, attacker)
   const modifier = damageModifier(skill, attacker, atDistance)
@@ -228,56 +258,41 @@ export function previewAttack(state: BattleState, plan: AttackPlan): AttackPrevi
     rollMode: mode,
     rollModeSources: sources,
     attackBonus,
+    statusAttackBonuses: bonuses,
     defence: defence.value,
     defenceKind: defence.kind,
     guardedBonus: defence.bonus,
     hitChance: d20Chance(mode, (face) => isHit(face, attackBonus, defence.value)),
     criticalChance: d20Chance(mode, (face) => face === 20),
-    damage: damageRange(dice, modifier),
-    criticalDamage: damageRange({ count: dice.count * 2, sides: dice.sides }, modifier),
+    damage: dice === null ? null : damageRange(dice, modifier),
+    criticalDamage: dice === null ? null : damageRange({ count: dice.count * 2, sides: dice.sides }, modifier),
+    statuses: statusOdds(attacker, target, skill),
   }
 }
 
 // ---------------------------------------------------------------- resolve
 
-function rollDice(stream: DiceStream, count: number, sides: number): { rolls: number[]; stream: DiceStream } {
-  const rolls: number[] = []
-  let next = stream
-  for (let i = 0; i < count; i++) {
-    const roll = rollDie(next, sides)
-    rolls.push(roll.value)
-    next = roll.stream
-  }
-  return { rolls, stream: next }
-}
-
-function otherSide(side: Side): Side {
-  return side === 'A' ? 'B' : 'A'
-}
-
-/** Rules §19.1, checked every time a Unit goes down. */
-function outcomeAfterDown(state: BattleState, down: UnitState): BattleOutcome | null {
-  const winner = otherSide(down.side)
-  if (down.kind === 'tamer') return { winner, cause: 'tamerDown' }
-  const monstersLeft = state.units.some((u) => u.side === down.side && u.kind === 'monster')
-  return monstersLeft ? null : { winner, cause: 'monstersDown' }
-}
-
 /**
- * Resolve one attack against one target (rules §10.5, dice order §21.4):
+ * One attack against one target (rules §10.5 steps 1–4, dice order §21.4):
  * attack roll → on a hit, damage dice (doubled on a critical) + modifier →
- * HP goes down → a Unit at 0 HP leaves the Board → the Battle may end.
- * The attacker's Action is used whether it hits or misses, and the attack
- * starts (or continues) its activation (rules §17.4).
+ * HP goes down (a Unit at 0 leaves the Board and the Battle may end) → if
+ * the target is still up, the skill's statuses (with their saves). Does not
+ * book the Action or activation: the caller does.
  */
-export function resolveAttack(before: BattleState, plan: AttackPlan): { state: BattleState; events: BattleEvent[] } {
-  const { attacker, target, skill } = plan
-  const state = activate(before, attacker.id)
-  const preview = previewAttack(state, plan)
+export function attackOnce(
+  before: BattleState,
+  attackerId: UnitId,
+  targetId: UnitId,
+  skill: Skill,
+): { state: BattleState; events: BattleEvent[]; hit: boolean } {
+  const attacker = findUnit(before, attackerId)
+  const target = findUnit(before, targetId)
+  if (attacker === undefined || target === undefined) throw new Error(`Attack between Units not on the Board`)
+  const preview = previewAttack(before, { attacker, target, skill })
   const events: BattleEvent[] = []
 
-  const d20 = rollDice(state.dice, preview.rollMode === 'normal' ? 1 : 2, 20)
-  let dice = d20.stream
+  const d20 = rollDice(before.dice, preview.rollMode === 'normal' ? 1 : 2, 20)
+  let state: BattleState = { ...before, dice: d20.stream }
   const face = keptFace(preview.rollMode, d20.rolls[0] ?? 0, d20.rolls[1] ?? 0)
   const hit = isHit(face, preview.attackBonus, preview.defence)
   const critical = face === 20
@@ -296,45 +311,49 @@ export function resolveAttack(before: BattleState, plan: AttackPlan): { state: B
     hit,
     critical,
   })
+  if (!hit) return { state, events, hit }
 
-  let units = state.units.map((u) => (u.id === attacker.id ? { ...u, hasActed: true } : u))
-  let fallen = state.fallen
-  let outcome: BattleOutcome | null = null
-
-  if (hit) {
-    const range = critical ? preview.criticalDamage : preview.damage
-    const damage = rollDice(dice, range.dice.count, range.dice.sides)
-    dice = damage.stream
+  const range = critical ? preview.criticalDamage : preview.damage
+  if (range !== null) {
+    const damage = rollDice(state.dice, range.dice.count, range.dice.sides)
     const sum = damage.rolls.reduce((total, roll) => total + roll, 0)
     const amount = Math.max(MIN_DAMAGE, sum + range.modifier)
-    const hpAfter = Math.max(0, target.hp - amount)
-    events.push({
-      type: 'damageDealt',
-      source: attacker.id,
-      target: target.id,
-      skill: skill.id,
-      dice: range.dice,
-      rolls: damage.rolls,
-      modifier: range.modifier,
-      amount,
-      hpBefore: target.hp,
-      hpAfter,
-    })
-
-    if (hpAfter > 0) {
-      units = units.map((u) => (u.id === target.id ? { ...u, hp: hpAfter } : u))
-    } else {
-      // Rules §10.4: HP set to 0, off the Board at once, every status gone; then check §19.1.
-      const down = { ...target, hp: 0, statuses: [] }
-      units = units.filter((u) => u.id !== target.id)
-      fallen = [...fallen, down]
-      events.push({ type: 'unitDown', unit: target.id, tile: target.tile })
-      outcome = outcomeAfterDown({ ...state, units, fallen }, down)
-      if (outcome !== null) {
-        events.push({ type: 'battleEnded', winner: outcome.winner, cause: outcome.cause, round: state.round })
-      }
-    }
+    const loss = loseHp({ ...state, dice: damage.stream }, target.id, amount)
+    events.push(
+      {
+        type: 'damageDealt',
+        source: attacker.id,
+        target: target.id,
+        skill: skill.id,
+        dice: range.dice,
+        rolls: damage.rolls,
+        modifier: range.modifier,
+        amount,
+        hpBefore: loss.hpBefore,
+        hpAfter: loss.hpAfter,
+      },
+      ...loss.after,
+    )
+    state = loss.state
   }
 
-  return { state: { ...state, units, fallen, dice, outcome }, events }
+  // Rules §14.1: statuses stick only if the target is still up after the damage.
+  if (state.outcome === null && findUnit(state, target.id) !== undefined) {
+    const given = giveSkillStatuses(state, attacker, target.id, skill)
+    state = given.state
+    events.push(...given.events)
+  }
+  return { state, events, hit }
+}
+
+/**
+ * Basic Attack (rules §10.5): the attacker's Action is used whether it hits
+ * or misses, and the attack starts (or continues) its activation (rules §17.4).
+ */
+export function resolveAttack(before: BattleState, plan: AttackPlan): { state: BattleState; events: BattleEvent[] } {
+  const { attacker, target, skill } = plan
+  const active = activate(before, attacker.id)
+  const booked = { ...active, units: active.units.map((u) => (u.id === attacker.id ? { ...u, hasActed: true } : u)) }
+  const { state, events } = attackOnce(booked, attacker.id, target.id, skill)
+  return { state, events }
 }

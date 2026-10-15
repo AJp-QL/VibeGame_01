@@ -8,15 +8,20 @@ import {
   tileName,
   type Board,
   type Dice,
+  type ElementWheel,
   type Scenario,
   type Side,
   type Skill,
   type Species,
+  type Stat,
+  type StatusType,
   type Tile,
 } from '@mt/shared'
 import {
   BASIC_ATTACK,
+  checkActor,
   checkAttack,
+  DEFEND,
   isRejection,
   previewAttack,
   resolveAttack,
@@ -27,6 +32,19 @@ import { diceStream, type DiceSource } from './dice.ts'
 import { derive, type DerivedValues } from './derived.ts'
 import { pathTo, reachableTiles } from './movement.ts'
 import type { RollMode } from './rollMode.ts'
+import {
+  applyRetreat,
+  applyUseSkill,
+  legalRetreats,
+  legalSkillUses,
+  loadoutOf,
+  previewSkill,
+  type EffectPreview,
+  type RetreatAction,
+  type SavePreview,
+  type SkillAvailability,
+  type UseSkillAction,
+} from './skills.ts'
 import {
   findAnyUnit,
   findUnit,
@@ -39,7 +57,8 @@ import {
   type UnitStatus,
   type UnitTemplate,
 } from './state.ts'
-import { activate, activationBlocker, endStartOfTurnStatuses, NO_ACTIVATIONS, startTurn } from './turns.ts'
+import { applyStatus, countDownStatuses, endOwnTurnStartStatuses, startOfTurnDamage } from './statuses.ts'
+import { activate, activationBlocker, NO_ACTIVATIONS, startTurn } from './turns.ts'
 
 // ----------------------------------------------------------------- actions
 
@@ -54,6 +73,10 @@ export type Action =
   | { readonly type: 'basicAttack'; readonly unit: UnitId; readonly target: UnitId }
   /** Defend (rules §12): the Unit's Action; it becomes Guarded (Guard and Ward +2) until its side's next Turn. */
   | { readonly type: 'defend'; readonly unit: UnitId }
+  /** Use a loadout skill (rules §13, §15); target fields by the skill's target kind. */
+  | UseSkillAction
+  /** After Hit and Run: step to an empty tile within reach, or `to: null` to stay (rules §15.1, D-12). */
+  | RetreatAction
   /** End the current Turn; the other side starts its Turn (rules §17.4). */
   | { readonly type: 'endTurn' }
 
@@ -123,10 +146,50 @@ export type BattleEvent =
     }
   /** A Unit used Defend as its Action (rules §12); `statusApplied` (Guarded) follows. */
   | { readonly type: 'defended'; readonly unit: UnitId }
-  /** A Unit gained a status, or had it reset (rules §14.1). */
-  | { readonly type: 'statusApplied'; readonly unit: UnitId; readonly status: UnitStatus }
-  /** A status left a Unit, e.g. Guarded at the start of its side's next Turn (rules §14.1, §17.4). */
+  /** A Unit used a loadout skill (rules §15); what it does follows. `targets`: the Units it lands on, in order. */
+  | { readonly type: 'skillUsed'; readonly unit: UnitId; readonly skill: string; readonly targets: readonly UnitId[] }
+  /** A save against a status (rules §11): d20 + mod against the user's Save DC; no natural 1 or 20 rule (D-27). */
+  | {
+      readonly type: 'saveRolled'
+      /** The Unit saving. */
+      readonly unit: UnitId
+      /** The skill's user. */
+      readonly source: UnitId
+      readonly skill: string
+      readonly status: StatusId
+      readonly stat: Stat
+      readonly roll: number
+      readonly modifier: number
+      readonly total: number
+      readonly dc: number
+      /** `true`: the status does not stick. */
+      readonly saved: boolean
+    }
+  /**
+   * A Unit gained a status (rules §14.1). `refreshed`: it already had it and
+   * it started again at full duration (or kept the higher bonus, Guarded).
+   */
+  | { readonly type: 'statusApplied'; readonly unit: UnitId; readonly status: UnitStatus; readonly refreshed?: true }
+  /** A status left a Unit: its duration ran out, or Guarded at the start of its side's next Turn (rules §14.1, §17.4). */
   | { readonly type: 'statusEnded'; readonly unit: UnitId; readonly status: StatusId }
+  /**
+   * Start-of-Turn damage from a status (Bleed 1d4, rules §17.4): not an
+   * attack, so no Guard, Weakened or Cover. Counts for the other side's total damage (D-11).
+   */
+  | {
+      readonly type: 'statusTicked'
+      readonly unit: UnitId
+      readonly status: StatusId
+      readonly dice: Dice
+      readonly rolls: readonly number[]
+      readonly amount: number
+      readonly hpBefore: number
+      readonly hpAfter: number
+    }
+  /** Hit and Run's step (rules §15.1): not a Move. */
+  | { readonly type: 'unitRetreated'; readonly unit: UnitId; readonly from: Tile; readonly to: Tile }
+  /** The Unit chose to stay instead of Hit and Run's step. */
+  | { readonly type: 'retreatDeclined'; readonly unit: UnitId }
   /** A Unit reached 0 HP and left the Board (rules §10.4). */
   | { readonly type: 'unitDown'; readonly unit: UnitId; readonly tile: Tile }
   /** The Battle is over (rules §19.1); nothing more can happen. */
@@ -159,6 +222,20 @@ export type RejectionCode =
   | 'out-of-range'
   /** Units stand on the line from the attacker to a target 2 or more tiles away (rules §7). */
   | 'no-line-of-sight'
+  /** A decision must be made first (Hit and Run's step): only `retreat` is legal. */
+  | 'decision-pending'
+  /** `retreat` when there is no step to choose, or by another Unit. */
+  | 'no-decision'
+  /** The skill is not in the Unit's loadout. */
+  | 'not-in-loadout'
+  /** Passive, or not in the game yet (its ticket has not landed). */
+  | 'skill-not-available'
+  /** A Major skill used in the last Turn of the side, or a Signature skill already used (rules §13). */
+  | 'on-cooldown'
+  /** Target fields that do not fit the skill (e.g. a target for a skill on oneself). */
+  | 'invalid-target'
+  /** A skill for allies aimed at an enemy. */
+  | 'not-an-ally'
 
 export interface Rejection {
   readonly code: RejectionCode
@@ -180,8 +257,12 @@ export interface BattleSetup {
   readonly board: Board
   /** Species by id; must contain every species the Scenario uses. */
   readonly species: Readonly<Record<string, Species>>
-  /** Skills by id; must contain Basic Attack. */
+  /** Skills by id (data/skills); must contain Basic Attack and Defend. */
   readonly skills: Readonly<Record<string, Skill>>
+  /** Status types by id (data/statuses). */
+  readonly statuses: Readonly<Record<string, StatusType>>
+  /** The element wheel (data/elements). */
+  readonly elementWheel: ElementWheel
   /** Dice Seed for play, or scripted roll results for tests. */
   readonly dice: DiceSource
   /**
@@ -206,7 +287,9 @@ export function createBattle(setup: BattleSetup): BattleState {
   // Any Board goes with any Scenario: `scenario.board` is only the default the
   // menu offers (spec user story 8).
   const { scenario, board, species, skills } = setup
-  if (skills[BASIC_ATTACK] === undefined) throw new Error(`Skills must include "${BASIC_ATTACK}"`)
+  for (const required of [BASIC_ATTACK, DEFEND]) {
+    if (skills[required] === undefined) throw new Error(`Skills must include "${required}"`)
+  }
 
   const templates: UnitTemplate[] = []
   for (const side of SIDES) {
@@ -222,6 +305,7 @@ export function createBattle(setup: BattleSetup): BattleState {
       hasMoved: false,
       hasActed: false,
       statuses: [],
+      skillsUsed: {},
     })
     team.monsters.forEach((monster, index) => {
       const speciesData = species[monster.species]
@@ -242,6 +326,7 @@ export function createBattle(setup: BattleSetup): BattleState {
         hasMoved: false,
         hasActed: false,
         statuses: [],
+        skillsUsed: {},
       })
     })
   }
@@ -265,6 +350,9 @@ export function createBattle(setup: BattleSetup): BattleState {
     activations: NO_ACTIVATIONS,
     dice: diceStream(setup.dice),
     skills,
+    statusTypes: setup.statuses,
+    elementWheel: setup.elementWheel,
+    pending: null,
     outcome: null,
   }
   return setup.preset === undefined ? deploying : startFromPreset(deploying, roster, setup.preset)
@@ -295,11 +383,13 @@ function startFromPreset(
 /**
  * Every legal action for the side to act. Deployment: placements, then
  * Confirm once all of the side's Units are placed. Play: Moves, then Basic
- * Attacks, then Defends, End Turn last. None once the Battle is over.
+ * Attacks, then skills, then Defends, End Turn last; while a decision is
+ * pending (Hit and Run's step), only its answers. None once the Battle is over.
  */
 export function legalActions(state: BattleState): Action[] {
   if (state.outcome !== null) return []
   if (state.phase === 'deployment') return deploymentActions(state)
+  if (state.pending !== null) return legalRetreats(state)
   const actions: Action[] = []
   for (const unit of state.units) {
     if (unit.side !== state.sideToAct || unit.hasMoved || activationBlocker(state, unit) !== null) continue
@@ -316,11 +406,26 @@ export function legalActions(state: BattleState): Action[] {
       }
     }
   }
+  actions.push(...legalSkillUses(state))
   for (const unit of state.units) {
-    if (actionBlocker(state, unit.id) === null) actions.push({ type: 'defend', unit: unit.id })
+    if (unit.side === state.sideToAct && !isRejection(checkActor(state, unit.id))) {
+      actions.push({ type: 'defend', unit: unit.id })
+    }
   }
   actions.push({ type: 'endTurn' })
   return actions
+}
+
+/**
+ * The loadout of a Unit on the Board or fallen (rules §13): each skill's
+ * tier, cooldown as the UI shows it (rules §13.2), whether a Signature is
+ * spent and whether the engine can resolve it yet. Not whether it can be used
+ * right now: that is `legalActions`.
+ */
+export function unitSkills(state: BattleState, unitId: UnitId): SkillAvailability[] {
+  const unit = findAnyUnit(state, unitId)
+  if (unit === undefined) throw new Error(`Unknown Unit "${unitId}"`)
+  return loadoutOf(state, unit)
 }
 
 /**
@@ -350,6 +455,10 @@ export function applyAction(state: BattleState, action: Action): ApplyResult {
       return applyBasicAttack(state, action.unit, action.target)
     case 'defend':
       return applyDefend(state, action.unit)
+    case 'useSkill':
+      return applyUseSkill(state, action)
+    case 'retreat':
+      return applyRetreat(state, action)
     case 'endTurn':
       return applyEndTurn(state)
     default:
@@ -362,15 +471,8 @@ function reject(state: BattleState, code: RejectionCode, message: string): Apply
 }
 
 function applyMove(state: BattleState, unitId: UnitId, to: Tile): ApplyResult {
-  if (state.phase !== 'play') return reject(state, 'wrong-phase', 'No Move during deployment')
-  const unit = findUnit(state, unitId)
-  if (unit === undefined) return reject(state, 'unknown-unit', `No Unit "${unitId}"`)
-  if (unit.side !== state.sideToAct) {
-    return reject(state, 'not-your-turn', `${unitId} belongs to side ${unit.side}; side ${state.sideToAct} is to act`)
-  }
-  const blocker = activationBlocker(state, unit)
-  if (blocker !== null) return { ok: false, state, rejection: blocker }
-  if (unit.hasMoved) return reject(state, 'already-moved', `${unitId} already moved this Turn`)
+  const unit = checkActor(state, unitId, 'move')
+  if (isRejection(unit)) return { ok: false, state, rejection: unit }
   if (!isOnBoard(to)) return reject(state, 'off-board', `(${to.x}, ${to.y}) is not on the Board`)
   const occupant = state.units.find((u) => u.tile.x === to.x && u.tile.y === to.y)
   if (occupant !== undefined) {
@@ -395,79 +497,67 @@ function applyBasicAttack(state: BattleState, unitId: UnitId, targetId: UnitId):
 }
 
 /**
- * Why `unitId` cannot use its Action now, whatever the Action is, or `null`:
- * in play, its side to act, its activation open or able to start, its
- * Action unused (rules §17.4).
- */
-function actionBlocker(state: BattleState, unitId: UnitId): Rejection | null {
-  if (state.phase !== 'play') return { code: 'wrong-phase', message: 'No Action during deployment' }
-  const unit = findUnit(state, unitId)
-  if (unit === undefined) return { code: 'unknown-unit', message: `No Unit "${unitId}" on the Board` }
-  if (unit.side !== state.sideToAct) {
-    return { code: 'not-your-turn', message: `${unitId} belongs to side ${unit.side}; side ${state.sideToAct} is to act` }
-  }
-  const blocker = activationBlocker(state, unit)
-  if (blocker !== null) return blocker
-  if (unit.hasActed) return { code: 'already-acted', message: `${unitId} already used its Action this Turn` }
-  return null
-}
-
-/** Defend gives Guarded +2 (rules §12). Kept in code until statuses move to data (ticket 07). */
-export const DEFEND_GUARDED_BONUS = 2
-
-/**
- * Defend (rules §12): uses the Unit's Action and makes it Guarded, Guard and
- * Ward +2, until the start of its side's next Turn. Guarded from several
- * sources keeps the higher bonus.
+ * Defend (rules §12): uses the Unit's Action and gives what data/skills/defend
+ * gives (Guarded, Guard and Ward +2, until the start of its side's next
+ * Turn). Guarded from several sources keeps the higher bonus.
  */
 function applyDefend(state: BattleState, unitId: UnitId): ApplyResult {
-  const blocker = actionBlocker(state, unitId)
-  if (blocker !== null) return { ok: false, state, rejection: blocker }
+  const unit = checkActor(state, unitId)
+  if (isRejection(unit)) return { ok: false, state, rejection: unit }
   const active = activate(state, unitId)
-  let status: UnitStatus = { id: 'guarded', bonus: DEFEND_GUARDED_BONUS }
-  const units = active.units.map((u) => {
-    if (u.id !== unitId) return u
-    const kept = u.statuses.find((s) => s.id === 'guarded')
-    if (kept !== undefined && kept.bonus > status.bonus) status = kept
-    return { ...u, hasActed: true, statuses: [...u.statuses.filter((s) => s.id !== 'guarded'), status] }
-  })
-  return {
-    ok: true,
-    state: { ...active, units },
-    events: [
-      { type: 'defended', unit: unitId },
-      { type: 'statusApplied', unit: unitId, status },
-    ],
+  let next: BattleState = { ...active, units: active.units.map((u) => (u.id === unitId ? { ...u, hasActed: true } : u)) }
+  const events: BattleEvent[] = [{ type: 'defended', unit: unitId }]
+  for (const application of state.skills[DEFEND]?.applies ?? []) {
+    const given = applyStatus(next, unitId, application, unitId)
+    next = given.state
+    events.push(given.event)
   }
+  return { ok: true, state: next, events }
 }
 
+/**
+ * End the Turn (rules §17.4): statuses on the ending side count down, then
+ * the other side's Turn starts: Guarded (and the like) end, then Bleed ticks
+ * in Unit order, which may end the Battle.
+ */
 function applyEndTurn(state: BattleState): ApplyResult {
   if (state.phase !== 'play' || state.firstSide === null) {
     return reject(state, 'wrong-phase', 'No Turn to end during deployment')
   }
+  if (state.pending !== null) {
+    return reject(state, 'decision-pending', `${state.pending.unit} must first choose where to step (${state.pending.skill})`)
+  }
   const ending = state.sideToAct
   const next: Side = ending === 'A' ? 'B' : 'A'
+  const counted = countDownStatuses(state, ending)
   const rested: BattleState = {
-    ...state,
-    units: state.units.map((u) => (u.hasMoved || u.hasActed ? { ...u, hasMoved: false, hasActed: false } : u)),
+    ...counted.state,
+    units: counted.state.units.map((u) => (u.hasMoved || u.hasActed ? { ...u, hasMoved: false, hasActed: false } : u)),
   }
   const started = startTurn(rested, next, state.firstSide)
-  const upkeep = endStartOfTurnStatuses(started, next)
+  const upkeep = endOwnTurnStartStatuses(started, next)
+  const ticks = startOfTurnDamage(upkeep.state, next)
   return {
     ok: true,
-    state: upkeep.state,
+    state: ticks.state,
     events: [
       { type: 'turnEnded', side: ending, turn: state.turnNumber[ending] },
+      ...counted.events,
       { type: 'turnStarted', side: next, turn: started.turnNumber[next], round: started.round },
       ...upkeep.events,
+      ...ticks.events,
     ],
   }
 }
 
 // ----------------------------------------------------------------- preview
 
-/** What an action would do, without doing it. Only attacks have odds to show so far (Defend has nothing to roll). */
-export type ActionPreview = AttackPreview
+/**
+ * What an action would do, without doing it: an attack's odds (Basic Attack
+ * and attack skills), a save skill's odds, or who a skill without rolls
+ * affects. Defend, Move and End Turn have nothing to roll.
+ */
+export type ActionPreview = AttackPreview | SavePreview | EffectPreview
 
 export type PreviewResult =
   /** `preview` is null for a legal action with nothing to roll (Move, End Turn). */
@@ -486,6 +576,7 @@ export function previewAction(state: BattleState, action: Action): PreviewResult
     if (isRejection(plan)) return { ok: false, rejection: plan }
     return { ok: true, preview: previewAttack(state, plan) }
   }
+  if (action.type === 'useSkill') return previewSkill(state, action)
   // Nothing to roll: legal exactly when applyAction accepts it (pure, so nothing changes).
   const result = applyAction(state, action)
   return result.ok ? { ok: true, preview: null } : { ok: false, rejection: result.rejection }

@@ -80,6 +80,18 @@ export function seedXoshiro128(seed: string): Xoshiro128State {
   return [words[0] ?? 0, words[1] ?? 0, words[2] ?? 0, words[3] ?? 0]
 }
 
+/** Roll `count` dice with `sides` faces one after another (rules §21.4). */
+export function rollDice(stream: DiceStream, count: number, sides: number): { rolls: number[]; stream: DiceStream } {
+  const rolls: number[] = []
+  let next = stream
+  for (let i = 0; i < count; i++) {
+    const roll = rollDie(next, sides)
+    rolls.push(roll.value)
+    next = roll.stream
+  }
+  return { rolls, stream: next }
+}
+
 const TWO_POW_32 = 4294967296
 
 /**

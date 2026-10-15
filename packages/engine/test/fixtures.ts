@@ -11,6 +11,7 @@ import {
   type Side,
   type Skill,
   type Stats,
+  type StatusType,
 } from '@mt/shared'
 import { applyAction, createBattle, type ApplyResult, type BattleState, type DiceSource } from '../src/index.ts'
 
@@ -49,6 +50,8 @@ export interface BattleOptions {
   readonly elements?: Readonly<Record<string, Element>>
   /** Skill data changes by skill id, on top of data/skills (e.g. a longer range). */
   readonly skills?: Readonly<Record<string, Partial<Skill>>>
+  /** Status data changes by status id, on top of data/statuses. */
+  readonly statuses?: Readonly<Record<string, Partial<StatusType>>>
   readonly dice?: DiceSource
 }
 
@@ -81,6 +84,10 @@ function setup(dice: DiceSource | undefined, options: BattleOptions = {}) {
     skills: Object.fromEntries(
       Object.entries(gameData.skills).map(([id, skill]) => [id, { ...skill, ...options.skills?.[id] }]),
     ),
+    statuses: Object.fromEntries(
+      Object.entries(gameData.statuses).map(([id, status]) => [id, { ...status, ...options.statuses?.[id] }]),
+    ),
+    elementWheel: gameData.elementWheel,
     dice: dice ?? { seed: '0123456789abcdef' },
   }
 }

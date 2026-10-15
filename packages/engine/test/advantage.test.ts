@@ -25,7 +25,7 @@ function battle(A: Tiles, B: Tiles, options: BattleOptions = {}): BattleState {
 
 function preview(state: BattleState, unit: UnitId, target: UnitId): AttackPreview {
   const result = previewAction(state, { type: 'basicAttack', unit, target })
-  if (!result.ok || result.preview === null) throw new Error(result.ok ? 'no preview' : result.rejection.message)
+  if (!result.ok || result.preview?.type !== 'attack') throw new Error(result.ok ? 'no preview' : result.rejection.message)
   return result.preview
 }
 

@@ -8,6 +8,7 @@
  *   previewAction(state, action)  → exact odds and damage ranges, without rolling or changing state
  *   applyAction(state, action)    → { ok, state, events } | { ok: false, state, rejection }
  *   derivedValues(state, unitId)  → values computed from the Unit's data
+ *   unitSkills(state, unitId)     → the Unit's loadout: tier, cooldown, implemented yet
  *   unitsVisibleTo(state, side)   → the Units a side may see (deployment is hidden)
  *   lineOfSightTiles(from, to)    → the tiles a line of sight passes (rules §7.3), for tests, AI and UI
  *   recordReplay / replayCompatibility / replayBattle → Replay of a Battle (ENGINE_VERSION is stamped in it)
@@ -15,10 +16,10 @@
 export {
   applyAction,
   createBattle,
-  DEFEND_GUARDED_BONUS,
   derivedValues,
   legalActions,
   previewAction,
+  unitSkills,
   type Action,
   type ActionPreview,
   type ApplyResult,
@@ -28,7 +29,16 @@ export {
   type Rejection,
   type RejectionCode,
 } from './battle.ts'
-export { BASIC_ATTACK, type AttackPreview, type Chance, type DamageRange } from './combat.ts'
+export { BASIC_ATTACK, DEFEND, type AttackPreview, type Chance, type DamageRange } from './combat.ts'
+export {
+  MAJOR_COOLDOWN_TURNS,
+  type EffectPreview,
+  type RetreatAction,
+  type SavePreview,
+  type SkillAvailability,
+  type UseSkillAction,
+} from './skills.ts'
+export type { SaveOdds, StatusBonus, StatusOdds } from './statuses.ts'
 export { lineOfSightTiles } from './lineOfSight.ts'
 export { elementBeats, type RollEffect, type RollMode, type RollModeSource } from './rollMode.ts'
 export type { DerivedValues } from './derived.ts'
@@ -41,10 +51,10 @@ export type {
   BattlePhase,
   BattleState,
   Deployment,
-  GuardedStatus,
   Initiative,
   InitiativeRoll,
   MonsterUnit,
+  PendingDecision,
   StatusId,
   TamerUnit,
   UnitId,

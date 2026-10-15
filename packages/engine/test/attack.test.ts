@@ -34,7 +34,7 @@ function accepted(result: ApplyResult): { state: BattleState; events: readonly B
 
 function preview(state: BattleState, unit: UnitId, target: UnitId): AttackPreview {
   const result = previewAction(state, { type: 'basicAttack', unit, target })
-  if (!result.ok || result.preview === null) throw new Error('expected an attack preview')
+  if (!result.ok || result.preview?.type !== 'attack') throw new Error('expected an attack preview')
   return result.preview
 }
 
@@ -199,8 +199,8 @@ describe('preview: exact odds, no state change, no dice used (rules §21.1)', ()
       const event = accepted(attack(battle({ dice: { rolls } }), 'A.m1', 'B.m1')).events[1]
       return event?.type === 'damageDealt' ? event.amount : NaN
     }
-    expect([amount([15, 1]), amount([15, 8])]).toEqual([p.damage.min, p.damage.max])
-    expect([amount([20, 1, 1]), amount([20, 8, 8])]).toEqual([p.criticalDamage.min, p.criticalDamage.max])
+    expect([amount([15, 1]), amount([15, 8])]).toEqual([p.damage?.min, p.damage?.max])
+    expect([amount([20, 1, 1]), amount([20, 8, 8])]).toEqual([p.criticalDamage?.min, p.criticalDamage?.max])
   })
 
   it('does not change the state or draw dice (seeded and scripted)', () => {

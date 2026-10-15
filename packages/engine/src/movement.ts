@@ -5,14 +5,16 @@
 import { isOnBoard, sameTile, type Tile } from '@mt/shared'
 import { baseMoveRange } from './derived.ts'
 import { terrainAt, type BattleState, type UnitState } from './state.ts'
+import { isImmobile } from './statuses.ts'
 
 /** Distance between two tiles: Chebyshev, diagonals count 1 (rules §2.3). */
 export function distance(a: Tile, b: Tile): number {
   return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
 }
 
-/** Movement range for this Move (rules §6.1): base + Aquatic on water. */
+/** Movement range for this Move (rules §6.1): base + Aquatic on water, but 0 while Pinned (rules §14.2). */
 export function moveRangeNow(state: BattleState, unit: UnitState): number {
+  if (isImmobile(state, unit)) return 0
   const aquaticBonus =
     unit.kind === 'monster' && unit.movement === 'aquatic' && terrainAt(state, unit.tile) === 'water' ? 1 : 0
   return baseMoveRange(unit) + aquaticBonus

@@ -52,6 +52,8 @@ function playBattle(header: ReplayHeader, data: GameData = gameData, maxActions 
     board,
     species: data.species,
     skills: data.skills,
+    statuses: data.statuses,
+    elementWheel: data.elementWheel,
     dice: { seed: header.diceSeed },
     ...(header.preset ? { preset: header.preset } : {}),
   })

@@ -8,8 +8,8 @@
  * only 2 of its 3 Units may start an activation.
  */
 import type { Side } from '@mt/shared'
-import type { BattleEvent, Rejection } from './battle.ts'
-import type { Activations, BattleState, StatusId, UnitId, UnitState } from './state.ts'
+import type { Rejection } from './battle.ts'
+import type { Activations, BattleState, UnitId, UnitState } from './state.ts'
 
 /** Units per side: Tamer + 2 Monsters (rules §17.1). */
 export const TEAM_SIZE = 3
@@ -23,7 +23,7 @@ export const NO_ACTIVATIONS: Activations = { current: null, started: [], limit: 
 /**
  * Start Turn `turnNumber[side] + 1` of `side` (rules §17.4 "เริ่ม Turn"):
  * count the Turn, count a Round when `side` plays first, and open a fresh set
- * of activations. Bleed and status upkeep join here in later tickets.
+ * of activations. Status upkeep and Bleed follow in applyEndTurn (statuses.ts).
  */
 export function startTurn(state: BattleState, side: Side, firstSide: Side): BattleState {
   const turn = state.turnNumber[side] + 1
@@ -39,26 +39,6 @@ export function startTurn(state: BattleState, side: Side, firstSide: Side): Batt
       limit: isFirstTurnOfStarter ? FIRST_TURN_ACTIVATIONS : TEAM_SIZE,
     },
   }
-}
-
-/** Statuses that last "until the next Turn of the Unit's side" (rules §14.1): Countering and Cover join later. */
-const ENDS_AT_OWN_TURN_START: readonly StatusId[] = ['guarded']
-
-/**
- * Start-of-Turn step 2 (rules §17.4): Guarded (later also Countering and
- * Cover) leaves the Units of `side`, in Unit order. Bleed ticks after this
- * (ticket 07).
- */
-export function endStartOfTurnStatuses(state: BattleState, side: Side): { state: BattleState; events: BattleEvent[] } {
-  const events: BattleEvent[] = []
-  const units = state.units.map((unit) => {
-    if (unit.side !== side) return unit
-    const ending = unit.statuses.filter((s) => ENDS_AT_OWN_TURN_START.includes(s.id))
-    if (ending.length === 0) return unit
-    for (const status of ending) events.push({ type: 'statusEnded', unit: unit.id, status: status.id })
-    return { ...unit, statuses: unit.statuses.filter((s) => !ENDS_AT_OWN_TURN_START.includes(s.id)) }
-  })
-  return { state: events.length === 0 ? state : { ...state, units }, events }
 }
 
 /**
