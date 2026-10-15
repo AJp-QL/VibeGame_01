@@ -1,0 +1,10 @@
+// Cloudflare Workers static assets: serves the Vite build in ./dist, no Worker code.
+// Deploy is a human step (needs a Cloudflare account): see README.md "Deploy".
+{
+  "name": "monster-tactics",
+  "compatibility_date": "2026-10-14",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

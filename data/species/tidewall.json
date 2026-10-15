@@ -1,0 +1,8 @@
+{
+  "id": "tidewall",
+  "name": "Tidewall",
+  "role": "guardian",
+  "build": "heavy",
+  "movement": "aquatic",
+  "guardBonus": 2
+}

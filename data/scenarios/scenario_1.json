@@ -1,0 +1,55 @@
+{
+  "id": "scenario_1",
+  "name": "Scenario 1",
+  "board": "crossroads",
+  "teams": {
+    "A": {
+      "tamer": {
+        "level": 1,
+        "stats": { "pow": 10, "agi": 12, "vit": 12, "int": 10, "sen": 12, "spi": 12 },
+        "skills": ["cover", "attune", "first_aid", "distract"]
+      },
+      "monsters": [
+        {
+          "species": "fangrel",
+          "element": "forest",
+          "star": 1,
+          "stats": { "pow": 14, "agi": 12, "vit": 10, "int": 8, "sen": 12, "spi": 8 },
+          "skills": ["heavy_blow", "rend", "hit_and_run", "pack_howl"]
+        },
+        {
+          "species": "wispling",
+          "element": "mountain",
+          "star": 1,
+          "stats": { "pow": 8, "agi": 12, "vit": 8, "int": 14, "sen": 12, "spi": 12 },
+          "skills": ["element_bolt", "burst", "hex", "blink"]
+        }
+      ],
+      "startingTiles": ["d1", "c2", "e2"]
+    },
+    "B": {
+      "tamer": {
+        "level": 1,
+        "stats": { "pow": 10, "agi": 12, "vit": 12, "int": 10, "sen": 12, "spi": 12 },
+        "skills": ["cover", "attune", "first_aid", "distract"]
+      },
+      "monsters": [
+        {
+          "species": "tidewall",
+          "element": "desert",
+          "star": 1,
+          "stats": { "pow": 12, "agi": 8, "vit": 14, "int": 8, "sen": 10, "spi": 12 },
+          "skills": ["taunt", "shield_bash", "counter", "pincer_guard"]
+        },
+        {
+          "species": "quillfox",
+          "element": "water",
+          "star": 1,
+          "stats": { "pow": 12, "agi": 12, "vit": 10, "int": 8, "sen": 14, "spi": 8 },
+          "skills": ["long_shot", "pin", "mark", "camouflage"]
+        }
+      ],
+      "startingTiles": ["d7", "e6", "c6"]
+    }
+  }
+}

@@ -9,8 +9,10 @@
 - F3 Tactical grid battle, Technical requirements (tile 32x32)
 
 ## แนวทาง/กฎการตั้งชื่อ
-- <board_id>.json หรือ .yaml, พิกัดแบบ a1-g7 ตามที่ใช้ใน playtest
+- <board_id>.json: `rows` 7 สตริง แถว 1 ก่อน แต่ละตัวอักษรคือช่อง a ถึง g ใช้สัญลักษณ์เดียวกับ rules §2.2 (`.` ปกติ, F ป่า, W น้ำ, M ภูเขา, D ทะเลทราย, L แสง, K มืด)
+- พิกัดแบบ a1-g7 ตามที่ใช้ใน playtest
 - ระยะใช้ Chebyshev, line of sight ใช้ Bresenham (ตาม prototype)
 
 ## สถานะ
-- ยังว่าง, รอเฟส 1
+- มี crossroads.json (rules §2.2)
+- จุดเกิดยังไม่อยู่ใน Board (โซนวางเป็นกติกา rules §17.1) ส่วนช่องเริ่มชั่วคราวอยู่ใน Scenario

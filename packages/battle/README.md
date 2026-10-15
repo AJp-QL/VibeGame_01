@@ -10,8 +10,10 @@ renderer ของกระดานต่อสู้ 7x7 ด้วย 2D frame
 - F3 Tactical grid battle, Technical requirements (hybrid rendering, tile 32x32)
 
 ## แนวทาง/กฎการตั้งชื่อ
-- 2D framework ยังไม่ตัดสินใจ ต้องยืนยันชื่อ library และเวอร์ชันจาก docs จริงก่อนเริ่ม implement (ตาม PRD)
+- ใช้ Phaser 4 (ADR 0003, docs/research/phase-1-stack.md)
+- ไม่ import web: ประกาศ interface `BattleSessionPort` ที่ต้องการไว้ใน `src/port.ts` แล้ว web ส่ง implementation เข้ามา
 - ภาพ pixel art ต้องตั้ง nearest-neighbor และ scale เป็นจำนวนเต็ม
 
 ## สถานะ
-- ยังว่าง, รอเลือก framework
+- `createBattleGame(parent, session)` วาด Board 7x7 (tile 32x32, `pixelArt`, zoom จำนวนเต็มด้วย MAX_ZOOM) สีช่องตามธาตุ และ Unit ภาพชั่วคราว (silhouette ต่อ species, สีตามธาตุ, ฐานและธงสีทีม)
+- แตะ/คลิก Unit แล้วเห็นช่องที่เดินได้, แตะช่องเพื่อเดิน (ใช้แค่ pointerdown ไม่พึ่ง hover) และเล่น animation เดินตาม path ในเหตุการณ์ของ engine

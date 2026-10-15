@@ -1,0 +1,161 @@
+:root {
+  --bg: #15161a;
+  --panel: #20222a;
+  --text: #ecebe6;
+  --muted: #a3a29a;
+  --accent: #ffe14d;
+  --side-a: #e0453a;
+  --side-b: #f5f5f5;
+  color-scheme: dark;
+  font-family: system-ui, 'Noto Sans Thai', 'Leelawadee UI', Tahoma, sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+.app {
+  max-width: 720px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-header h1 {
+  margin: 12px 0 0;
+  font-size: 1.25rem;
+}
+
+.battle {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.round {
+  color: var(--muted);
+}
+
+.turn {
+  font-weight: 600;
+  padding-left: 8px;
+  border-left: 4px solid currentColor;
+}
+
+.turn.side-A {
+  border-color: var(--side-a);
+}
+
+.turn.side-B {
+  border-color: var(--side-b);
+}
+
+/* The Phaser parent needs a definite size: MAX_ZOOM picks the largest whole
+   multiple of 224 px that fits both width and height. */
+.board {
+  width: 100%;
+  height: max(224px, min(100vw - 32px, 75vh));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+}
+
+.board canvas {
+  display: block;
+  margin: 0 !important;
+}
+
+.panel {
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.panel h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.hint {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+.unit-card {
+  margin-bottom: 12px;
+  padding-left: 8px;
+  border-left: 4px solid currentColor;
+}
+
+.unit-card.side-A {
+  border-color: var(--side-a);
+}
+
+.unit-card.side-B {
+  border-color: var(--side-b);
+}
+
+.unit-card .team {
+  color: var(--muted);
+}
+
+.end-turn {
+  font: inherit;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 8px 20px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #15161a;
+  cursor: pointer;
+}
+
+.end-turn:active {
+  transform: translateY(1px);
+}
+
+.log ul {
+  margin: 0;
+  padding-left: 20px;
+  max-height: 12em;
+  overflow-y: auto;
+}
+
+.log .empty,
+.meta,
+.app-footer {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.app-footer {
+  margin-top: auto;
+  padding: 12px 0;
+}
+
+.error pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

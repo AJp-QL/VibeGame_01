@@ -15,7 +15,8 @@
 
 ## แนวทาง/กฎการตั้งชื่อ
 - ทิศทาง dependency: shared <- engine <- ai / battle / web / server; engine ห้าม import package อื่นนอกจาก shared
-- ภาษา, build tool และ framework ยังไม่ล็อก ต้องยืนยันชื่อ library และเวอร์ชันจาก docs จริงก่อนเริ่ม implement (ตาม PRD)
+- stack และเวอร์ชันตาม docs/research/phase-1-stack.md (TypeScript, pnpm, Vite, Vitest, React, Phaser)
 
 ## สถานะ
-- ยังว่าง, รอเฟส 1
+- pnpm workspace + TypeScript project references (`tsc -b`) ตั้งแล้วใน ticket 03: มี shared, engine, battle, web; ai และ server ยังว่าง
+- แต่ละ package export `src/index.ts` ตรงๆ (ไม่มี build step) และ import ข้ามได้แค่ package ที่ประกาศใน `dependencies` (import ผิดทิศ `tsc -b` และ Vitest จะ fail)

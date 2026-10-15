@@ -1,0 +1,16 @@
+{
+  "name": "@mt/battle",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@mt/engine": "workspace:*",
+    "@mt/shared": "workspace:*",
+    "phaser": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

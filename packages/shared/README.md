@@ -15,4 +15,6 @@ types และ data schema ที่ใช้ร่วมกันทุก pac
 - ต้องยืนยันชื่อ library และเวอร์ชันจาก docs จริงก่อนเริ่ม implement (ตาม PRD)
 
 ## สถานะ
-- ยังว่าง, รอเฟส 1
+- มี schema (zod) ของ boards, species, scenarios และ `loadGameData()` ที่ตรวจทั้งโฟลเดอร์ data/ (schema, id ตรงชื่อไฟล์, การอ้างอิงข้ามไฟล์) ใช้ทั้งตอน build, test และโหลด
+- มี type ของ Tile และตัวแปลงชื่อช่อง a1–g7
+- ยังไม่มี schema ของ skills, statuses และ Replay

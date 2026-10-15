@@ -3,16 +3,18 @@
 ข้อมูลเกม (data-driven) ที่ engine อ่าน แยกตามประเภท
 
 ## เก็บอะไร
-- species/, skills/, statuses/, traits/, boards/, campaigns/
+- species/, skills/, statuses/, traits/, boards/, campaigns/, scenarios/
 
 ## อ้างอิง PRD
 - F1 Shared stat model, F3, F4, F7 Monster design, Content/progression/economy
 
 ## แนวทาง/กฎการตั้งชื่อ
-- รูปแบบ JSON หรือ YAML (เลือกแบบเดียวทั้งโปรเจกต์ ยังไม่ตัดสินใจ), หนึ่ง entity ต่อหนึ่งไฟล์
+- รูปแบบ JSON, หนึ่ง entity ต่อหนึ่งไฟล์
 - ชื่อไฟล์และ id เป็น snake_case ภาษาอังกฤษ ตรงกัน เช่น fangrel.json มี id "fangrel"
-- schema นิยามไว้ที่ packages/shared และต้อง validate ผ่านก่อน commit
-- ลำดับ: prototype/rules -> data/ -> packages/engine
+- schema นิยามไว้ที่ packages/shared (`loadGameData`) และถูกตรวจตอน `pnpm test`, ตอน build/dev และตอนเกมโหลด โฟลเดอร์ที่ยังไม่มี schema ห้ามมีไฟล์ .json
+- เก็บแค่ค่าต้นทาง (stat, Star, Level, ธาตุ, ข้อมูล species) ไม่เก็บค่าที่คำนวณได้ (HP, ระยะเดิน ฯลฯ)
+- ลำดับ: docs/rules -> data/ -> packages/engine
 
 ## สถานะ
-- ยังว่าง, รอเฟส 1 (แปลงจาก rules v4)
+- มี boards/crossroads, species 4 ตัว (เฉพาะข้อมูลที่การเดินใช้) และ scenarios/scenario_1
+- skills, statuses, traits, campaigns ยังว่าง

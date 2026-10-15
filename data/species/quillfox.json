@@ -1,0 +1,8 @@
+{
+  "id": "quillfox",
+  "name": "Quillfox",
+  "role": "ranger",
+  "build": "light",
+  "movement": "ground",
+  "guardBonus": 0
+}

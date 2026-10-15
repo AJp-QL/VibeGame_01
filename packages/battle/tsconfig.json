@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": ".tsbuild/src",
+    "lib": ["es2023", "dom", "dom.iterable"]
+  },
+  "include": ["src"],
+  "references": [{ "path": "../shared" }, { "path": "../engine" }]
+}

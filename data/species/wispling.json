@@ -1,0 +1,8 @@
+{
+  "id": "wispling",
+  "name": "Wispling",
+  "role": "caster",
+  "build": "light",
+  "movement": "flying",
+  "guardBonus": 0
+}

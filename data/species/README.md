@@ -14,4 +14,5 @@
 - rarity = ความหลากหลาย ไม่ใช่พลัง (ตาม decision log)
 
 ## สถานะ
-- ยังว่าง; 4 species ของ MVP vertical slice: Fangrel, Tidewall, Wispling, Quillfox
+- มี 4 species ของ phase 1: Fangrel, Tidewall, Wispling, Quillfox แต่ละไฟล์มี role, build (light/heavy), movement (ground/flying/aquatic) และ guardBonus (D-06)
+- ยังไม่มี base stat, growth, lifespan, rarity และข้อมูล sprite
