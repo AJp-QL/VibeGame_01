@@ -276,6 +276,30 @@ function d20Chance(mode: RollMode, test: (face: number) => boolean): Chance {
   return { numerator: count, denominator: 400 }
 }
 
+// The same few chances come up again and again (the AI previews thousands of attacks per
+// Battle): remember each one. Pure functions of their arguments, so nothing else changes.
+const hitChances = new Map<string, Chance>()
+const criticalChances = new Map<RollMode, Chance>()
+
+function hitChanceOf(mode: RollMode, attackBonus: number, defence: number): Chance {
+  const key = `${mode}:${attackBonus}:${defence}`
+  let chance = hitChances.get(key)
+  if (chance === undefined) {
+    chance = d20Chance(mode, (face) => isHit(face, attackBonus, defence))
+    hitChances.set(key, chance)
+  }
+  return chance
+}
+
+function criticalChanceOf(mode: RollMode): Chance {
+  let chance = criticalChances.get(mode)
+  if (chance === undefined) {
+    chance = d20Chance(mode, (face) => face === 20)
+    criticalChances.set(mode, chance)
+  }
+  return chance
+}
+
 /** `isCounterattack`: this attack is itself a counterattack, which never triggers another (rules §14.2). */
 export function previewAttack(state: BattleState, plan: AttackPlan, isCounterattack = false): AttackPreview {
   const { attacker, target, skill } = plan
@@ -301,8 +325,8 @@ export function previewAttack(state: BattleState, plan: AttackPlan, isCounteratt
     defence: defence.value,
     defenceKind: defence.kind,
     guardedBonus: defence.bonus,
-    hitChance: d20Chance(mode, (face) => isHit(face, attackBonus, defence.value)),
-    criticalChance: d20Chance(mode, (face) => face === 20),
+    hitChance: hitChanceOf(mode, attackBonus, defence.value),
+    criticalChance: criticalChanceOf(mode),
     damage: dice === null ? null : damageRange(dice, modifier, statusModifiers),
     criticalDamage: dice === null ? null : damageRange({ count: dice.count * 2, sides: dice.sides }, modifier, statusModifiers),
     statuses: statusOdds(attacker, target, skill),

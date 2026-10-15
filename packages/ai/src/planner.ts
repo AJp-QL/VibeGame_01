@@ -383,6 +383,7 @@ function areaCandidates(ctx: Ctx, st: BattleState, unit: UnitState, skill: Skill
   const max = skill.area?.maxTargets ?? 1
   const enemies = enemiesOf(st, unit)
   const seen = new Set<string>()
+  const usableAreas = new Set<string>()
   const out: Candidate[] = []
   for (let y = 0; y < 7; y++) {
     for (let x = 0; x < 7; x++) {
@@ -390,6 +391,10 @@ function areaCandidates(ctx: Ctx, st: BattleState, unit: UnitState, skill: Skill
       if (distance(unit.tile, centre) > skill.range) continue
       const inArea = enemies.filter((e) => distance(e.tile, centre) <= radius)
       if (inArea.length === 0) continue
+      // Whether a target can be hit depends on the user and the target, not the centre (Hidden):
+      // a centre covering the same enemies as an earlier usable one gives the same candidate.
+      const areaKey = inArea.map((e) => e.id).join(',')
+      if (usableAreas.has(areaKey)) continue
       const scored: { v: number; e: UnitState }[] = []
       for (const e of inArea) {
         // Hittable from here (Taunted aside: the whole choice is checked below).
@@ -405,6 +410,7 @@ function areaCandidates(ctx: Ctx, st: BattleState, unit: UnitState, skill: Skill
       const chosen = scored.slice(0, max)
       const action: Action = { type: 'useSkill', unit: unit.id, skill: skill.id, tile: centre, targets: chosen.map((c) => c.e.id) }
       if (!previewAction(st, action).ok) continue
+      usableAreas.add(areaKey)
       out.push({ value: chosen.reduce((sum, c) => sum + c.v, 0), action, targets: chosen.map((c) => c.e.id) })
     }
   }

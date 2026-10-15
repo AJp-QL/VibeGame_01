@@ -148,9 +148,17 @@ export class Ctx {
 
   // ------------------------------------------------------- attack odds
 
-  /** The engine's what-if preview of `attacker` attacking `target` with `skillId` as they stand in `st` (cached). */
+  /**
+   * The engine's what-if preview of `attacker` attacking `target` with
+   * `skillId` as they stand in `st` (cached). The cache key holds what an
+   * attack preview depends on that a hypothetical move of our Units can
+   * change: the attacker's tile (terrain), melee or not (damage mod,
+   * counterattack) and Tamer protection of the target. Statuses, HP and
+   * Command are the same for the whole decision.
+   */
   preview(st: BattleState, attacker: UnitState, target: UnitState, skillId: string): AttackPreview {
-    const key = `${attacker.id}@${attacker.tile.x}${attacker.tile.y}>${target.id}@${target.tile.x}${target.tile.y}:${skillId}:${protectedNow(st, target) ? 1 : 0}`
+    const d = distance(attacker.tile, target.tile)
+    const key = `${attacker.id}@${attacker.tile.x}${attacker.tile.y}>${target.id}:${d <= 1 ? d : 2}:${skillId}:${protectedNow(st, target) ? 1 : 0}`
     let p = this.previews.get(key)
     if (p === undefined) {
       p = previewAttackWhatIf(st, attacker.id, target.id, skillId)
