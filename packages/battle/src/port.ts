@@ -6,17 +6,28 @@
  * keeps no game state of its own: it draws `getSnapshot()` and reports taps.
  */
 import type { Tile } from '@mt/shared'
-import type { BattleEvent, BattleState, UnitId } from '@mt/engine'
+import type { BattleEvent, BattleState, UnitId, UnitState } from '@mt/engine'
 
 export interface BattleSnapshot {
   readonly state: BattleState
+  /**
+   * The Units to draw: what the player holding the device may see. During
+   * deployment only the placing side's own Units (the other side's stay
+   * hidden); in play every Unit.
+   */
+  readonly units: readonly UnitState[]
+  /** Units of the side to act that still have a legal action; the view dims the others. */
+  readonly canAct: readonly UnitId[]
   /** Events of the last accepted action, in order, for animation. */
   readonly events: readonly BattleEvent[]
   /** Goes up by one with every accepted action, so a view can tell new events from old. */
   readonly revision: number
   /** Unit the player has selected, if any (UI state, not game state). */
   readonly selectedUnit: UnitId | null
-  /** Tiles the selected Unit can Move to, taken from the engine's legal actions. */
+  /**
+   * Tiles the selected Unit can Move to (play) or be placed on (deployment),
+   * taken from the engine's legal actions.
+   */
   readonly reachable: readonly Tile[]
 }
 

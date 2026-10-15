@@ -1,11 +1,13 @@
 /**
  * The Phaser scene that draws the Board and its Units from the session's
  * snapshot, animates Moves from the engine's events and turns taps into
- * BoardInput. It keeps view objects only, never game state.
+ * BoardInput. It keeps view objects only, never game state. It draws only
+ * the Units in `snapshot.units`, so Units hidden during deployment never
+ * appear and cannot be tapped.
  */
 import * as Phaser from 'phaser'
 import { BOARD_SIZE, type Tile } from '@mt/shared'
-import type { BattleState, UnitId } from '@mt/engine'
+import type { BattleState, UnitId, UnitState } from '@mt/engine'
 import { GRID_LINE, REACHABLE, SELECTED, TERRAIN_COLOURS } from './palette.ts'
 import type { BattleSessionPort, BattleSnapshot } from './port.ts'
 import { drawUnit } from './silhouettes.ts'
@@ -15,6 +17,9 @@ export const BOARD_PIXELS = TILE_SIZE * BOARD_SIZE
 
 /** Milliseconds per step when a Unit walks its path. */
 const STEP_MS = 90
+
+/** Units of the side to act that have nothing left to do this Turn. */
+const SPENT_ALPHA = 0.5
 
 export interface BattleSceneData {
   readonly session: BattleSessionPort
@@ -44,13 +49,6 @@ export class BattleScene extends Phaser.Scene {
     const snapshot = this.session.getSnapshot()
     this.drawBoard(snapshot.state)
     this.highlights = this.add.graphics()
-    for (const unit of snapshot.state.units) {
-      const view = this.add.container(0, 0)
-      const g = this.add.graphics()
-      drawUnit(g, unit)
-      view.add(g)
-      this.unitViews.set(unit.id, view)
-    }
     this.shownRevision = snapshot.revision
     this.render()
 
@@ -85,12 +83,29 @@ export class BattleScene extends Phaser.Scene {
       this.shownRevision = snapshot.revision
       this.animateEvents(snapshot)
     }
-    for (const unit of snapshot.state.units) {
-      const view = this.unitViews.get(unit.id)
-      if (view === undefined || this.walking.has(unit.id)) continue
+    const shown = new Set(snapshot.units.map((u) => u.id))
+    for (const [id, view] of this.unitViews) view.setVisible(shown.has(id))
+    const { phase, sideToAct } = snapshot.state
+    for (const unit of snapshot.units) {
+      const view = this.unitView(unit)
+      const spent = phase === 'play' && unit.side === sideToAct && !snapshot.canAct.includes(unit.id)
+      view.setAlpha(spent ? SPENT_ALPHA : 1)
+      if (this.walking.has(unit.id)) continue
       const { x, y } = tileCentre(unit.tile)
       view.setPosition(x, y)
     }
+  }
+
+  /** The view of a Unit, created the first time the Unit is shown. */
+  private unitView(unit: UnitState): Phaser.GameObjects.Container {
+    const existing = this.unitViews.get(unit.id)
+    if (existing !== undefined) return existing
+    const view = this.add.container(0, 0)
+    const g = this.add.graphics()
+    drawUnit(g, unit)
+    view.add(g)
+    this.unitViews.set(unit.id, view)
+    return view
   }
 
   private drawHighlights(snapshot: BattleSnapshot): void {
@@ -102,7 +117,7 @@ export class BattleScene extends Phaser.Scene {
       g.lineStyle(1, REACHABLE, 0.9)
       g.strokeRect(tile.x * TILE_SIZE + 2.5, tile.y * TILE_SIZE + 2.5, TILE_SIZE - 4, TILE_SIZE - 4)
     }
-    const selected = snapshot.state.units.find((u) => u.id === snapshot.selectedUnit)
+    const selected = snapshot.units.find((u) => u.id === snapshot.selectedUnit)
     if (selected !== undefined) {
       g.lineStyle(2, SELECTED, 1)
       g.strokeRect(selected.tile.x * TILE_SIZE + 2, selected.tile.y * TILE_SIZE + 2, TILE_SIZE - 3, TILE_SIZE - 3)
@@ -133,7 +148,7 @@ export class BattleScene extends Phaser.Scene {
   private onTap(pointer: Phaser.Input.Pointer): void {
     const tile = { x: Math.floor(pointer.x / TILE_SIZE), y: Math.floor(pointer.y / TILE_SIZE) }
     if (tile.x < 0 || tile.y < 0 || tile.x >= BOARD_SIZE || tile.y >= BOARD_SIZE) return
-    const unit = this.session.getSnapshot().state.units.find((u) => u.tile.x === tile.x && u.tile.y === tile.y)
+    const unit = this.session.getSnapshot().units.find((u) => u.tile.x === tile.x && u.tile.y === tile.y)
     this.session.input(unit ? { type: 'tapUnit', unit: unit.id } : { type: 'tapTile', tile })
   }
 }

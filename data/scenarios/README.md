@@ -16,5 +16,5 @@ Scenario ที่กำหนดทีม stat และ Board ไว้ล่�
 
 ## สถานะ
 - มี scenario_1 (ต้นเกม: Tamer Level 1, Monster 1 Star)
-- `startingTiles` (Tamer, Monster 1, Monster 2) เป็นช่องเริ่มชั่วคราวจนกว่าจะมี deployment ใน ticket 04
+- Scenario ไม่กำหนดช่องเริ่ม: ผู้เล่นวาง Unit เองใน deployment (rules §17.1)
 - scenario_2 รอ ticket 13
