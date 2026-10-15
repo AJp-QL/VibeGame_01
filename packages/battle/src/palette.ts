@@ -95,6 +95,11 @@ export const STATUS_ICONS: Readonly<Record<string, { readonly colour: number; re
   hidden: { colour: 0x6fdc7a, pattern: ['...##', '..###', '.###.', '###..', '#....'] },
 }
 export const STATUS_DOT: readonly string[] = ['.###.', '#####', '#####', '#####', '.###.']
+/** Not statuses, drawn with them: Cover on a Monster (an umbrella) and the Command it got this Turn (a flag). */
+export const COVER_ICON = { colour: 0xc9a0ff, pattern: ['.###.', '#####', '..#..', '..#..', '.##..'] } as const
+export const COMMAND_ICON = { colour: 0xffe14d, pattern: ['##...', '####.', '##...', '#....', '#....'] } as const
+/** Frame and Turns-left digit on a tile Attune changed. */
+export const ATTUNED = 0xffffff
 export const STATUS_POSITIVE = 0x7fc8ff
 export const STATUS_NEGATIVE = 0xff6b5e
 export const HP_BAR_BACK = 0x141414

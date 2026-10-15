@@ -5,7 +5,9 @@
  * game state. Each element tile carries a small corner mark (palette
  * TERRAIN_GLYPHS); statuses show as small icons (Guarded shield, Bleed drop, Rallied arrow, Pin cross, Marked
  * crosshair, Hidden leaf); enemies that line of sight blocks, or that are Hidden 2 or more tiles away, are crossed
- * out while choosing a target. Tile and area skills
+ * out while choosing a target. A tile Attune changed shows its new terrain
+ * with a white frame and the Turns it has left; Cover and Command show as
+ * icons next to the statuses. Tile and area skills
  * light up the tiles they can be aimed at, Burst's 3x3 area shows around its
  * centre and its chosen targets carry their order number; Blink plays as a
  * fade out and in. It draws only the Units in `snapshot.units`, so Units hidden
@@ -16,6 +18,9 @@ import { BOARD_SIZE, type Tile } from '@mt/shared'
 import { derivedValues, type BattleState, type UnitId, type UnitState } from '@mt/engine'
 import {
   AREA,
+  ATTUNED,
+  COMMAND_ICON,
+  COVER_ICON,
   BLOCKED_TARGET,
   GLYPH_ALPHA,
   glyphColour,
@@ -91,6 +96,9 @@ export class BattleScene extends Phaser.Scene {
   private session!: BattleSessionPort
   private labels!: BoardLabels
   private highlights!: Phaser.GameObjects.Graphics
+  private terrainLayer!: Phaser.GameObjects.Graphics
+  /** What the terrain layer shows, to redraw it only when Attune changed something. */
+  private terrainKey = ''
   private readonly unitViews = new Map<UnitId, UnitView>()
   /** Units whose position a running animation owns (walking, lunging, falling). */
   private readonly animating = new Set<UnitId>()
@@ -107,6 +115,7 @@ export class BattleScene extends Phaser.Scene {
 
   create(): void {
     const snapshot = this.session.getSnapshot()
+    this.terrainLayer = this.add.graphics()
     this.drawBoard(snapshot.state)
     this.highlights = this.add.graphics()
     this.shownRevision = snapshot.revision
@@ -120,8 +129,13 @@ export class BattleScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.DESTROY, unsubscribe)
   }
 
+  /** Terrain now (Attune included, rules §4.3), grid, and on attuned tiles a frame with the Turns left. */
   private drawBoard(state: BattleState): void {
-    const g = this.add.graphics()
+    const key = JSON.stringify([state.terrain, state.attuned])
+    if (key === this.terrainKey) return
+    this.terrainKey = key
+    const g = this.terrainLayer
+    g.clear()
     state.terrain.forEach((row, y) =>
       row.forEach((terrain, x) => {
         g.fillStyle(TERRAIN_COLOURS[terrain], 1)
@@ -136,10 +150,22 @@ export class BattleScene extends Phaser.Scene {
       g.fillRect(at, 0, 1, BOARD_PIXELS)
       g.fillRect(0, at, BOARD_PIXELS, 1)
     }
+    for (const attuned of state.attuned) {
+      const left = attuned.tile.x * TILE_SIZE
+      const top = attuned.tile.y * TILE_SIZE
+      g.lineStyle(1, ATTUNED, 0.9)
+      g.strokeRect(left + 2, top + 2, TILE_SIZE - 4, TILE_SIZE - 4)
+      const digit = ORDER_DIGITS[attuned.turnsLeft - 1]
+      g.fillStyle(OUTLINE, 1)
+      g.fillRect(left + TILE_SIZE - 8, top + 3, 5, 7)
+      g.fillStyle(ATTUNED, 1)
+      drawPattern(g, digit ?? STATUS_DOT, left + TILE_SIZE - 7, top + 4)
+    }
   }
 
   private render(): void {
     const snapshot = this.session.getSnapshot()
+    this.drawBoard(snapshot.state)
     this.drawHighlights(snapshot)
     if (snapshot.revision !== this.shownRevision) {
       this.shownRevision = snapshot.revision
@@ -201,14 +227,19 @@ export class BattleScene extends Phaser.Scene {
   private drawStatusIcons(g: Phaser.GameObjects.Graphics, unit: UnitState, state: BattleState): void {
     g.clear()
     const step = unit.side === 'A' ? -8 : 8
-    unit.statuses.slice(0, MAX_STATUS_ICONS).forEach((status, index) => {
-      const left = (unit.side === 'A' ? 8 : -15) + index * step
+    const icons: { colour: number; pattern: readonly string[] }[] = unit.statuses.map((status) => {
       const icon = STATUS_ICONS[status.id]
       const colour = icon?.colour ?? (state.statusTypes[status.id]?.polarity === 'negative' ? STATUS_NEGATIVE : STATUS_POSITIVE)
+      return { colour, pattern: icon?.pattern ?? STATUS_DOT }
+    })
+    if (unit.coveredBy !== undefined) icons.push(COVER_ICON)
+    if (state.command?.target === unit.id && state.command.spent !== true) icons.push(COMMAND_ICON)
+    icons.slice(0, MAX_STATUS_ICONS).forEach((icon, index) => {
+      const left = (unit.side === 'A' ? 8 : -15) + index * step
       g.fillStyle(OUTLINE, 1)
       g.fillRect(left, -15, 7, 7)
-      g.fillStyle(colour, 1)
-      drawPattern(g, icon?.pattern ?? STATUS_DOT, left + 1, -14)
+      g.fillStyle(icon.colour, 1)
+      drawPattern(g, icon.pattern, left + 1, -14)
     })
   }
 
