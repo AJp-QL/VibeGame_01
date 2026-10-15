@@ -12,6 +12,7 @@
  *   unitSkills(state, unitId)     → the Unit's loadout: tier, cooldown, implemented yet
  *   unitsVisibleTo(state, side)   → the Units a side may see (deployment is hidden)
  *   lineOfSightTiles(from, to)    → the tiles a line of sight passes (rules §7.3), for tests, AI and UI
+ *   areaTiles(skill, centre)      → the tiles an area skill (Burst) covers around a centre, for the UI and AI
  *   recordReplay / replayCompatibility / replayBattle → Replay of a Battle (ENGINE_VERSION is stamped in it)
  */
 export {
@@ -34,6 +35,7 @@ export {
 export { BASIC_ATTACK, DEFEND, type AttackPreview, type Chance, type DamageRange } from './combat.ts'
 export {
   MAJOR_COOLDOWN_TURNS,
+  type AreaPreview,
   type EffectPreview,
   type RetreatAction,
   type SavePreview,
@@ -42,6 +44,7 @@ export {
 } from './skills.ts'
 export type { SaveOdds, StatusBonus, StatusOdds } from './statuses.ts'
 export { lineOfSightTiles } from './lineOfSight.ts'
+export { areaTiles } from './wisplingSkills.ts'
 export { elementBeats, type RollEffect, type RollMode, type RollModeSource } from './rollMode.ts'
 export type { DerivedValues } from './derived.ts'
 export { isInStartZone, START_ZONE_ROWS, unitsVisibleTo } from './deployment.ts'

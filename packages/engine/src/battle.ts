@@ -41,6 +41,7 @@ import {
   loadoutOf,
   previewSkill,
   skillResolution,
+  type AreaPreview,
   type EffectPreview,
   type RetreatAction,
   type SavePreview,
@@ -63,7 +64,13 @@ import {
   type UnitStatus,
   type UnitTemplate,
 } from './state.ts'
-import { applyStatus, countDownStatuses, endOwnTurnStartStatuses, startOfTurnDamage } from './statuses.ts'
+import {
+  applyStatus,
+  countDownStatuses,
+  endOwnTurnStartStatuses,
+  startOfTurnDamage,
+  type StatusBonus,
+} from './statuses.ts'
 import { activate, activationBlocker, NO_ACTIVATIONS, startTurn } from './turns.ts'
 
 // ----------------------------------------------------------------- actions
@@ -159,7 +166,10 @@ export type BattleEvent =
       /** Dice rolled, already doubled on a critical. */
       readonly dice: Dice
       readonly rolls: readonly number[]
+      /** Added once to the dice: damage mod plus `statusModifiers`. */
       readonly modifier: number
+      /** The part of `modifier` from the attacker's statuses (Weakened −2, rules §10.3); absent when none. */
+      readonly statusModifiers?: readonly StatusBonus[]
       /** Full damage, even past the HP left (rules §10.3, D-11). */
       readonly amount: number
       readonly hpBefore: number
@@ -209,6 +219,8 @@ export type BattleEvent =
       readonly hpBefore: number
       readonly hpAfter: number
     }
+  /** Blink (rules §15.1, D-13): the Unit's Move, as a teleport; no path, nothing in between matters. */
+  | { readonly type: 'unitTeleported'; readonly unit: UnitId; readonly skill: string; readonly from: Tile; readonly to: Tile }
   /** Hit and Run's step (rules §15.1): not a Move. */
   | { readonly type: 'unitRetreated'; readonly unit: UnitId; readonly from: Tile; readonly to: Tile }
   /** The Unit chose to stay instead of Hit and Run's step. */
@@ -670,10 +682,10 @@ function turnLimit(state: BattleState): { state: BattleState; event: BattleEvent
 
 /**
  * What an action would do, without doing it: an attack's odds (Basic Attack
- * and attack skills), a save skill's odds, or who a skill without rolls
- * affects. Defend, Move and End Turn have nothing to roll.
+ * and attack skills), one attack's odds per target in order (Burst), a save
+ * skill's odds, or who a skill without rolls affects. Defend, Move and End Turn have nothing to roll.
  */
-export type ActionPreview = AttackPreview | SavePreview | EffectPreview
+export type ActionPreview = AttackPreview | SavePreview | EffectPreview | AreaPreview
 
 export type PreviewResult =
   /** `preview` is null for a legal action with nothing to roll (Move, End Turn). */

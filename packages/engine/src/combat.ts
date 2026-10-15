@@ -9,7 +9,7 @@
  * are here. Each later rule has its slot: targeting (Hidden, Taunted) in
  * `checkEnemyTarget`, roll mode sources (Marked, Off-balance, Command) in
  * `rollModeSources`, defence bonuses in `defenceOf`, damage adjustments
- * (Weakened) in `damageModifier`, Cover where `loseHp` is called in
+ * (Weakened, `damageDealtModifiers`) in `previewAttack`, Cover where `loseHp` is called in
  * `attackOnce`, and Counter after the attack in `attackOnce`.
  */
 import type { Dice, Skill } from '@mt/shared'
@@ -24,6 +24,7 @@ import { combineRollMode, rollModeSources, type RollMode, type RollModeSource } 
 import { findUnit, type BattleState, type PendingDecision, type UnitId, type UnitState } from './state.ts'
 import {
   attackRollBonuses,
+  damageDealtModifiers,
   defenceBonus,
   giveSkillStatuses,
   statusOdds,
@@ -170,8 +171,9 @@ function damageDice(skill: Skill, attacker: UnitState): Dice | null {
 }
 
 /**
- * Modifier added once to the damage dice (rules §10.1, §10.3): physical uses
- * POW mod at distance 1 and SEN mod at 2 or more; elemental uses INT mod.
+ * Damage mod added once to the damage dice (rules §10.1, §10.3 step 2):
+ * physical uses POW mod at distance 1 and SEN mod at 2 or more; elemental
+ * uses INT mod. Statuses (Weakened) come on top (`damageDealtModifiers`).
  */
 function damageModifier(skill: Skill, attacker: UnitState, atDistance: number): number {
   const mods = derive(attacker).damageMod
@@ -185,15 +187,19 @@ const MIN_DAMAGE = 1
 export interface DamageRange {
   /** Dice rolled, already doubled for a critical. */
   readonly dice: Dice
+  /** Everything added once to the dice: the damage mod plus `statusModifiers` (Weakened −2, rules §10.3). */
   readonly modifier: number
+  /** The part of `modifier` that statuses give (Weakened); absent when none. */
+  readonly statusModifiers?: readonly StatusBonus[]
   readonly min: number
   readonly max: number
 }
 
-function damageRange(dice: Dice, modifier: number): DamageRange {
+function damageRange(dice: Dice, modifier: number, statusModifiers: readonly StatusBonus[]): DamageRange {
   return {
     dice,
     modifier,
+    ...(statusModifiers.length > 0 ? { statusModifiers } : {}),
     min: Math.max(MIN_DAMAGE, dice.count + modifier),
     max: Math.max(MIN_DAMAGE, dice.count * dice.sides + modifier),
   }
@@ -258,7 +264,8 @@ export function previewAttack(state: BattleState, plan: AttackPlan): AttackPrevi
   const defence = defenceOf(state, skill, target)
   const atDistance = distance(attacker.tile, target.tile)
   const dice = damageDice(skill, attacker)
-  const modifier = damageModifier(skill, attacker, atDistance)
+  const statusModifiers = damageDealtModifiers(state, attacker)
+  const modifier = damageModifier(skill, attacker, atDistance) + statusModifiers.reduce((sum, m) => sum + m.bonus, 0)
   return {
     type: 'attack',
     skill: skill.id,
@@ -274,8 +281,8 @@ export function previewAttack(state: BattleState, plan: AttackPlan): AttackPrevi
     guardedBonus: defence.bonus,
     hitChance: d20Chance(mode, (face) => isHit(face, attackBonus, defence.value)),
     criticalChance: d20Chance(mode, (face) => face === 20),
-    damage: dice === null ? null : damageRange(dice, modifier),
-    criticalDamage: dice === null ? null : damageRange({ count: dice.count * 2, sides: dice.sides }, modifier),
+    damage: dice === null ? null : damageRange(dice, modifier, statusModifiers),
+    criticalDamage: dice === null ? null : damageRange({ count: dice.count * 2, sides: dice.sides }, modifier, statusModifiers),
     statuses: statusOdds(attacker, target, skill),
   }
 }
@@ -338,6 +345,7 @@ export function* attackOnce(
         dice: range.dice,
         rolls: damage.rolls,
         modifier: range.modifier,
+        ...(range.statusModifiers !== undefined ? { statusModifiers: range.statusModifiers } : {}),
         amount,
         hpBefore: loss.hpBefore,
         hpAfter: loss.hpAfter,
