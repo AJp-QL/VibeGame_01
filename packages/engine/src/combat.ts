@@ -14,7 +14,7 @@
  * `spendAttackRoll`, and Counter after the attack in `attackOnce` (ticket 08:
  * `counterattackAfter`).
  */
-import type { Dice, Skill } from '@mt/shared'
+import type { Dice, Skill, Tile } from '@mt/shared'
 import type { BattleEvent, Rejection } from './battle.ts'
 import { loseHp } from './damage.ts'
 import { derive } from './derived.ts'
@@ -502,4 +502,38 @@ export function* resolveAttack(before: BattleState, plan: AttackPlan): Resolutio
   const active = activate(before, attacker.id)
   const booked = { ...active, units: active.units.map((u) => (u.id === attacker.id ? { ...u, hasActed: true } : u)) }
   return (yield* attackOnce(booked, attacker.id, target.id, skill)).state
+}
+
+/**
+ * A what-if attack preview for the AI (ticket 15): `attackerId` attacking
+ * `targetId` with `skillId` as the rules of the roll stand in `state`
+ * (roll mode sources, Guard/Ward and Guarded, attack bonus, damage dice and
+ * mod by distance, statuses' save odds, counterattack), with the attacker on
+ * `attackerTile` and the target on `targetTile` when given. Whose Turn it is,
+ * range, line of sight, Hidden and cooldowns are NOT checked: legality is
+ * `legalActions`' job. Pure; draws no dice. Throws for a Unit not on the
+ * Board or an unknown skill (a programming error).
+ */
+export function previewAttackWhatIf(
+  state: BattleState,
+  attackerId: UnitId,
+  targetId: UnitId,
+  skillId: string,
+  tiles: { readonly attackerTile?: Tile; readonly targetTile?: Tile } = {},
+): AttackPreview {
+  const skill = state.skills[skillId]
+  if (skill === undefined) throw new Error(`No skill "${skillId}"`)
+  let moved = state
+  for (const [id, tile] of [
+    [attackerId, tiles.attackerTile],
+    [targetId, tiles.targetTile],
+  ] as const) {
+    const unit = findUnit(moved, id)
+    if (unit === undefined) throw new Error(`No Unit "${id}" on the Board`)
+    if (tile !== undefined && (unit.tile.x !== tile.x || unit.tile.y !== tile.y)) moved = replaceUnit(moved, { ...unit, tile })
+  }
+  const attacker = findUnit(moved, attackerId)
+  const target = findUnit(moved, targetId)
+  if (attacker === undefined || target === undefined) throw new Error('Units left the Board')
+  return previewAttack(moved, { attacker, target, skill })
 }

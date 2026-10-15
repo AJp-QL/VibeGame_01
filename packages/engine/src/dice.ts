@@ -124,3 +124,35 @@ export function rollDie(stream: DiceStream, sides: number): { value: number; str
     }
   }
 }
+
+/** xoshiro128** jump polynomial (Blackman & Vigna, xoshiro128starstar.c): advances the state by 2^64 draws. */
+const JUMP: readonly number[] = [0x8764000b, 0xf542d2d3, 0x6fa035c3, 0x77f2db5b]
+
+/** The state 2^64 draws after `state` (xoshiro128** `jump()`), without drawing them one by one. */
+export function jumpXoshiro128(state: Xoshiro128State): Xoshiro128State {
+  let acc: [number, number, number, number] = [0, 0, 0, 0]
+  let s = state
+  for (const word of JUMP) {
+    for (let bit = 0; bit < 32; bit++) {
+      if (((word >>> bit) & 1) === 1) {
+        acc = [(acc[0] ^ s[0]) >>> 0, (acc[1] ^ s[1]) >>> 0, (acc[2] ^ s[2]) >>> 0, (acc[3] ^ s[3]) >>> 0]
+      }
+      s = nextUint32(s).state
+    }
+  }
+  return acc
+}
+
+/** Seed of the AI stream when the Battle's dice are scripted (tests): there is no seeded state to jump from. */
+const SCRIPTED_AI_SEED = '0000000000000000'
+
+/**
+ * The AI's own dice stream (rules §21.5 item 4): a copy of the Battle's
+ * initial stream, jumped once (2^64 draws ahead), so the AI's thinking never
+ * draws the Battle's dice. Pass the stream of the Battle as created (before
+ * any roll). A scripted Battle stream (tests) gives the jump of a fixed seed.
+ */
+export function aiDiceStream(battleDice: DiceStream): DiceStream {
+  const start = battleDice.kind === 'seeded' ? battleDice.state : seedXoshiro128(SCRIPTED_AI_SEED)
+  return { kind: 'seeded', state: jumpXoshiro128(start) }
+}

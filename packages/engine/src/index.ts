@@ -32,7 +32,15 @@ export {
   type Rejection,
   type RejectionCode,
 } from './battle.ts'
-export { BASIC_ATTACK, COUNTERATTACK, DEFEND, type AttackPreview, type Chance, type DamageRange } from './combat.ts'
+export {
+  BASIC_ATTACK,
+  COUNTERATTACK,
+  DEFEND,
+  previewAttackWhatIf,
+  type AttackPreview,
+  type Chance,
+  type DamageRange,
+} from './combat.ts'
 export {
   MAJOR_COOLDOWN_TURNS,
   type AreaPreview,
@@ -97,7 +105,9 @@ export { ENGINE_VERSION } from './version.ts'
 
 // Dice stream (rules §21.5): exported for the AI's separate stream, tests and tools.
 export {
+  aiDiceStream,
   diceStream,
+  jumpXoshiro128,
   isDiceSeed,
   nextUint32,
   rollDie,
