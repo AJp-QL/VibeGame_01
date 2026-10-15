@@ -1,11 +1,11 @@
 /**
  * AI speed benchmark: AI against AI, whole Battles (deployment to outcome).
- *   node packages/ai/tools/bench.ts [games=50] [scenario_1|scenario_2] [greedy|tamer_rush|neutral] [sim|game]
+ *   node packages/ai/test/bench.ts [games=50] [scenario_1|scenario_2] [greedy|tamer_rush|neutral] [sim|game]
  * Node ≥ 24 runs this TypeScript directly (type stripping).
  */
 import { applyAction, decidingSide, type BattleState } from '@mt/engine'
 import { chooseAction, createAi, GAME_PROFILES, SIM_PROFILES, type AiMode, type AiState } from '../src/index.ts'
-import { newBattle, seedOf } from '../test/play.ts'
+import { newBattle, seedOf } from './play.ts'
 
 const games = Number(process.argv[2] ?? 50)
 const scenario = process.argv[3] ?? 'scenario_1'
