@@ -1,0 +1,12 @@
+{
+  "id": "long_shot",
+  "name": "Long Shot",
+  "tier": "minor",
+  "target": "enemy",
+  "range": 4,
+  "attack": "physical",
+  "damage": {
+    "count": 1,
+    "sides": 8
+  }
+}

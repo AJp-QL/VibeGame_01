@@ -1,0 +1,10 @@
+{
+  "id": "attune",
+  "name": "Attune",
+  "tier": "major",
+  "target": "tile",
+  "range": 1,
+  "effects": {
+    "terrainTurns": 3
+  }
+}

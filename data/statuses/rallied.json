@@ -1,0 +1,13 @@
+{
+  "id": "rallied",
+  "name": "Rallied",
+  "polarity": "positive",
+  "duration": {
+    "kind": "turns",
+    "turns": 2
+  },
+  "stacking": "reset",
+  "effects": {
+    "attackRoll": 1
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "shield_bash",
+  "name": "Shield Bash",
+  "tier": "minor",
+  "target": "enemy",
+  "range": 1,
+  "attack": "physical",
+  "damage": {
+    "count": 2,
+    "sides": 6
+  },
+  "effects": {
+    "push": 1
+  }
+}

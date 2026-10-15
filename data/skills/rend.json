@@ -1,0 +1,19 @@
+{
+  "id": "rend",
+  "name": "Rend",
+  "tier": "major",
+  "target": "enemy",
+  "range": 1,
+  "attack": "physical",
+  "damage": {
+    "count": 1,
+    "sides": 6
+  },
+  "dcStat": "pow",
+  "applies": [
+    {
+      "status": "bleed",
+      "save": "vit"
+    }
+  ]
+}

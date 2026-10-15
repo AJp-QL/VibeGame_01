@@ -1,0 +1,23 @@
+{
+  "id": "element_wheel",
+  "beats": {
+    "forest": [
+      "water"
+    ],
+    "water": [
+      "mountain"
+    ],
+    "mountain": [
+      "desert"
+    ],
+    "desert": [
+      "forest"
+    ],
+    "light": [
+      "dark"
+    ],
+    "dark": [
+      "light"
+    ]
+  }
+}

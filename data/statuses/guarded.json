@@ -1,0 +1,12 @@
+{
+  "id": "guarded",
+  "name": "Guarded",
+  "polarity": "positive",
+  "duration": {
+    "kind": "untilOwnTurnStart"
+  },
+  "stacking": "keepHigher",
+  "effects": {
+    "defenceFromSource": true
+  }
+}

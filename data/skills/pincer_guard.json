@@ -1,0 +1,13 @@
+{
+  "id": "pincer_guard",
+  "name": "Pincer Guard",
+  "tier": "passive",
+  "target": "none",
+  "range": 0,
+  "effects": {
+    "counterattackDamage": {
+      "count": 2,
+      "sides": 8
+    }
+  }
+}

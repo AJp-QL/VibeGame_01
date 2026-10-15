@@ -1,0 +1,16 @@
+{
+  "id": "bleed",
+  "name": "Bleed",
+  "polarity": "negative",
+  "duration": {
+    "kind": "turns",
+    "turns": 3
+  },
+  "stacking": "reset",
+  "effects": {
+    "startOfTurnDamage": {
+      "count": 1,
+      "sides": 4
+    }
+  }
+}

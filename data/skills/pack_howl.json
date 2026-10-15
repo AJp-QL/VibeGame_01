@@ -1,0 +1,12 @@
+{
+  "id": "pack_howl",
+  "name": "Pack Howl",
+  "tier": "major",
+  "target": "selfAndAllies",
+  "range": 1,
+  "applies": [
+    {
+      "status": "rallied"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "first_aid",
+  "name": "First Aid",
+  "tier": "major",
+  "target": "ally",
+  "range": 1,
+  "effects": {
+    "heal": {
+      "dice": {
+        "count": 1,
+        "sides": 8
+      },
+      "stat": "spi"
+    }
+  }
+}

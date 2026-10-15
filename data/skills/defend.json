@@ -1,0 +1,13 @@
+{
+  "id": "defend",
+  "name": "Defend",
+  "tier": "minor",
+  "target": "self",
+  "range": 0,
+  "applies": [
+    {
+      "status": "guarded",
+      "bonus": 2
+    }
+  ]
+}

@@ -1,30 +1,36 @@
 /**
  * Loading the whole data/ folder: every file is checked against the schema of
  * its folder, its id must match its file name, and references between files
- * (Scenario → Board, Monster → species) must resolve.
+ * (Scenario → Board, species and loadout skills; skill → status) must resolve, and
+ * data/elements holds exactly the element wheel.
  *
  * Used at build time (web Vite plugin), at test time and at load time (web),
  * so malformed data is rejected in all three places by the same code.
  */
 import type * as z from 'zod'
 import {
-  BoardSchema,
-  ScenarioSchema,
-  SIDES,
+  ElementWheelSchema,
   SkillSchema,
-  SpeciesSchema,
-  type Board,
-  type Scenario,
+  StatusTypeSchema,
+  type ElementWheel,
   type Skill,
-  type Species,
-} from './model.ts'
+  type StatusType,
+} from './combatData.ts'
+import { BoardSchema, ScenarioSchema, SIDES, SpeciesSchema, type Board, type Scenario, type Species } from './model.ts'
 
 export interface GameData {
   readonly boards: Readonly<Record<string, Board>>
   readonly species: Readonly<Record<string, Species>>
   readonly scenarios: Readonly<Record<string, Scenario>>
   readonly skills: Readonly<Record<string, Skill>>
+  /** Status types by id (data/statuses, rules §14.2). */
+  readonly statuses: Readonly<Record<string, StatusType>>
+  /** The element wheel (data/elements/element_wheel.json, rules §4.1). */
+  readonly elementWheel: ElementWheel
 }
+
+/** The one element wheel file every data set must have. */
+export const ELEMENT_WHEEL_ID = 'element_wheel'
 
 export interface DataIssue {
   /** File path relative to data/, e.g. "boards/crossroads.json". */
@@ -54,6 +60,8 @@ const FOLDERS = {
   species: SpeciesSchema,
   scenarios: ScenarioSchema,
   skills: SkillSchema,
+  statuses: StatusTypeSchema,
+  elements: ElementWheelSchema,
 } as const
 
 type Folder = keyof typeof FOLDERS
@@ -75,6 +83,8 @@ export function loadGameData(files: Readonly<Record<string, unknown>>): GameData
   const species: Record<string, Species> = {}
   const scenarios: Record<string, Scenario> = {}
   const skills: Record<string, Skill> = {}
+  const statuses: Record<string, StatusType> = {}
+  const wheels: Record<string, ElementWheel> = {}
 
   for (const [file, content] of Object.entries(files)) {
     const match = /^([a-z_]+)\/([a-z0-9_]+)\.json$/.exec(file)
@@ -89,7 +99,7 @@ export function loadGameData(files: Readonly<Record<string, unknown>>): GameData
       continue
     }
 
-    const result = (FOLDERS[folder] as z.ZodType<Board | Species | Scenario | Skill>).safeParse(content)
+    const result = (FOLDERS[folder] as z.ZodType<Board | Species | Scenario | Skill | StatusType | ElementWheel>).safeParse(content)
     if (!result.success) {
       for (const issue of result.error.issues) {
         issues.push({ file, path: issue.path.join('.'), message: issue.message })
@@ -105,7 +115,36 @@ export function loadGameData(files: Readonly<Record<string, unknown>>): GameData
     if (folder === 'boards') boards[record.id] = record as Board
     else if (folder === 'species') species[record.id] = record as Species
     else if (folder === 'scenarios') scenarios[record.id] = record as Scenario
-    else skills[record.id] = record as Skill
+    else if (folder === 'skills') skills[record.id] = record as Skill
+    else if (folder === 'statuses') statuses[record.id] = record as StatusType
+    else wheels[record.id] = record as ElementWheel
+  }
+
+  const elementWheel = wheels[ELEMENT_WHEEL_ID]
+  if (elementWheel === undefined) {
+    issues.push({ file: `elements/${ELEMENT_WHEEL_ID}.json`, path: '', message: 'the element wheel is missing' })
+  }
+  for (const id of Object.keys(wheels)) {
+    if (id !== ELEMENT_WHEEL_ID) {
+      issues.push({ file: `elements/${id}.json`, path: '', message: `the only element wheel is "${ELEMENT_WHEEL_ID}"` })
+    }
+  }
+
+  // Every status a skill gives must exist; a bonus only goes with a status whose effect uses it.
+  for (const skill of Object.values(skills)) {
+    skill.applies?.forEach((application, index) => {
+      const status = statuses[application.status]
+      const path = `applies.${index}`
+      if (status === undefined) {
+        issues.push({ file: `skills/${skill.id}.json`, path: `${path}.status`, message: `unknown status "${application.status}"` })
+      } else if ((application.bonus !== undefined) !== (status.effects.defenceFromSource === true)) {
+        issues.push({
+          file: `skills/${skill.id}.json`,
+          path: `${path}.bonus`,
+          message: `"${status.id}" ${status.effects.defenceFromSource ? 'needs' : 'takes no'} a bonus from its source`,
+        })
+      }
+    })
   }
 
   for (const scenario of Object.values(scenarios)) {
@@ -115,6 +154,11 @@ export function loadGameData(files: Readonly<Record<string, unknown>>): GameData
     }
     for (const side of SIDES) {
       const team = scenario.teams[side]
+      const unknownSkills = (skillIds: readonly string[], path: string) =>
+        skillIds.forEach((id, index) => {
+          if (skills[id] === undefined) issues.push({ file, path: `${path}.${index}`, message: `unknown skill "${id}"` })
+        })
+      unknownSkills(team.tamer.skills, `teams.${side}.tamer.skills`)
       team.monsters.forEach((monster, index) => {
         if (species[monster.species] === undefined) {
           issues.push({
@@ -123,10 +167,11 @@ export function loadGameData(files: Readonly<Record<string, unknown>>): GameData
             message: `unknown species "${monster.species}"`,
           })
         }
+        unknownSkills(monster.skills, `teams.${side}.monsters.${index}.skills`)
       })
     }
   }
 
-  if (issues.length > 0) throw new DataError(issues)
-  return { boards, species, scenarios, skills }
+  if (issues.length > 0 || elementWheel === undefined) throw new DataError(issues)
+  return { boards, species, scenarios, skills, statuses, elementWheel }
 }

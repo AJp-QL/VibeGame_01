@@ -1,0 +1,14 @@
+{
+  "id": "distract",
+  "name": "Distract",
+  "tier": "minor",
+  "target": "enemy",
+  "range": 3,
+  "dcStat": "spi",
+  "applies": [
+    {
+      "status": "off_balance",
+      "save": "spi"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "element_bolt",
+  "name": "Element Bolt",
+  "tier": "minor",
+  "target": "enemy",
+  "range": 4,
+  "attack": "elemental",
+  "damage": {
+    "count": 1,
+    "sides": 8
+  }
+}

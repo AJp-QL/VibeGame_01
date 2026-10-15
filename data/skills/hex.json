@@ -1,0 +1,14 @@
+{
+  "id": "hex",
+  "name": "Hex",
+  "tier": "major",
+  "target": "enemy",
+  "range": 3,
+  "dcStat": "int",
+  "applies": [
+    {
+      "status": "weakened",
+      "save": "spi"
+    }
+  ]
+}

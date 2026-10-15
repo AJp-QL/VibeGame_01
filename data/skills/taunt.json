@@ -1,0 +1,14 @@
+{
+  "id": "taunt",
+  "name": "Taunt",
+  "tier": "major",
+  "target": "enemy",
+  "range": 3,
+  "dcStat": "vit",
+  "applies": [
+    {
+      "status": "taunted",
+      "save": "spi"
+    }
+  ]
+}

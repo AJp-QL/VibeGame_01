@@ -1,0 +1,13 @@
+{
+  "id": "mark",
+  "name": "Mark",
+  "tier": "minor",
+  "target": "enemy",
+  "range": 5,
+  "attack": "physical",
+  "applies": [
+    {
+      "status": "marked"
+    }
+  ]
+}

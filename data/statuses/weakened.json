@@ -1,0 +1,13 @@
+{
+  "id": "weakened",
+  "name": "Weakened",
+  "polarity": "negative",
+  "duration": {
+    "kind": "turns",
+    "turns": 2
+  },
+  "stacking": "reset",
+  "effects": {
+    "damageDealt": -2
+  }
+}

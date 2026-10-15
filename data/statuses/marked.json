@@ -1,0 +1,13 @@
+{
+  "id": "marked",
+  "name": "Marked",
+  "polarity": "negative",
+  "duration": {
+    "kind": "turns",
+    "turns": 1
+  },
+  "stacking": "reset",
+  "effects": {
+    "attackersRollMode": "advantage"
+  }
+}

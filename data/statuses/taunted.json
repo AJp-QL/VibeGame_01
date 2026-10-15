@@ -1,0 +1,14 @@
+{
+  "id": "taunted",
+  "name": "Taunted",
+  "polarity": "negative",
+  "duration": {
+    "kind": "turns",
+    "turns": 1
+  },
+  "stacking": "reset",
+  "tracksSource": true,
+  "effects": {
+    "forcedToAttackSource": true
+  }
+}

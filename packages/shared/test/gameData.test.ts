@@ -205,8 +205,8 @@ describe('malformed data is rejected', () => {
   })
 
   it('rejects files in a data folder that has no schema yet', () => {
-    expect(issuesOf(withFile('statuses/bleed.json', { id: 'bleed' }))).toContainEqual(
-      expect.objectContaining({ file: 'statuses/bleed.json', message: expect.stringContaining('no schema') }),
+    expect(issuesOf(withFile('traits/keen_eye.json', { id: 'keen_eye' }))).toContainEqual(
+      expect.objectContaining({ file: 'traits/keen_eye.json', message: expect.stringContaining('no schema') }),
     )
   })
 
@@ -226,10 +226,167 @@ describe('skills in data/ (rules §15.1)', () => {
       id: 'basic_attack',
       name: 'Basic Attack',
       tier: 'minor',
+      target: 'enemy',
       range: 1,
       attack: 'physical',
       damage: { count: 1, sides: 8 },
       tamerDamage: { count: 1, sides: 6 },
     })
+  })
+
+  const skills = loadGameData(realFiles).skills
+
+  it('has every skill of every Scenario loadout, plus Basic Attack and Defend', () => {
+    const data = loadGameData(realFiles)
+    const loadouts = Object.values(data.scenarios).flatMap((s) =>
+      (['A', 'B'] as const).flatMap((side) => [s.teams[side].tamer.skills, ...s.teams[side].monsters.map((m) => m.skills)]),
+    )
+    for (const id of [...loadouts.flat(), 'basic_attack', 'defend']) expect(skills[id], id).toBeDefined()
+  })
+
+  it("Fangrel's loadout as rules §15.1 writes it", () => {
+    expect(skills.heavy_blow).toMatchObject({ tier: 'major', target: 'enemy', range: 1, attack: 'physical', damage: { count: 2, sides: 8 } })
+    expect(skills.rend).toMatchObject({
+      tier: 'major',
+      range: 1,
+      attack: 'physical',
+      damage: { count: 1, sides: 6 },
+      dcStat: 'pow',
+      applies: [{ status: 'bleed', save: 'vit' }],
+    })
+    expect(skills.hit_and_run).toMatchObject({ tier: 'minor', range: 1, damage: { count: 1, sides: 8 }, effects: { retreat: 1 } })
+    expect(skills.pack_howl).toMatchObject({ tier: 'major', target: 'selfAndAllies', range: 1, applies: [{ status: 'rallied' }] })
+    expect(skills.pack_howl?.attack).toBeUndefined()
+  })
+
+  it('Defend gives Guarded +2 (rules §12)', () => {
+    expect(skills.defend).toEqual({
+      id: 'defend',
+      name: 'Defend',
+      tier: 'minor',
+      target: 'self',
+      range: 0,
+      applies: [{ status: 'guarded', bonus: 2 }],
+    })
+  })
+
+  it('Save DC stat is the main stat of the owner\'s role (rules §3.2): Striker POW, Guardian VIT, Caster INT, Ranger SEN, Tamer SPI', () => {
+    expect([skills.rend, skills.taunt, skills.hex, skills.pin, skills.distract].map((s) => s?.dcStat)).toEqual([
+      'pow',
+      'vit',
+      'int',
+      'sen',
+      'spi',
+    ])
+  })
+})
+
+describe('statuses in data/ (rules §14.2)', () => {
+  const statuses = loadGameData(realFiles).statuses
+
+  it('has the 10 phase 1 statuses', () => {
+    expect(Object.keys(statuses).sort()).toEqual(
+      ['bleed', 'countering', 'guarded', 'hidden', 'marked', 'off_balance', 'pin', 'rallied', 'taunted', 'weakened'].sort(),
+    )
+  })
+
+  it('durations as in the status table', () => {
+    const turns = (id: string) => {
+      const duration = statuses[id]?.duration
+      return duration?.kind === 'turns' ? duration.turns : duration?.kind
+    }
+    expect(['bleed', 'pin', 'taunted', 'weakened', 'marked', 'rallied'].map(turns)).toEqual([3, 1, 1, 2, 1, 2])
+    expect(['guarded', 'countering', 'off_balance', 'hidden'].map(turns)).toEqual([
+      'untilOwnTurnStart',
+      'untilOwnTurnStart',
+      'untilAttackRoll',
+      'untilBroken',
+    ])
+  })
+
+  it('Bleed 1d4 at the start of the Turn, Rallied +1 attack roll, Guarded keeps the higher bonus', () => {
+    expect(statuses.bleed?.effects).toEqual({ startOfTurnDamage: { count: 1, sides: 4 } })
+    expect(statuses.rallied?.effects).toEqual({ attackRoll: 1 })
+    expect(statuses.guarded).toMatchObject({ stacking: 'keepHigher', effects: { defenceFromSource: true } })
+    expect(statuses.bleed?.stacking).toBe('reset')
+  })
+})
+
+describe('the element wheel in data/ (rules §4.1)', () => {
+  it('forest > water > mountain > desert > forest; light and dark beat each other', () => {
+    expect(loadGameData(realFiles).elementWheel.beats).toEqual({
+      forest: ['water'],
+      water: ['mountain'],
+      mountain: ['desert'],
+      desert: ['forest'],
+      light: ['dark'],
+      dark: ['light'],
+    })
+  })
+})
+
+describe('malformed skills, statuses and element wheel are rejected', () => {
+  const file = (id: string): any => structuredClone(realFiles[id])
+
+  it('rejects a Scenario loadout naming an unknown skill', () => {
+    const scenario = scenario1()
+    scenario.teams.A.monsters[0].skills[1] = 'rendd'
+    scenario.teams.B.tamer.skills[0] = 'cuddle'
+    expect(issuesOf(withFile('scenarios/scenario_1.json', scenario))).toEqual(
+      expect.arrayContaining([
+        { file: 'scenarios/scenario_1.json', path: 'teams.A.monsters.0.skills.1', message: 'unknown skill "rendd"' },
+        { file: 'scenarios/scenario_1.json', path: 'teams.B.tamer.skills.0', message: 'unknown skill "cuddle"' },
+      ]),
+    )
+  })
+
+  it('rejects a skill that gives an unknown status, or a save without a Save DC stat', () => {
+    const rend = file('skills/rend.json')
+    rend.applies = [{ status: 'bleeding', save: 'vit' }]
+    expect(issuesOf(withFile('skills/rend.json', rend))).toContainEqual(
+      expect.objectContaining({ path: 'applies.0.status', message: 'unknown status "bleeding"' }),
+    )
+    delete rend.dcStat
+    expect(issuesOf(withFile('skills/rend.json', rend)).map((i) => i.path)).toContain('dcStat')
+  })
+
+  it('rejects a skill whose fields do not fit together', () => {
+    const howl = file('skills/pack_howl.json')
+    howl.damage = { count: 1, sides: 6 }
+    howl.tier = 'passive'
+    const paths = issuesOf(withFile('skills/pack_howl.json', howl)).map((i) => i.path)
+    expect(paths).toEqual(expect.arrayContaining(['damage', 'target']))
+    const defend = file('skills/defend.json')
+    defend.range = 1
+    expect(issuesOf(withFile('skills/defend.json', defend)).map((i) => i.path)).toEqual(['range'])
+    // Guarded's bonus comes from its source: Defend without one is rejected.
+    const noBonus = file('skills/defend.json')
+    noBonus.applies = [{ status: 'guarded' }]
+    expect(issuesOf(withFile('skills/defend.json', noBonus)).map((i) => i.path)).toEqual(['applies.0.bonus'])
+  })
+
+  it('rejects a bad status: unknown duration kind, negative duration, unknown effect, wrong id', () => {
+    const bleed = file('statuses/bleed.json')
+    bleed.duration = { kind: 'turns', turns: 0 }
+    bleed.effects.poison = true
+    const paths = issuesOf(withFile('statuses/bleed.json', bleed)).map((i) => i.path)
+    expect(paths).toEqual(expect.arrayContaining(['duration.turns', 'effects']))
+    const rallied = file('statuses/rallied.json')
+    rallied.duration = { kind: 'forever' }
+    rallied.stacking = 'add'
+    expect(issuesOf(withFile('statuses/rallied.json', rallied)).map((i) => i.path)).toEqual(
+      expect.arrayContaining(['duration.kind', 'stacking']),
+    )
+  })
+
+  it('rejects an element wheel where an element beats itself, and a missing wheel', () => {
+    const wheel = file('elements/element_wheel.json')
+    wheel.beats.water = ['water']
+    expect(issuesOf(withFile('elements/element_wheel.json', wheel))).toContainEqual(
+      expect.objectContaining({ path: 'beats.water', message: 'water cannot beat itself' }),
+    )
+    const files = structuredClone(realFiles)
+    delete files['elements/element_wheel.json']
+    expect(issuesOf(files)).toContainEqual(expect.objectContaining({ message: 'the element wheel is missing' }))
   })
 })

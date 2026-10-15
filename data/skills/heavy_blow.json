@@ -1,0 +1,12 @@
+{
+  "id": "heavy_blow",
+  "name": "Heavy Blow",
+  "tier": "major",
+  "target": "enemy",
+  "range": 1,
+  "attack": "physical",
+  "damage": {
+    "count": 2,
+    "sides": 8
+  }
+}

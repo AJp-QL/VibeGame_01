@@ -1,0 +1,15 @@
+{
+  "id": "hit_and_run",
+  "name": "Hit and Run",
+  "tier": "minor",
+  "target": "enemy",
+  "range": 1,
+  "attack": "physical",
+  "damage": {
+    "count": 1,
+    "sides": 8
+  },
+  "effects": {
+    "retreat": 1
+  }
+}

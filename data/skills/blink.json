@@ -1,0 +1,10 @@
+{
+  "id": "blink",
+  "name": "Blink",
+  "tier": "minor",
+  "target": "tile",
+  "range": 2,
+  "effects": {
+    "replacesMove": true
+  }
+}

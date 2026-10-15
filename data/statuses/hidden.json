@@ -1,0 +1,12 @@
+{
+  "id": "hidden",
+  "name": "Hidden",
+  "polarity": "positive",
+  "duration": {
+    "kind": "untilBroken"
+  },
+  "stacking": "reset",
+  "effects": {
+    "untargetableFrom": 2
+  }
+}

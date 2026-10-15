@@ -1,0 +1,15 @@
+{
+  "id": "camouflage",
+  "name": "Camouflage",
+  "tier": "minor",
+  "target": "self",
+  "range": 0,
+  "applies": [
+    {
+      "status": "hidden"
+    }
+  ],
+  "effects": {
+    "requiresTerrain": "forest"
+  }
+}

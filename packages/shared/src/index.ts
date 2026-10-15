@@ -10,16 +10,38 @@ export {
 } from './tiles.ts'
 export {
   ATTACK_KINDS,
+  DiceSchema,
+  ElementWheelSchema,
+  SKILL_TARGETS,
+  SKILL_TIERS,
+  SkillSchema,
+  STATUS_POLARITIES,
+  STATUS_STACKING,
+  StatusTypeSchema,
+  type AttackKind,
+  type Dice,
+  type ElementWheel,
+  type Heal,
+  type Skill,
+  type SkillEffects,
+  type SkillTarget,
+  type SkillTier,
+  type StatusApplication,
+  type StatusDuration,
+  type StatusEffects,
+  type StatusPolarity,
+  type StatusStacking,
+  type StatusType,
+} from './combatData.ts'
+export {
   BUILDS,
   ELEMENTS,
   MOVEMENTS,
   ROLES,
   SIDES,
-  SKILL_TIERS,
-  type AttackKind,
+  STATS,
   type Board,
   type Build,
-  type Dice,
   type Element,
   type Monster,
   type Movement,
@@ -27,14 +49,13 @@ export {
   type Scenario,
   type ScenarioTeam,
   type Side,
-  type Skill,
-  type SkillTier,
   type Species,
+  type Stat,
   type Stats,
   type Tamer,
   type Terrain,
 } from './model.ts'
-export { DataError, loadGameData, type DataIssue, type GameData } from './gameData.ts'
+export { DataError, ELEMENT_WHEEL_ID, loadGameData, type DataIssue, type GameData } from './gameData.ts'
 export { canonicalJson, dataHash, sha256Hex } from './dataHash.ts'
 export {
   BATTLE_MODES,

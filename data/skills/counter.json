@@ -1,0 +1,12 @@
+{
+  "id": "counter",
+  "name": "Counter",
+  "tier": "minor",
+  "target": "self",
+  "range": 0,
+  "applies": [
+    {
+      "status": "countering"
+    }
+  ]
+}

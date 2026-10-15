@@ -1,0 +1,16 @@
+{
+  "id": "burst",
+  "name": "Burst",
+  "tier": "major",
+  "target": "area",
+  "range": 3,
+  "attack": "elemental",
+  "damage": {
+    "count": 1,
+    "sides": 6
+  },
+  "area": {
+    "radius": 1,
+    "maxTargets": 2
+  }
+}

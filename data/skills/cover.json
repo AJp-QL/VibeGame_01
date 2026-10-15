@@ -1,0 +1,10 @@
+{
+  "id": "cover",
+  "name": "Cover",
+  "tier": "major",
+  "target": "allyMonster",
+  "range": 1,
+  "effects": {
+    "cover": true
+  }
+}

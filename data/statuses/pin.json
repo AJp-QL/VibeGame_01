@@ -1,0 +1,13 @@
+{
+  "id": "pin",
+  "name": "Pin",
+  "polarity": "negative",
+  "duration": {
+    "kind": "turns",
+    "turns": 1
+  },
+  "stacking": "reset",
+  "effects": {
+    "immobile": true
+  }
+}

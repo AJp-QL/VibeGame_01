@@ -1,0 +1,15 @@
+{
+  "id": "countering",
+  "name": "Countering",
+  "polarity": "positive",
+  "duration": {
+    "kind": "untilOwnTurnStart"
+  },
+  "stacking": "reset",
+  "effects": {
+    "counterattack": {
+      "count": 1,
+      "sides": 8
+    }
+  }
+}

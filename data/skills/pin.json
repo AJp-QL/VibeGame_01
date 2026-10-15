@@ -1,0 +1,19 @@
+{
+  "id": "pin",
+  "name": "Pin",
+  "tier": "major",
+  "target": "enemy",
+  "range": 4,
+  "attack": "physical",
+  "damage": {
+    "count": 1,
+    "sides": 6
+  },
+  "dcStat": "sen",
+  "applies": [
+    {
+      "status": "pin",
+      "save": "vit"
+    }
+  ]
+}

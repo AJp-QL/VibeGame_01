@@ -1,0 +1,12 @@
+{
+  "id": "off_balance",
+  "name": "Off-balance",
+  "polarity": "negative",
+  "duration": {
+    "kind": "untilAttackRoll"
+  },
+  "stacking": "reset",
+  "effects": {
+    "nextAttackRollMode": "disadvantage"
+  }
+}
