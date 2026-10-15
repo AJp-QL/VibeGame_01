@@ -6,7 +6,7 @@
  * English UI is out of scope).
  */
 import type { Element, Side, Terrain } from '@mt/shared'
-import type { BattleEndCause, RejectionCode, StatusId } from '@mt/engine'
+import type { BattleEndCause, RejectionCode } from '@mt/engine'
 import type { Mode } from './battleChoice.ts'
 
 /** "+2", "0", "−1" (true minus sign). */
@@ -205,10 +205,71 @@ export const th = {
     `${target} เสีย ${amount} HP (${dice}: ${rolls.join(' + ')}${modifier === 0 ? '' : ` ${signed(modifier)}`}) เหลือ HP ${hp}/${maxHp}`,
   logUnitDown: (unit: string) => `${unit} ล้มและออกจาก Board`,
   logDefended: (unit: string) => `${unit} ใช้ Defend`,
-  logGuarded: (unit: string, bonus: number) =>
-    `${unit} ติด Guarded: Guard และ Ward +${bonus} จนถึงเริ่ม Turn ถัดไปของทีมตัวเอง`,
   logStatusEnded: (unit: string, status: string) => `${status} ของ ${unit} หมดแล้ว`,
-  status: { guarded: 'Guarded' } satisfies Record<StatusId, string>,
+  logSkillUsed: (unit: string, skill: string, targets: string) => `${unit} ใช้ ${skill}${targets ? ` กับ ${targets}` : ''}`,
+  logSave: (unit: string, status: string, stat: string, roll: number, modifier: number, total: number, dc: number, saved: boolean) =>
+    `${unit} ทอย save ${stat} ต้าน ${status}: d20 ได้ ${roll} ${signed(modifier)} = ${total} เทียบ DC ${dc} → ${saved ? 'ต้านได้' : 'ไม่ผ่าน'}`,
+  logStatusApplied: (unit: string, status: string, effect: string, duration: string, refreshed: boolean) =>
+    `${unit} ติด ${status}${refreshed ? ' ซ้ำ (เริ่มนับใหม่ ไม่ซ้อน)' : ''}: ${effect} (${duration})`,
+  logStatusTicked: (unit: string, status: string, amount: number, dice: string, rolls: readonly number[], hp: number, maxHp: number) =>
+    `${status}: ${unit} เสีย ${amount} HP (${dice}: ${rolls.join(' + ')}) เหลือ HP ${hp}/${maxHp}`,
+  logRetreated: (unit: string, from: string, to: string) => `${unit} ถอยจาก ${from} ไป ${to} (ไม่ใช่การเดิน ยังเดินต่อได้)`,
+  logRetreatDeclined: (unit: string) => `${unit} เลือกไม่ถอย`,
+
+  // Skills and statuses (rules §13–§15): names come from data, everything else from here.
+  skillsTitle: 'Skill',
+  tier: { minor: 'Minor', major: 'Major', signature: 'Signature', passive: 'Passive' },
+  cooldownBadge: (turns: number) => `อีก ${turns}`,
+  cooldownTitle: (turns: number) => `cooldown: ใช้ได้อีกใน ${turns} Turn ของทีมตัวเอง`,
+  skillSpent: 'ใช้ไปแล้วใน Battle นี้',
+  skillPassive: 'ทำงานตลอด ไม่ต้องกดใช้',
+  skillNotYet: 'ยังไม่เปิดใช้ในเวอร์ชันนี้',
+  skillRange: (range: number) => (range === 0 ? 'ตัวเอง' : `ระยะ ${range}`),
+  skillRangeAllies: (range: number) => `ตัวเองและพวกในระยะ ${range}`,
+  skillDamage: (dice: string) => `damage ${dice}`,
+  skillAttack: { physical: 'กายภาพ', elemental: 'ธาตุ' },
+  skillRetreat: 'ถอยฟรี 1 ช่องหลังโจมตี',
+  skillGives: (status: string) => `ติด ${status}`,
+  skillGivesSave: (status: string, stat: string) => `ติด ${status} (save ${stat})`,
+  hintChooseSkillTarget: (skill: string) => `แตะเป้าที่ไฮไลต์สีแดงเพื่อดูผลของ ${skill} ก่อนยืนยัน`,
+  hintConfirmSkill: (skill: string) => `ดูผลของ ${skill} แล้วกดยืนยัน หรือกดยกเลิก`,
+  hintSkillBlocked: 'เป้าในระยะถูก Unit อื่นขวางแนวเล็งทั้งหมด ลองเดินไปตำแหน่งอื่นก่อน',
+  hintRetreat: (unit: string) =>
+    `Hit and Run: แตะช่องที่สว่างเพื่อให้ ${unit} ถอยฟรี 1 ช่อง (ไม่นับเป็นการเดิน) หรือกด "ไม่ถอย"`,
+  stayInPlace: 'ไม่ถอย',
+  confirmSkill: 'ยืนยันใช้ skill',
+  previewIfHit: 'ถ้าโดน',
+  previewSave: (status: string, percent: string, stat: string, dc: number, modifier: number) =>
+    `${status}: โอกาสเป้าไม่ผ่าน save ${percent} (d20 ${signed(modifier)} ${stat} ต้องได้อย่างน้อย ${dc})`,
+  previewNoSave: (status: string) => `${status}: ติดทันที ไม่มี save`,
+  previewNoDamage: 'ไม่ทำ damage',
+  previewEffect: (statuses: string, units: string) => `${statuses} กับ ${units} ไม่ต้องทอย`,
+  previewSaveTitle: (user: string, skill: string, target: string) => `${user} ใช้ ${skill} ใส่ ${target}: ไม่ทอยโจมตี เป้าทอย save`,
+  previewAttackBonusStatus: (status: string, bonus: number) => `${status} ${signed(bonus)}`,
+  statusesTitle: 'Status',
+  noStatuses: 'ไม่มี status',
+  statusDuration: {
+    turns: (turns: number, skip: boolean) =>
+      skip ? `ส่วนที่เหลือของ Turn นี้ และอีก ${turns} Turn ของทีมตัวเอง` : `อีก ${turns} Turn ของทีมตัวเอง (หมดตอนจบ Turn)`,
+    untilOwnTurnStart: 'จนถึงเริ่ม Turn ถัดไปของทีมตัวเอง',
+    untilAttackRoll: 'จนถึง attack roll ครั้งถัดไป',
+    untilBroken: 'จนกว่าจะหลุดตามเงื่อนไข',
+  },
+  statusTurnsBadge: (turns: number) => `${turns}`,
+  statusEffect: {
+    startOfTurnDamage: (dice: string) => `เสีย HP ${dice} ตอนเริ่ม Turn ของทีมตัวเอง`,
+    attackRoll: (bonus: number) => `attack roll ${signed(bonus)}`,
+    defence: (bonus: number) => `Guard และ Ward +${bonus}`,
+    immobile: 'เดินไม่ได้ (รวมการถอยของ Hit and Run) แต่ยังใช้ Action ได้',
+    damageDealt: (bonus: number) => `damage ที่ทำ ${signed(bonus)} (ขั้นต่ำ 1)`,
+    attackersAdvantage: 'ผู้โจมตีทุกตัวได้ advantage เมื่อโจมตี Unit นี้',
+    nextAttackDisadvantage: 'attack roll ครั้งถัดไปได้ disadvantage',
+    untargetable: (distance: number) => `ศัตรูเล็งจากระยะ ${distance} ขึ้นไปไม่ได้`,
+    taunted: 'ต้องโจมตีผู้ taunt ถ้าทำได้',
+    counterattack: (dice: string) => `โจมตีกลับ ${dice} เมื่อถูกโจมตีจากระยะ 1`,
+  },
+  statusPositive: 'บวก',
+  statusNegative: 'ลบ',
   logBattleEnded: (winner: Side, round: number) => `Battle จบใน Round ${round}: ทีม ${winner} ชนะ`,
 
   cause: {
@@ -237,6 +298,13 @@ export const th = {
     'not-an-enemy': 'โจมตีได้เฉพาะ Unit ของอีกทีม',
     'out-of-range': 'เป้าอยู่นอกระยะ',
     'no-line-of-sight': 'มี Unit ขวางแนวเล็ง (line of sight) จึงโจมตีเป้านี้ไม่ได้',
+    'decision-pending': 'ต้องเลือกช่องถอยของ Hit and Run (หรือไม่ถอย) ก่อน',
+    'no-decision': 'ตอนนี้ไม่มีการถอยให้เลือก',
+    'not-in-loadout': 'Unit นี้ไม่มี skill นี้',
+    'skill-not-available': 'skill นี้ยังใช้ไม่ได้',
+    'on-cooldown': 'skill นี้ยังติด cooldown',
+    'invalid-target': 'skill นี้เลือกเป้าแบบนี้ไม่ได้',
+    'not-an-ally': 'skill นี้ใช้ได้กับพวกเดียวกันเท่านั้น',
   } satisfies Record<RejectionCode, string>,
 
   battleMenu: {
@@ -285,6 +353,9 @@ export const th = {
       confirmDeployment: (side: string) => `ทีม ${side} ยืนยันการวาง`,
       move: (unit: string, tile: string) => `${unit} เดินไป ${tile}`,
       attack: (unit: string, skill: string, target: string) => `${unit} ใช้ ${skill} ใส่ ${target}`,
+      skill: (unit: string, skill: string) => `${unit} ใช้ ${skill}`,
+      retreat: (unit: string, tile: string) => `${unit} ถอยไป ${tile} (Hit and Run)`,
+      stay: (unit: string) => `${unit} ไม่ถอย (Hit and Run)`,
       defend: (unit: string) => `${unit} ป้องกัน (Defend)`,
       endTurn: (side: string) => `ทีม ${side} จบ Turn`,
       other: (type: string) => `action "${type}"`,

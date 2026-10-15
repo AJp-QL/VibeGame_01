@@ -390,6 +390,100 @@ body {
   color: #cfeaff;
 }
 
+/* Skills and statuses (ticket 07). */
+
+.status-tag {
+  border: 0;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.status-tag.positive {
+  background: #1f4b6b;
+  color: #cfeaff;
+}
+
+.status-tag.negative {
+  background: #6a2626;
+  color: #ffd2cc;
+}
+
+.status-detail {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.statuses {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+}
+
+.statuses .tag {
+  margin-left: 0;
+}
+
+.skills ul {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.skills li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.skills button.skill {
+  position: relative;
+  min-width: 8.5rem;
+  min-height: 44px;
+  padding: 6px 12px;
+  text-align: left;
+}
+
+.skills button.skill[aria-pressed='true'] {
+  outline: 2px solid var(--accent);
+}
+
+/* The cooldown number on the skill button (rules §13.2). */
+.skills .cooldown {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #15161a;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+.skills .skill-info {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  flex: 1 1 12rem;
+}
+
+.status-odds {
+  margin: 2px 0;
+  padding-left: 18px;
+  font-size: 0.875rem;
+}
+
 .sources ul {
   margin: 4px 0;
   padding: 0;

@@ -69,6 +69,20 @@ export const BLOCKED_TARGET = 0xb0b0b0
 /** Guarded shield icon on a Unit. */
 export const GUARDED = 0x7fc8ff
 export const GUARDED_SHIELD: readonly string[] = ['#####', '#####', '#####', '.###.', '..#..']
+
+/** Status icons (5x5) on a Unit by status id; any other status shows a dot in its polarity colour. */
+export const STATUS_ICONS: Readonly<Record<string, { readonly colour: number; readonly pattern: readonly string[] }>> = {
+  guarded: { colour: GUARDED, pattern: GUARDED_SHIELD },
+  // A drop.
+  bleed: { colour: 0xff4a3d, pattern: ['..#..', '.###.', '#####', '#####', '.###.'] },
+  // An arrow up.
+  rallied: { colour: 0xffb84d, pattern: ['..#..', '.###.', '#####', '..#..', '..#..'] },
+  // A cross.
+  pin: { colour: 0xd0d0d0, pattern: ['#...#', '.#.#.', '..#..', '.#.#.', '#...#'] },
+}
+export const STATUS_DOT: readonly string[] = ['.###.', '#####', '#####', '#####', '.###.']
+export const STATUS_POSITIVE = 0x7fc8ff
+export const STATUS_NEGATIVE = 0xff6b5e
 export const HP_BAR_BACK = 0x141414
 export const HP_BAR_FILL = 0x58d26b
 /** At a third of max HP or less. */

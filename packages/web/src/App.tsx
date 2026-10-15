@@ -3,15 +3,18 @@ import {
   createBattle,
   derivedValues,
   legalActions,
+  type ActionPreview,
   type AttackPreview,
   type BattleEvent,
   type BattleState,
   type Chance,
   type Initiative,
   type RollModeSource,
+  type StatusOdds,
   type UnitState,
   type UnitTemplate,
 } from '@mt/engine'
+import { diceText, skillSummary, statName, statusDurationText, statusEffectText, statusName } from './skillText.ts'
 import { GLYPH_ALPHA, glyphColour, TERRAIN_COLOURS, TERRAIN_GLYPHS } from '@mt/battle'
 import { DataError, tileName, type GameData, type Side, type Terrain } from '@mt/shared'
 import { BattleView } from './BattleView.tsx'
@@ -403,10 +406,16 @@ function DeploymentPanel({ snapshot, session, data }: { snapshot: SessionSnapsho
 function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, current: UnitState | undefined, data: GameData) {
   const { state } = snapshot
   if (snapshot.rejection !== null) return th.rejection[snapshot.rejection]
+  if (state.pending !== null) return th.hintRetreat(selected === undefined ? state.pending.unit : unitName(selected, data))
   if (selected === undefined) return th.hintSelect(state.sideToAct)
   if (snapshot.mode === 'attack') {
     if (snapshot.preview !== null) return th.hintConfirm
     return snapshot.canAttack ? th.hintChooseTarget : th.hintAllBlocked
+  }
+  if (snapshot.mode === 'skill' && snapshot.pendingSkill !== null) {
+    const skill = skillName(data, snapshot.pendingSkill)
+    if (snapshot.preview !== null) return th.hintConfirmSkill(skill)
+    return snapshot.targets.length > 0 ? th.hintChooseSkillTarget(skill) : th.hintSkillBlocked
   }
   const { current: playing, started, limit } = state.activations
   if (started.includes(selected.id) && playing !== selected.id) return th.hintActivationOver
@@ -437,15 +446,28 @@ function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; ses
     else session.endTurn()
   }
 
+  const inspected = state.units.find((u) => u.id === snapshot.inspectedUnit)
+  const deciding = state.pending !== null
+
   return (
     <section className="panel controls">
       <p className="hint">{turnHint(snapshot, selected, current, data)}</p>
       {selected !== undefined && <UnitCard unit={selected} state={state} data={data} />}
-      {snapshot.mode === 'attack' && snapshot.blocked.length > 0 && (
+      {inspected !== undefined && <UnitCard unit={inspected} state={state} data={data} />}
+      {selected !== undefined && snapshot.mode === 'move' && !deciding && snapshot.skills.length > 0 && (
+        <SkillButtons snapshot={snapshot} session={session} data={data} />
+      )}
+      {snapshot.mode !== 'move' && snapshot.blocked.length > 0 && (
         <BlockedTargets blocked={snapshot.blocked} name={namer(state, data)} />
       )}
       {snapshot.preview !== null && <PreviewCard preview={snapshot.preview} name={namer(state, data)} data={data} />}
-      {warning === null ? (
+      {deciding ? (
+        <div className="buttons">
+          <button type="button" className="secondary" onClick={() => session.stayInPlace()}>
+            {th.stayInPlace}
+          </button>
+        </div>
+      ) : warning === null ? (
         <div className="buttons">
           {selected !== undefined && snapshot.mode === 'move' && (
             <button
@@ -462,12 +484,12 @@ function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; ses
               {th.defend}
             </button>
           )}
-          {snapshot.preview !== null && (
+          {snapshot.ready !== null && (
             <button type="button" className="primary" onClick={() => session.confirmAttack()}>
-              {th.confirmAttack}
+              {snapshot.mode === 'skill' ? th.confirmSkill : th.confirmAttack}
             </button>
           )}
-          {snapshot.mode === 'attack' && (
+          {snapshot.mode !== 'move' && (
             <button type="button" className="secondary" onClick={() => session.cancel()}>
               {th.cancel}
             </button>
@@ -501,9 +523,12 @@ function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; ses
   )
 }
 
-/** Guard and Ward bonus from Guarded, 0 when the Unit is not Guarded. */
-function guardedBonus(unit: UnitState): number {
-  return unit.statuses.reduce((bonus, s) => (s.id === 'guarded' ? Math.max(bonus, s.bonus) : bonus), 0)
+/** Guard and Ward bonus from statuses (Guarded), 0 when none. */
+function guardedBonus(unit: UnitState, state: BattleState): number {
+  return unit.statuses.reduce(
+    (bonus, s) => (state.statusTypes[s.id]?.effects.defenceFromSource ? Math.max(bonus, s.bonus ?? 0) : bonus),
+    0,
+  )
 }
 
 function UnitCard({ unit, state, data }: { unit: UnitState; state: BattleState; data: GameData }) {
@@ -514,15 +539,113 @@ function UnitCard({ unit, state, data }: { unit: UnitState; state: BattleState; 
       : [th.star(unit.star), th.element[unit.element], th.movementType[unit.movement]]
   const terrain = state.terrain[unit.tile.y]?.[unit.tile.x]
   const standing = terrain === undefined ? [] : [th.standingOn(th.terrain[terrain])]
-  const bonus = guardedBonus(unit)
+  const bonus = guardedBonus(unit, state)
   const defences =
     bonus > 0 ? th.defencesGuarded(values.guard + bonus, values.ward + bonus, bonus) : th.defences(values.guard, values.ward)
   return (
     <div className={`unit-card side-${unit.side}`}>
       <strong>{unitName(unit, data)}</strong> <span className="team">{th.team(unit.side)}</span>
-      {bonus > 0 && <span className="tag guarded">{th.guardedTag(bonus)}</span>}
       <div>{[...details, th.move(values.move), ...standing].join(' · ')}</div>
       <div>{[th.hp(unit.hp, values.maxHp), defences, th.attackBonus(values.attackBonus)].join(' · ')}</div>
+      <StatusList unit={unit} state={state} />
+    </div>
+  )
+}
+
+/** Every status on a Unit with what it does and how long it has left (spec user story 41). */
+function StatusList({ unit, state }: { unit: UnitState; state: BattleState }) {
+  if (unit.statuses.length === 0) return <div className="muted">{th.noStatuses}</div>
+  return (
+    <ul className="statuses">
+      {unit.statuses.map((status) => {
+        const type = state.statusTypes[status.id]
+        if (type === undefined) return null
+        return (
+          <li key={status.id} className={`status ${type.polarity}`}>
+            <span className={`tag status-tag ${type.polarity}`}>{type.name}</span> {statusEffectText(type, status)} ·{' '}
+            <span className="muted">{statusDurationText(type, status)}</span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+/** Small status chips for lists; tap one to read what it does and how long it lasts. */
+function StatusChips({ unit, state }: { unit: UnitState; state: BattleState }) {
+  const [open, setOpen] = useState<string | null>(null)
+  const shown = unit.statuses.find((s) => s.id === open)
+  const shownType = shown === undefined ? undefined : state.statusTypes[shown.id]
+  return (
+    <>
+      {unit.statuses.map((status) => {
+        const type = state.statusTypes[status.id]
+        if (type === undefined) return null
+        const badge = status.turnsLeft === undefined ? '' : ` ${th.statusTurnsBadge(status.turnsLeft)}`
+        return (
+          <button
+            key={status.id}
+            type="button"
+            className={`tag status-tag ${type.polarity}`}
+            aria-expanded={open === status.id}
+            onClick={() => setOpen(open === status.id ? null : status.id)}
+          >
+            {type.name}
+            {badge}
+          </button>
+        )
+      })}
+      {shown !== undefined && shownType !== undefined && (
+        <span className="status-detail">
+          {statusEffectText(shownType, shown)} · {statusDurationText(shownType, shown)}
+        </span>
+      )}
+    </>
+  )
+}
+
+/** The selected Unit's loadout: tap to aim; cooldown shows as a number on the button (rules §13.2). */
+function SkillButtons({ snapshot, session, data }: { snapshot: SessionSnapshot; session: BattleSession; data: GameData }) {
+  const statuses = snapshot.state.statusTypes
+  return (
+    <div className="skills">
+      <strong>{th.skillsTitle}</strong>
+      <ul>
+        {snapshot.skills.map((button) => {
+          const skill = data.skills[button.skill]
+          const reason = !button.implemented
+            ? button.tier === 'passive'
+              ? th.skillPassive
+              : th.skillNotYet
+            : button.spent
+              ? th.skillSpent
+              : button.cooldown > 0
+                ? th.cooldownTitle(button.cooldown)
+                : null
+          return (
+            <li key={button.skill}>
+              <button
+                type="button"
+                className={`skill tier-${button.tier}`}
+                disabled={!button.usable}
+                aria-pressed={snapshot.pendingSkill === button.skill}
+                onClick={() => session.chooseSkill(button.skill)}
+              >
+                <span className="skill-name">{skillName(data, button.skill)}</span>
+                {button.cooldown > 0 && (
+                  <span className="cooldown" aria-label={th.cooldownTitle(button.cooldown)}>
+                    {button.cooldown}
+                  </span>
+                )}
+              </button>
+              <span className="skill-info">
+                {skill !== undefined && skillSummary(skill, statuses)}
+                {reason !== null && <span className="reason"> · {reason}</span>}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }
@@ -576,20 +699,65 @@ function RollModeSources({ preview, name }: { preview: AttackPreview; name: (id:
   )
 }
 
-function PreviewCard({ preview, name, data }: { preview: AttackPreview; name: (id: string) => string; data: GameData }) {
+/** The chance each status of a skill sticks: the target's save, or no save at all. */
+function StatusOddsList({ odds, statuses }: { odds: readonly StatusOdds[]; statuses: BattleState['statusTypes'] }) {
+  return (
+    <ul className="status-odds">
+      {odds.map((o) => {
+        const status = statusName(statuses, o.status)
+        return (
+          <li key={`${o.target}-${o.status}`}>
+            {o.save === null
+              ? th.previewNoSave(status)
+              : th.previewSave(status, percent(o.save.failChance), statName(o.save.stat), o.save.dc, o.save.modifier)}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+function PreviewCard({ preview, name, data }: { preview: ActionPreview; name: (id: string) => string; data: GameData }) {
+  if (preview.type === 'effect') {
+    const statuses = preview.statuses.map((id) => statusName(data.statuses, id)).join(', ')
+    return (
+      <div className="preview" aria-live="polite">
+        <strong>{th.logSkillUsed(name(preview.user), skillName(data, preview.skill), '')}</strong>
+        <div>{th.previewEffect(statuses, preview.units.map(name).join(', '))}</div>
+      </div>
+    )
+  }
+  if (preview.type === 'save') {
+    return (
+      <div className="preview" aria-live="polite">
+        <strong>{th.previewSaveTitle(name(preview.user), skillName(data, preview.skill), name(preview.target))}</strong>
+        <StatusOddsList odds={preview.statuses} statuses={data.statuses} />
+      </div>
+    )
+  }
   return (
     <div className="preview" aria-live="polite">
       <strong>{th.previewTitle(name(preview.attacker), skillName(data, preview.skill), name(preview.target))}</strong>
       <div className="preview-numbers">
         <span className="big">{th.previewHit(percent(preview.hitChance))}</span>
-        <span className="big">{th.previewDamage(preview.damage.min, preview.damage.max)}</span>
+        <span className="big">
+          {preview.damage === null ? th.previewNoDamage : th.previewDamage(preview.damage.min, preview.damage.max)}
+        </span>
       </div>
-      <div>
-        {th.previewCritical(percent(preview.criticalChance), preview.criticalDamage.min, preview.criticalDamage.max)}
-      </div>
+      {preview.criticalDamage !== null && (
+        <div>
+          {th.previewCritical(percent(preview.criticalChance), preview.criticalDamage.min, preview.criticalDamage.max)}
+        </div>
+      )}
+      {preview.statuses.length > 0 && (
+        <div>
+          {th.previewIfHit}: <StatusOddsList odds={preview.statuses} statuses={data.statuses} />
+        </div>
+      )}
       <RollModeSources preview={preview} name={name} />
       <div className="muted">
         {th.previewRoll(preview.attackBonus, th.defence[preview.defenceKind], preview.defence)}
+        {preview.statusAttackBonuses.map((b) => ` (${th.previewAttackBonusStatus(statusName(data.statuses, b.status), b.bonus)})`)}
         {preview.guardedBonus > 0 && ` ${th.previewGuarded(preview.guardedBonus)}`} · {th.previewRules}
       </div>
     </div>
@@ -605,7 +773,7 @@ export function HpList({ state, data }: { state: BattleState; data: GameData }) 
           <li key={unit.id} className={`side-${unit.side}${down ? ' down' : ''}`}>
             <span>
               {unitName(unit, data)} <span className="team">{th.team(unit.side)}</span>
-              {!down && guardedBonus(unit) > 0 && <span className="tag guarded">{th.guardedTag(guardedBonus(unit))}</span>}
+              {!down && <StatusChips unit={unit} state={state} />}
             </span>
             <span>{down ? th.down : th.hp(unit.hp, derivedValues(state, unit.id).maxHp)}</span>
           </li>
@@ -667,10 +835,55 @@ function logLines(event: BattleEvent, name: (id: string) => string, state: Battl
       return [th.logUnitDown(name(event.unit))]
     case 'defended':
       return [th.logDefended(name(event.unit))]
-    case 'statusApplied':
-      return [th.logGuarded(name(event.unit), event.status.bonus)]
+    case 'skillUsed': {
+      // Attack skills say it in their attack roll line; the others say it here.
+      if (data.skills[event.skill]?.attack !== undefined) return []
+      return [th.logSkillUsed(name(event.unit), skillName(data, event.skill), event.targets.filter((t) => t !== event.unit).map(name).join(', '))]
+    }
+    case 'saveRolled':
+      return [
+        th.logSave(
+          name(event.unit),
+          statusName(state.statusTypes, event.status),
+          statName(event.stat),
+          event.roll,
+          event.modifier,
+          event.total,
+          event.dc,
+          event.saved,
+        ),
+      ]
+    case 'statusApplied': {
+      const type = state.statusTypes[event.status.id]
+      if (type === undefined) return []
+      return [
+        th.logStatusApplied(
+          name(event.unit),
+          type.name,
+          statusEffectText(type, event.status),
+          statusDurationText(type, event.status),
+          event.refreshed === true,
+        ),
+      ]
+    }
     case 'statusEnded':
-      return [th.logStatusEnded(name(event.unit), th.status[event.status])]
+      return [th.logStatusEnded(name(event.unit), statusName(state.statusTypes, event.status))]
+    case 'statusTicked':
+      return [
+        th.logStatusTicked(
+          name(event.unit),
+          statusName(state.statusTypes, event.status),
+          event.amount,
+          diceText(event.dice),
+          event.rolls,
+          event.hpAfter,
+          derivedValues(state, event.unit).maxHp,
+        ),
+      ]
+    case 'unitRetreated':
+      return [th.logRetreated(name(event.unit), tileName(event.from), tileName(event.to))]
+    case 'retreatDeclined':
+      return [th.logRetreatDeclined(name(event.unit))]
     case 'battleEnded':
       return [`${th.logBattleEnded(event.winner, event.round)} (${th.cause[event.cause](otherSide(event.winner))})`]
     case 'turnEnded':

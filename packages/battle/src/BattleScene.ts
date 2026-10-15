@@ -3,7 +3,7 @@
  * snapshot, animates the engine's events (Moves, attacks, damage, Units going
  * down) and turns taps into BoardInput. It keeps view objects only, never
  * game state. Each element tile carries a small corner mark (palette
- * TERRAIN_GLYPHS); a Guarded Unit shows a shield; enemies that line of
+ * TERRAIN_GLYPHS); statuses show as small icons (Guarded shield, Bleed drop, Rallied arrow); enemies that line of
  * sight blocks are crossed out while choosing a target. It draws only the Units in `snapshot.units`, so Units hidden
  * during deployment never appear and cannot be tapped.
  */
@@ -15,8 +15,6 @@ import {
   GLYPH_ALPHA,
   glyphColour,
   GRID_LINE,
-  GUARDED,
-  GUARDED_SHIELD,
   HP_BAR_BACK,
   HP_BAR_FILL,
   HP_BAR_LOW,
@@ -24,6 +22,10 @@ import {
   REACHABLE,
   SELECTED,
   OUTLINE,
+  STATUS_DOT,
+  STATUS_ICONS,
+  STATUS_NEGATIVE,
+  STATUS_POSITIVE,
   TARGET,
   TERRAIN_COLOURS,
   TERRAIN_GLYPHS,
@@ -46,6 +48,9 @@ const FLOAT_MS = 800
 
 /** Units of the side to act that have nothing left to do this Turn. */
 const SPENT_ALPHA = 0.5
+
+/** Status icons drawn on a Unit; the Unit card lists them all. */
+const MAX_STATUS_ICONS = 3
 
 export interface BattleSceneData {
   readonly session: BattleSessionPort
@@ -139,7 +144,7 @@ export class BattleScene extends Phaser.Scene {
       // Units being placed are not on the Board yet, and are at full HP.
       const maxHp = state.phase === 'play' ? derivedValues(state, unit.id).maxHp : unit.hp
       this.drawHpBar(view.hpBar, unit.hp, maxHp)
-      this.drawStatusIcons(view.statusIcons, unit)
+      this.drawStatusIcons(view.statusIcons, unit, state)
       if (this.animating.has(unit.id)) continue
       const { x, y } = tileCentre(unit.tile)
       view.container.setPosition(x, y)
@@ -175,15 +180,23 @@ export class BattleScene extends Phaser.Scene {
     g.fillRect(-width / 2, 14, filled, 2)
   }
 
-  /** Guarded: a small shield in the top corner the team pennant does not use (A's pennant is left, B's right). */
-  private drawStatusIcons(g: Phaser.GameObjects.Graphics, unit: UnitState): void {
+  /**
+   * Status icons (Guarded shield, Bleed drop, Rallied arrow, …) in a row from
+   * the top corner the team pennant does not use (A's pennant is left, B's
+   * right), up to 3; tap the Unit for the full list with durations.
+   */
+  private drawStatusIcons(g: Phaser.GameObjects.Graphics, unit: UnitState, state: BattleState): void {
     g.clear()
-    if (!unit.statuses.some((s) => s.id === 'guarded')) return
-    const left = unit.side === 'A' ? 8 : -15
-    g.fillStyle(OUTLINE, 1)
-    g.fillRect(left, -15, 7, 7)
-    g.fillStyle(GUARDED, 1)
-    drawPattern(g, GUARDED_SHIELD, left + 1, -14)
+    const step = unit.side === 'A' ? -8 : 8
+    unit.statuses.slice(0, MAX_STATUS_ICONS).forEach((status, index) => {
+      const left = (unit.side === 'A' ? 8 : -15) + index * step
+      const icon = STATUS_ICONS[status.id]
+      const colour = icon?.colour ?? (state.statusTypes[status.id]?.polarity === 'negative' ? STATUS_NEGATIVE : STATUS_POSITIVE)
+      g.fillStyle(OUTLINE, 1)
+      g.fillRect(left, -15, 7, 7)
+      g.fillStyle(colour, 1)
+      drawPattern(g, icon?.pattern ?? STATUS_DOT, left + 1, -14)
+    })
   }
 
   private drawHighlights(snapshot: BattleSnapshot): void {
@@ -246,6 +259,15 @@ export class BattleScene extends Phaser.Scene {
           })
           break
         }
+        case 'unitRetreated':
+          // Hit and Run's free step: a one-tile walk.
+          this.walk(event.unit, [event.to])
+          break
+        case 'statusTicked':
+          // Bleed at the start of the Turn: no attack, just the HP lost.
+          this.flash(event.unit)
+          this.floatText(event.unit, `-${event.amount}`, '#ff6b5e')
+          break
         case 'unitDown':
           this.fall(event.unit)
           break
