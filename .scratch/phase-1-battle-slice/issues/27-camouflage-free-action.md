@@ -6,11 +6,11 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] rules.md §15.1 (Camouflage), §17.4 และตาราง skill เขียนกติกาใหม่ มีแถว D-28 ใน §23 และแถวใน decision log
-- [ ] engine: Camouflage ไม่ใช้ Action และ Move, 1 ครั้งต่อ activation, เริ่ม activation ได้, ผ่าน legalActions / applyAction / previewAction; contract เพิ่มอย่างเดียว; ENGINE_VERSION 0.8.0 → 0.9.0 ใน commit เดียวกัน
-- [ ] session: หลัง Camouflage Unit ยังถูกเลือกอยู่ถ้ายังทำอย่างอื่นได้ และหลัง Action ยังกด Camouflage ได้ มี test
-- [ ] AI โปรไฟล์ในเกม (GAME_PROFILES) พิจารณา "ทำ Action แล้วซ่อน" SIM_PROFILES ไม่เปลี่ยน และการเทียบผลกับ sim v4 ยังผ่าน
-- [ ] simulator 2,000 Battle ต่อชุด ทั้ง 4 ชุด (game:greedy ทั้งสองฝั่ง): A ชนะ 40–60%, turn limit ≤ 15%, รายงาน Hex และ Camouflage ต่อ Battle ใน docs/balance/ticket-27-camouflage.md และอัปเดต docs/balance/phase-1-baseline.md
-- [ ] ถ้า UI ต้องเปลี่ยน เปิด ticket 28 (Owner: codex, Blocked by: 27)
+- [x] rules.md §15.1 (Camouflage), §17.4 และตาราง skill เขียนกติกาใหม่ มีแถว D-28 ใน §23 และแถวใน decision log
+- [x] engine: Camouflage ไม่ใช้ Action และ Move, 1 ครั้งต่อ activation, เริ่ม activation ได้, ผ่าน legalActions / applyAction / previewAction; contract เพิ่มอย่างเดียว; ENGINE_VERSION 0.8.0 → 0.9.0 ใน commit เดียวกัน
+- [x] session: หลัง Camouflage Unit ยังถูกเลือกอยู่ถ้ายังทำอย่างอื่นได้ และหลัง Action ยังกด Camouflage ได้ มี test
+- [x] AI โปรไฟล์ในเกม (GAME_PROFILES) พิจารณา "ทำ Action แล้วซ่อน" SIM_PROFILES ไม่เปลี่ยน และการเทียบผลกับ sim v4 ยังผ่าน
+- [x] simulator 2,000 Battle ต่อชุด ทั้ง 4 ชุด (game:greedy ทั้งสองฝั่ง): A ชนะ 40–60%, turn limit ≤ 15%, รายงาน Hex และ Camouflage ต่อ Battle ใน docs/balance/ticket-27-camouflage.md และอัปเดต docs/balance/phase-1-baseline.md
+- [x] ถ้า UI ต้องเปลี่ยน เปิด ticket 28 (Owner: codex, Blocked by: 27)
