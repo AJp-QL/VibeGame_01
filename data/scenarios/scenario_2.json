@@ -37,7 +37,7 @@
           "species": "tidewall",
           "element": "desert",
           "star": 4,
-          "stats": { "pow": 26, "agi": 10, "vit": 22, "int": 10, "sen": 14, "spi": 18 },
+          "stats": { "pow": 28, "agi": 10, "vit": 22, "int": 10, "sen": 14, "spi": 18 },
           "skills": ["taunt", "shield_bash", "counter", "pincer_guard"]
         },
         {

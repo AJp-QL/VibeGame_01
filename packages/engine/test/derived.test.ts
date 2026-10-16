@@ -38,9 +38,9 @@ const SCENARIO_2: readonly Expected[] = [
   { unit: 'A.tamer', name: 'Tamer Level 6', hp: 45, move: 3, guard: 12, ward: 11, proficiency: 3, attackBonus: 5, primary: { dice: '1d6', mod: 'melee', value: 0 } },
   { unit: 'A.m1', name: 'Fangrel 4 Star', hp: 31, move: 5, guard: 14, ward: 11, proficiency: 2, attackBonus: 5, primary: { dice: '1d8', mod: 'melee', value: 6 } },
   { unit: 'A.m2', name: 'Wispling 4 Star', hp: 29, move: 4, guard: 13, ward: 14, proficiency: 2, attackBonus: 6, primary: { dice: 'Bolt 1d8', mod: 'elemental', value: 6 } },
-  { unit: 'B.m1', name: 'Tidewall 4 Star', hp: 50, move: 2, guard: 12, ward: 14, proficiency: 2, attackBonus: 4, primary: { dice: 'Shield Bash 2d6', mod: 'melee', value: 8 } },
+  { unit: 'B.m1', name: 'Tidewall 4 Star', hp: 50, move: 2, guard: 12, ward: 14, proficiency: 2, attackBonus: 4, primary: { dice: 'Shield Bash 2d6', mod: 'melee', value: 9 } },
   { unit: 'B.tamer', name: 'Tamer Level 6', hp: 45, move: 3, guard: 12, ward: 11, proficiency: 3, attackBonus: 5, primary: { dice: '1d6', mod: 'melee', value: 0 } },
-  { unit: 'B.m1', name: 'Tidewall 4 Star', hp: 50, move: 2, guard: 12, ward: 14, proficiency: 2, attackBonus: 4, primary: { dice: 'Shield Bash 2d6', mod: 'melee', value: 8 } },
+  { unit: 'B.m1', name: 'Tidewall 4 Star', hp: 50, move: 2, guard: 12, ward: 14, proficiency: 2, attackBonus: 4, primary: { dice: 'Shield Bash 2d6', mod: 'melee', value: 9 } },
   { unit: 'B.m2', name: 'Quillfox 4 Star', hp: 36, move: 5, guard: 14, ward: 13, proficiency: 2, attackBonus: 9, primary: { dice: 'Long Shot 1d8', mod: 'ranged', value: 7 } },
 ]
 

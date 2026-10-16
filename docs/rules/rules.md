@@ -629,7 +629,7 @@ Tamer ทั้งสอง Scenario ใช้แค่ basic skill [PRD kit]
 | Fangrel 1 Star | 14 | 12 | 10 | 8 | 12 | 8 | 19 | 4 | 11 / 9 | +2 | 11 | 1d8+2 |
 | Fangrel 4 Star | 22 | 18 | 14 | 10 | 16 | 12 | 31 | 5 | 14 / 11 | +5 | 16 | 1d8+6 |
 | Tidewall 1 Star | **16** | 8 | 14 | 8 | 10 | 12 | 31 | **2** | 11 / 11 | +1 | 11 | Shield Bash 2d6+3 |
-| Tidewall 4 Star | **26** | 10 | 22 | 10 | 14 | 18 | 50 | **2** | 12 / 14 | +4 | 16 | Shield Bash 2d6+8 |
+| Tidewall 4 Star | **28** | 10 | 22 | 10 | 14 | 18 | 50 | **2** | 12 / 14 | +4 | 16 | Shield Bash 2d6+9 |
 | Wispling 1 Star | 8 | 12 | 8 | 14 | 12 | 12 | 17 | 4 | 11 / 11 | +2 | 11 | Bolt 1d8+2 |
 | Wispling 4 Star | 10 | 16 | 12 | 22 | 18 | 18 | 29 | 4 | 13 / 14 | +6 | 16 | Bolt 1d8+6 |
 | Quillfox 1 Star | 12 | 12 | **14** | 8 | **16** | 8 | 22 | 4 | 11 / 9 | +4 | 12 | Long Shot 1d8+3 |
@@ -637,7 +637,7 @@ Tamer ทั้งสอง Scenario ใช้แค่ basic skill [PRD kit]
 | Tamer Level 1 | 10 | 12 | 12 | 10 | 12 | **8** | 25 | 3 | 11 / 9 | +3 | 9 | 1d6 |
 | Tamer Level 6 | 10 | 14 | 14 | 10 | 14 | **12** | 45 | 3 | 12 / 11 | +5 | 12 | 1d6 |
 
-- ทุกค่าตรงกับตาราง stat block ใน Prototype kit ยกเว้น Move ของ Tidewall ที่เปลี่ยนจาก 3 เป็น 2 ตามสูตรล้วน [DL 2026-10-14] และ stat ตัวหนาที่ปรับใน ticket 19 (balance, DL 2026-10-16): Tidewall POW +4 (Scenario 2 +6), Quillfox VIT +4 / SEN +2 (Scenario 2 VIT +8 / SEN +2), Tamer SPI −4 ทั้งสองทีม test กติกาใน packages/engine ยังใช้ stat ของ kit เดิมของ Scenario 1 (fixture `scenario1`) ส่วน derived.test.ts ตรวจตารางนี้กับ data จริง
+- ทุกค่าตรงกับตาราง stat block ใน Prototype kit ยกเว้น Move ของ Tidewall ที่เปลี่ยนจาก 3 เป็น 2 ตามสูตรล้วน [DL 2026-10-14] และ stat ตัวหนาที่ปรับใน ticket 19 (balance, DL 2026-10-16): Tidewall POW +4 (Scenario 2 +6 และอีก +2 ใน ticket 27 รวม +8), Quillfox VIT +4 / SEN +2 (Scenario 2 VIT +8 / SEN +2), Tamer SPI −4 ทั้งสองทีม test กติกาใน packages/engine ยังใช้ stat ของ kit เดิมของ Scenario 1 (fixture `scenario1`) ส่วน derived.test.ts ตรวจตารางนี้กับ data จริง
 - Guard ของ Tidewall รวม Guard bonus +2 ของ species (D-06)
 - Quillfox 4 Star SPI 16 (และ Tidewall 4 Star POW 20 ของ kit ก่อน ticket 19) เป็นค่าทดสอบของ kit ไม่ใช่ค่าของ sim v4 (ดู D-25)
 - initiative mod: Scenario 1 ทั้งสองทีม +1, Scenario 2 ทั้งสองทีม +4
