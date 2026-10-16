@@ -110,8 +110,11 @@ jobs:
       - name: Check the Replay fixtures match this build
         id: fixtures
         run: |
-          pnpm --filter @mt/simulator --silent check-replays | tee "$RUNNER_TEMP/fixtures.txt"
+          # GitHub runs this with -e -o pipefail; --dir (not --filter) keeps the script's exit code.
+          set +e
+          pnpm --dir tools/simulator --silent check-replays | tee "$RUNNER_TEMP/fixtures.txt"
           code=${PIPESTATUS[0]}
+          set -e
           if [ "$code" = 3 ]; then
             echo "stale=true" >> "$GITHUB_OUTPUT"
             echo "::warning title=Visual fixtures are stale::Board screenshots were NOT compared. Run 'pnpm --filter @mt/web visual:fixtures', refresh the baselines on Linux with the pinned Chromium, inspect every image, and open an Owner: codex ticket (AGENTS.md, ENGINE_VERSION)."
