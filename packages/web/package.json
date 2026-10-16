@@ -8,9 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mt/ai": "workspace:*",
     "@mt/battle": "workspace:*",
-    "@mt/engine": "workspace:*",
+    "@mt/session": "workspace:*",
     "@mt/shared": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:"

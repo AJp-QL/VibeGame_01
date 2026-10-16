@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { loadGameData, tileFromName, tileName, type Side } from '@mt/shared'
 import { createBattle, type Action } from '@mt/engine'
-import { describeAction } from '../src/replay.ts'
 import { createBattleSession } from '../src/session.ts'
 
 const DATA_DIR = fileURLToPath(new URL('../../../data/', import.meta.url))
@@ -127,14 +126,5 @@ describe('BattleSession: Tamer skills', () => {
     s.input({ type: 'tapUnit', unit: 'A.m2' })
     s.confirmAttack()
     expect(s.getSnapshot().state.units.find((u) => u.id === 'A.m2')?.coveredBy).toBe('A.tamer')
-  })
-
-  it('Replay lines for Command and the Tamer skills', () => {
-    const state = playingSession().getSnapshot().state
-    expect(describeAction({ type: 'command', unit: 'A.tamer', target: 'A.m1', option: 'advantage' }, 'A', state, data)).toContain('Command')
-    expect(describeAction({ type: 'useSkill', unit: 'A.tamer', skill: 'attune', tile: t('c3'), element: 'water' }, 'A', state, data)).toContain(
-      'c3',
-    )
-    expect(describeAction({ type: 'useSkill', unit: 'A.tamer', skill: 'first_aid', target: 'A.m1' }, 'A', state, data)).toContain('First Aid')
   })
 })

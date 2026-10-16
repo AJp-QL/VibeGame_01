@@ -35,7 +35,8 @@
  * sees what that team may see; the AI (@mt/ai) works out its deployment
  * before the human places (rules §17.1) and plays every decision of its side
  * through the engine like a player, one action per `aiStep` (the UI calls it
- * with a short delay so each action shows on the Board and in the log). No
+ * with a short delay so each action shows on the Board and in the log; the
+ * delay is the UI's: the session has no timers). No
  * hand-over screens; the human can only act when it is the human's decision.
  */
 import { sameTile, type Element, type Side, type Tile } from '@mt/shared'
@@ -58,7 +59,7 @@ import {
   type UnitId,
   type UseSkillAction,
 } from '@mt/engine'
-import type { BattleSessionPort, BattleSnapshot, BoardInput } from '@mt/battle'
+import type { BattleSessionPort, BattleSnapshot, BoardInput } from './port.ts'
 
 /**
  * Hotseat screens that cover the Board:

@@ -1,7 +1,8 @@
 /**
  * The menu before a Battle (spec user stories 8–9): which Scenario, which
  * Board, which mode and, against the AI, which team the human plays. No
- * rules here; `battleSetup` turns the choice into the engine's BattleSetup.
+ * rules and no text here (the menu's words are web's strings);
+ * `battleSetup` turns the choice into the engine's BattleSetup.
  */
 import { DEFAULT_GAME_PROFILE } from '@mt/ai'
 import type { BattleSetup } from '@mt/engine'

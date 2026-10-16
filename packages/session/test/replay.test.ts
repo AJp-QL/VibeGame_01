@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest'
 import { dataHash, loadGameData, serializeReplay, type GameData } from '@mt/shared'
 import { createBattle, ENGINE_VERSION, legalActions, type Action } from '@mt/engine'
 import { battleSetup, type BattleChoice } from '../src/battleChoice.ts'
-import { loadBundledGameData } from '../src/gameData.ts'
 import { battleReplay, createReplayPlayer, openReplay, replayFileName } from '../src/replay.ts'
 import { createBattleSession, type BattleSession } from '../src/session.ts'
 
@@ -105,10 +104,6 @@ describe('Replay export from a Battle', () => {
   it('names the file after the Scenario, Board, Dice Seed and export time', () => {
     const replay = battleReplay(data, CHOICE, SEED, [], META)
     expect(replayFileName(replay)).toBe('replay_scenario_2_shallows_00c0ffee00c0ffee_20261015-093005.json')
-  })
-
-  it('the bundled game data (as the browser loads it) has the same data hash as data/ read by Node', () => {
-    expect(dataHash(loadBundledGameData())).toBe(dataHash(data))
   })
 })
 

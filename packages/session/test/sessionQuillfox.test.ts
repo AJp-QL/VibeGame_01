@@ -5,8 +5,6 @@ import { describe, expect, it } from 'vitest'
 import { loadGameData, tileFromName, type ScenarioTeam, type Side } from '@mt/shared'
 import { createBattle, type DiceSource } from '@mt/engine'
 import { createBattleSession } from '../src/session.ts'
-import { skillSummary } from '../src/skillText.ts'
-import { th } from '../src/strings.ts'
 
 const DATA_DIR = fileURLToPath(new URL('../../../data/', import.meta.url))
 
@@ -88,8 +86,6 @@ describe('BattleSession: Quillfox (ticket 10)', () => {
     // Tapping it says why instead of dropping the selection.
     s.input({ type: 'tapUnit', unit: 'B.m2' })
     expect(s.getSnapshot()).toMatchObject({ rejection: 'target-hidden', selectedUnit: 'A.m2', preview: null })
-    expect(th.rejection['target-hidden']).toContain('Hidden')
-    expect(th.blockedHidden('Quillfox')).toContain('ระยะ 1')
   })
 
   it('Burst: a Hidden enemy in the area is shown as not selectable, with the reason (ticket 17)', () => {
@@ -128,10 +124,5 @@ describe('BattleSession: Quillfox (ticket 10)', () => {
       rollMode: 'advantage',
       rollModeSources: [{ kind: 'status', effect: 'advantage', status: 'marked', holder: 'target' }],
     })
-  })
-
-  it('skill text says Mark deals no damage and Camouflage needs forest', () => {
-    expect(skillSummary(data.skills.mark!, data.statuses)).toContain(th.skillNoDamage)
-    expect(skillSummary(data.skills.camouflage!, data.statuses)).toContain(th.skillRequiresTerrain(th.terrain.forest))
   })
 })

@@ -1,4 +1,4 @@
-import type { PlayStats } from './playStats.ts'
+import type { PlayStats } from '@mt/session'
 import { th } from './strings.ts'
 
 /** The feedback form link; nothing at all when no form URL is configured (src/config.ts). */

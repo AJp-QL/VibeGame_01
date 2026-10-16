@@ -4,7 +4,7 @@
  * Drawn with integer coordinates around (0, 0) = tile centre, inside 32x32.
  */
 import type * as Phaser from 'phaser'
-import type { UnitState } from '@mt/engine'
+import type { UnitState } from '@mt/session'
 import { ELEMENT_COLOURS, OUTLINE, SIDE_COLOURS, TAMER_COLOUR } from './palette.ts'
 
 type Graphics = Phaser.GameObjects.Graphics

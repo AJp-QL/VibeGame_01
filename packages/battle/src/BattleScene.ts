@@ -15,7 +15,7 @@
  */
 import * as Phaser from 'phaser'
 import { BOARD_SIZE, type Tile } from '@mt/shared'
-import { derivedValues, type BattleState, type UnitId, type UnitState } from '@mt/engine'
+import { derivedValues, type BattleSessionPort, type BattleSnapshot, type BattleState, type UnitId, type UnitState } from '@mt/session'
 import {
   AREA,
   ATTUNED,
@@ -42,7 +42,7 @@ import {
   TERRAIN_GLYPHS,
   TILE_CHOICE,
 } from './palette.ts'
-import type { BattleSessionPort, BattleSnapshot, BoardLabels } from './port.ts'
+import type { BoardLabels } from './labels.ts'
 import { drawUnit } from './silhouettes.ts'
 
 export const TILE_SIZE = 32

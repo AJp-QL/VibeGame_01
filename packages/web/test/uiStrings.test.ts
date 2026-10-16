@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
  * text and text attributes written straight into the code.
  */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url))
-const SOURCES = ['packages/web/src', 'packages/battle/src']
+const SOURCES = ['packages/web/src', 'packages/battle/src', 'packages/session/src']
 /** The string table itself. */
 const TABLES = new Set(['packages/web/src/strings.ts'])
 /** Visible text that is deliberately not translated: symbols and the like. Keep it short. */

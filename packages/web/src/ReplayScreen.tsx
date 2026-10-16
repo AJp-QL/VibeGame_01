@@ -2,7 +2,8 @@ import { useMemo, useSyncExternalStore } from 'react'
 import type { GameData, Replay } from '@mt/shared'
 import { EventLog, HpList, ResultSummary, StatusBar } from './App.tsx'
 import { BattleView } from './BattleView.tsx'
-import { createReplayPlayer, describeAction, type OpenedReplay } from './replay.ts'
+import { createReplayPlayer, type OpenedReplay } from '@mt/session'
+import { describeAction } from './replay.ts'
 import { th } from './strings.ts'
 
 interface ReplayScreenProps {

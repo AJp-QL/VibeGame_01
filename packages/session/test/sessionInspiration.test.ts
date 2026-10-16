@@ -4,9 +4,8 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { loadGameData, tileFromName, type Side } from '@mt/shared'
 import { createBattle, previewAction, type BattleSetup, type DiceSource } from '@mt/engine'
-import { describeAction, openReplay, battleReplay } from '../src/replay.ts'
+import { openReplay, battleReplay } from '../src/replay.ts'
 import { createBattleSession, type BattleSession } from '../src/session.ts'
-import { th } from '../src/strings.ts'
 
 // Inspiration in the Hotseat UI (rules §18): the session asks the deciding
 // side after a d20, and covers the Board to hand the device over when that
@@ -148,7 +147,7 @@ describe('BattleSession: Inspiration prompt', () => {
     expect(session.getSnapshot().screen).toBe('board')
   })
 
-  it('the Replay holds the decisions, plays back, and describes them', () => {
+  it('the Replay holds the decisions and plays back to the same state', () => {
     const seed = 'fedcba9876543210'
     const session = createBattleSession(createBattle(setup({ seed }, false)))
     for (const side of ['A', 'B'] as const) {
@@ -172,14 +171,10 @@ describe('BattleSession: Inspiration prompt', () => {
     const opened = openReplay(JSON.stringify(replay), data)
     if (opened.kind !== 'ready') throw new Error(`replay not ready: ${opened.kind}`)
     expect(opened.steps.at(-1)?.state).toEqual(state)
-
+    // The playback names who answered each decision (web turns it into the line).
     const index = actions.findIndex((a) => a.type === 'useInspiration')
-    const before = index === 0 ? opened.initial : opened.steps[index - 1]!.state
     const used = actions[index]!
     if (used.type !== 'useInspiration') throw new Error('unreachable')
-    expect(describeAction(used, used.side, before, data)).toBe(th.replay.action.useInspiration(used.side))
-    expect(describeAction({ type: 'declineInspiration', side: 'A' }, 'A', state, data)).toBe(
-      th.replay.action.declineInspiration('A'),
-    )
+    expect(opened.steps[index]?.action).toEqual(used)
   })
 })

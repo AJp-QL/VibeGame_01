@@ -4,16 +4,12 @@ import { fileURLToPath } from 'node:url'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { legalActions } from '@mt/engine'
+import { createPlayStats, legalActions, openReplay, type BattleChoice, type BattleSession } from '@mt/session'
 import { loadGameData, serializeReplay } from '@mt/shared'
 import { boardZoom } from '@mt/battle/boardFit'
 import { App, replayToExport, startBattle } from '../src/App.tsx'
-import type { BattleChoice } from '../src/battleChoice.ts'
 import { FEEDBACK_FORM_URL, feedbackFormUrl } from '../src/config.ts'
-import { createPlayStats } from '../src/playStats.ts'
 import { FeedbackLink, Guide } from '../src/Playtest.tsx'
-import { openReplay } from '../src/replay.ts'
-import type { BattleSession } from '../src/session.ts'
 import { th } from '../src/strings.ts'
 
 // Phaser needs a browser; the menu only needs the Board colours from @mt/battle.
@@ -47,7 +43,7 @@ describe('feedback form link', () => {
     expect(feedbackFormUrl('   ')).toBeNull()
     expect(feedbackFormUrl('javascript:alert(1)')).toBeNull()
     expect(html(createElement(FeedbackLink, { url: null }))).toBe('')
-    const menu = html(createElement(App, { stats: createPlayStats(null), feedbackUrl: null }))
+    const menu = html(createElement(App, { stats: createPlayStats(null, () => new Date()), feedbackUrl: null }))
     expect(menu).not.toContain(th.playtest.feedback)
   })
 
@@ -57,7 +53,7 @@ describe('feedback form link', () => {
     expect(link).toContain(`href="${FORM}"`)
     expect(link).toContain('target="_blank"')
     expect(link).toContain('rel="noopener noreferrer"')
-    expect(html(createElement(App, { stats: createPlayStats(null), feedbackUrl: FORM }))).toContain(th.playtest.feedback)
+    expect(html(createElement(App, { stats: createPlayStats(null, () => new Date()), feedbackUrl: FORM }))).toContain(th.playtest.feedback)
     expect(html(createElement(Guide, { feedbackUrl: FORM, onBack: () => {} }))).toContain(th.playtest.feedback)
     // The result screen renders the same component (App.tsx, BattleScreen's result panel).
     expect(readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8')).toMatch(/<FeedbackLink url=\{feedbackUrl\} \/>/)
@@ -66,7 +62,7 @@ describe('feedback form link', () => {
 
 describe('menu: playtester guide and stats export', () => {
   it('the menu offers the guide (วิธีเล่น), the stats export and the stats so far', () => {
-    const stats = createPlayStats(null)
+    const stats = createPlayStats(null, () => new Date())
     stats.recordAppOpen()
     const menu = html(createElement(App, { stats, feedbackUrl: null }))
     expect(th.menu.guide).toBe('วิธีเล่น')

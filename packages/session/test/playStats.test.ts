@@ -66,7 +66,7 @@ describe('local play stats', () => {
   })
 
   it('works without storage: counts for this visit only', () => {
-    const stats = createPlayStats(null)
+    const stats = createPlayStats(null, clock('2026-10-16T09:00:00'))
     stats.recordAppOpen()
     stats.recordBattleFinished(stats.recordBattleStarted(AI), { winner: 'A', cause: 'tamerDown' }, 3)
     expect(stats.persistent()).toBe(false)
@@ -82,14 +82,14 @@ describe('local play stats', () => {
         throw new Error('QuotaExceededError')
       },
     }
-    const stats = createPlayStats(throwing)
+    const stats = createPlayStats(throwing, clock('2026-10-16T09:00:00'))
     expect(() => stats.recordAppOpen()).not.toThrow()
     expect(stats.read().appOpens).toBe(1)
     expect(stats.persistent()).toBe(false)
 
     const readable = memoryStorage()
     const writeFails = { ...readable, setItem: throwing.setItem }
-    const later = createPlayStats(writeFails)
+    const later = createPlayStats(writeFails, clock('2026-10-16T09:00:00'))
     expect(() => later.recordBattleStarted(AI)).not.toThrow()
     expect(later.read().battlesStarted).toBe(1)
     expect(later.persistent()).toBe(false)
@@ -99,7 +99,7 @@ describe('local play stats', () => {
     for (const saved of ['not json', '{"format":"other"}', 'null', '{"format":"monster-tactics-play-stats","appOpens":-3}']) {
       const storage = memoryStorage()
       storage.items.set(STATS_KEY, saved)
-      expect(createPlayStats(storage).read()).toEqual(emptyStats())
+      expect(createPlayStats(storage, clock('2026-10-16T09:00:00')).read()).toEqual(emptyStats())
     }
   })
 })

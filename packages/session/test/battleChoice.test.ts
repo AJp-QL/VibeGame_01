@@ -14,7 +14,6 @@ import {
   menuScenarios,
   type BattleChoice,
 } from '../src/battleChoice.ts'
-import { th } from '../src/strings.ts'
 
 const DATA_DIR = fileURLToPath(new URL('../../../data/', import.meta.url))
 
@@ -32,17 +31,13 @@ const data = gameData()
 const SEED = '0123456789abcdef'
 
 describe('menu: what it offers (spec user stories 8–9)', () => {
-  it('offers Scenario 1 (early game) and Scenario 2 (mid game), each with a Thai stage name', () => {
-    expect(menuScenarios(data).map((s) => [s.id, th.menu.stage[s.id]])).toEqual([
-      ['scenario_1', 'ต้นเกม'],
-      ['scenario_2', 'กลางเกม'],
-    ])
+  it('offers Scenario 1 (early game) and Scenario 2 (mid game), in id order', () => {
+    expect(menuScenarios(data).map((s) => s.id)).toEqual(['scenario_1', 'scenario_2'])
   })
 
-  it('offers every Board in data/, each with a Thai description', () => {
+  it('offers every Board in data/, in id order', () => {
     const boards = menuBoards(data)
     expect(boards.map((b) => b.id)).toEqual(['crossroads', 'shallows'])
-    for (const board of boards) expect(th.menu.boardBlurb[board.id], board.id).toBeTruthy()
   })
 
   it('starts on Scenario 1, its own Board, Hotseat, human as team A', () => {

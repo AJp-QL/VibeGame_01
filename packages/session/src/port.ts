@@ -1,9 +1,8 @@
 /**
- * What the Phaser view needs from the session that wraps the engine.
- *
- * battle must not import web, so it declares the interface here and web
- * passes in an implementation (docs/research/phase-1-stack.md §3). The view
- * keeps no game state of its own: it draws `getSnapshot()` and reports taps.
+ * What the Phaser view needs from the session that wraps the engine (the
+ * port, ADR 0004). battle and web both import it from here; the session and
+ * the Replay player implement it. The view keeps no game state of its own: it
+ * draws `getSnapshot()` and reports taps.
  */
 import type { Tile } from '@mt/shared'
 import type { BattleEvent, BattleState, UnitId, UnitState } from '@mt/engine'
@@ -55,14 +54,4 @@ export interface BattleSessionPort {
   /** Returns the unsubscribe function. */
   subscribe(listener: () => void): () => void
   input(input: BoardInput): void
-}
-
-/** Words the Board draws, from the web string table (battle has no text of its own). */
-export interface BoardLabels {
-  readonly miss: string
-  readonly critical: string
-  /** Shown over a Unit that strikes back (Countering). */
-  readonly counter: string
-  /** Shown over a Unit whose push had nowhere to go. */
-  readonly pushBlocked: string
 }

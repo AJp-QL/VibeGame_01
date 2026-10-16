@@ -233,9 +233,9 @@ importers:
 
   packages/battle:
     dependencies:
-      '@mt/engine':
+      '@mt/session':
         specifier: workspace:*
-        version: link:../engine
+        version: link:../session
       '@mt/shared':
         specifier: workspace:*
         version: link:../shared
@@ -249,6 +249,28 @@ importers:
 
   packages/engine:
     dependencies:
+      '@mt/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.0)(vite@8.3.2(@types/node@24.19.0))
+
+  packages/session:
+    dependencies:
+      '@mt/ai':
+        specifier: workspace:*
+        version: link:../ai
+      '@mt/engine':
+        specifier: workspace:*
+        version: link:../engine
       '@mt/shared':
         specifier: workspace:*
         version: link:../shared
@@ -281,15 +303,12 @@ importers:
 
   packages/web:
     dependencies:
-      '@mt/ai':
-        specifier: workspace:*
-        version: link:../ai
       '@mt/battle':
         specifier: workspace:*
         version: link:../battle
-      '@mt/engine':
+      '@mt/session':
         specifier: workspace:*
-        version: link:../engine
+        version: link:../session
       '@mt/shared':
         specifier: workspace:*
         version: link:../shared

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react'
-import { mountBattleGame, type BattleSessionPort, type BoardLabels } from '@mt/battle'
+import { mountBattleGame, type BoardLabels } from '@mt/battle'
+import type { BattleSessionPort } from '@mt/session'
 import { th } from './strings.ts'
 
 const LABELS: BoardLabels = {

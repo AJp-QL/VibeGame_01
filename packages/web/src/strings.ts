@@ -6,8 +6,7 @@
  * English UI is out of scope).
  */
 import type { Element, Side, Terrain } from '@mt/shared'
-import type { BattleEndCause, CommandOption, RejectionCode } from '@mt/engine'
-import type { Mode } from './battleChoice.ts'
+import type { BattleEndCause, CommandOption, Mode, RejectionCode } from '@mt/session'
 
 /** "+2", "0", "−1" (true minus sign). */
 const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0')

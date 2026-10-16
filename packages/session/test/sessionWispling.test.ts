@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { loadGameData, tileFromName, tileName, type Side } from '@mt/shared'
 import { createBattle, previewAction, type Action, type DiceSource } from '@mt/engine'
-import { describeAction } from '../src/replay.ts'
 import { createBattleSession } from '../src/session.ts'
 
 const DATA_DIR = fileURLToPath(new URL('../../../data/', import.meta.url))
@@ -145,15 +144,5 @@ describe('BattleSession: Blink (destination → preview → confirm)', () => {
       ['hex', true],
       ['blink', false],
     ])
-  })
-})
-
-describe('Replay viewer lines for Wispling skills', () => {
-  it('names Burst\'s centre and target order, and Blink\'s destination', () => {
-    const state = playingSession().getSnapshot().state
-    const burst = describeAction({ type: 'useSkill', unit: 'A.m2', skill: 'burst', tile: t('d4'), targets: ['B.m2', 'B.m1'] }, 'A', state, data)
-    expect(burst).toContain('d4')
-    expect(burst.indexOf('Quillfox')).toBeLessThan(burst.indexOf('Tidewall'))
-    expect(describeAction({ type: 'useSkill', unit: 'A.m2', skill: 'blink', tile: t('f3') }, 'A', state, data)).toContain('f3')
   })
 })

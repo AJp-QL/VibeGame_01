@@ -1,5 +1,18 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import {
+  aiOpponent,
+  battleReplay,
+  battleSetup,
+  createBattleSession,
+  defaultChoice,
+  idleUnits,
+  openReplay,
+  statsFileName,
+  type BattleChoice,
+  type BattleSession,
+  type OpenedReplay,
+  type PlayStatsStore,
+  type SessionSnapshot,
   COMMAND_OPTIONS,
   COUNTERATTACK,
   createBattle,
@@ -18,20 +31,17 @@ import {
   type StatusOdds,
   type UnitState,
   type UnitTemplate,
-} from '@mt/engine'
+} from '@mt/session'
 import { diceText, skillSummary, statName, statusDurationText, statusEffectText, statusName } from './skillText.ts'
 import { GLYPH_ALPHA, glyphColour, TERRAIN_COLOURS, TERRAIN_GLYPHS } from '@mt/battle'
 import { DataError, isOnBoard, tileName, type GameData, type Side, type Terrain } from '@mt/shared'
 import { BattleView } from './BattleView.tsx'
 import { loadBundledGameData } from './gameData.ts'
 import { Menu, type ReplayNotice } from './Menu.tsx'
-import { aiOpponent, battleSetup, defaultChoice, type BattleChoice } from './battleChoice.ts'
 import { feedbackFormUrl } from './config.ts'
-import { statsFileName, type PlayStatsStore } from './playStats.ts'
 import { FeedbackLink, Guide } from './Playtest.tsx'
-import { battleReplay, downloadJson, downloadReplay, openReplay, type OpenedReplay } from './replay.ts'
+import { downloadJson, downloadReplay } from './replay.ts'
 import { ReplayScreen } from './ReplayScreen.tsx'
-import { createBattleSession, idleUnits, type BattleSession, type SessionSnapshot } from './session.ts'
 import { th } from './strings.ts'
 
 /** What the app shows: the menu, a Battle, a Replay, or why the game data failed to load. */

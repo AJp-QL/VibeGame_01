@@ -5,7 +5,7 @@
  * string table.
  */
 import type { Dice, Skill, StatusType } from '@mt/shared'
-import type { UnitStatus } from '@mt/engine'
+import type { UnitStatus } from '@mt/session'
 import { th } from './strings.ts'
 
 const diceText = (dice: Dice) => `${dice.count}d${dice.sides}`

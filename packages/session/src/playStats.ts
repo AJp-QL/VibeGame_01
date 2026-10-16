@@ -10,6 +10,9 @@ import type { BattleChoice } from './battleChoice.ts'
  * Storage may be missing or throw (private mode, blocked site data, full
  * quota): every read and write is wrapped, and the counts then live in memory
  * for this visit only, so the game always works.
+ *
+ * Headless: the storage and the clock are passed in (web gives
+ * `localStorage` and the real time; tests give their own).
  */
 
 /** One Battle as the stats see it. */
@@ -59,15 +62,6 @@ export function emptyStats(): PlayStats {
   }
 }
 
-/** `window.localStorage`, or null where reading it throws or it does not exist. */
-export function browserStorage(): StatsStorage | null {
-  try {
-    return typeof localStorage === 'undefined' ? null : localStorage
-  } catch {
-    return null
-  }
-}
-
 /** The local calendar date of `at`, as YYYY-MM-DD. */
 export function localDay(at: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -106,7 +100,7 @@ export interface PlayStatsStore {
   recordBattleFinished(index: number, outcome: BattleOutcome, rounds: number): void
 }
 
-export function createPlayStats(storage: StatsStorage | null, now: () => Date = () => new Date()): PlayStatsStore {
+export function createPlayStats(storage: StatsStorage | null, now: () => Date): PlayStatsStore {
   let saving = storage !== null
   let stats = emptyStats()
   if (storage !== null) {

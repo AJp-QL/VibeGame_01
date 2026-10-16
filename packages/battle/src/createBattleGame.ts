@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser'
 import { BattleScene, BOARD_PIXELS, type BattleSceneData } from './BattleScene.ts'
 import { alignInputOnPress, destroyBoard, fitBoard } from './boardFit.ts'
-import type { BattleSessionPort, BoardLabels } from './port.ts'
+import type { BattleSessionPort } from '@mt/session'
+import type { BoardLabels } from './labels.ts'
 
 /**
  * Mount the Board in `parent`. The canvas is 224x224 (7 tiles of 32 px),

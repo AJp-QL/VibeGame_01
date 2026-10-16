@@ -1,10 +1,17 @@
 import { useMemo, useRef } from 'react'
 import { TERRAIN_COLOURS } from '@mt/battle'
-import { ENGINE_VERSION } from '@mt/engine'
 import { dataHash, SIDES, type Board, type GameData } from '@mt/shared'
-import { canStart, isModeAvailable, menuBoards, menuScenarios, MODES, type BattleChoice } from './battleChoice.ts'
-import type { OpenedReplay } from './replay.ts'
-import type { PlayStats } from './playStats.ts'
+import {
+  canStart,
+  ENGINE_VERSION,
+  isModeAvailable,
+  menuBoards,
+  menuScenarios,
+  MODES,
+  type BattleChoice,
+  type OpenedReplay,
+  type PlayStats,
+} from '@mt/session'
 import { PlaytestPanel } from './Playtest.tsx'
 import { ReplayDetails } from './ReplayScreen.tsx'
 import { th } from './strings.ts'
