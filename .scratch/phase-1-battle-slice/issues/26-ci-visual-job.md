@@ -6,7 +6,7 @@
 
 job ต้องแยก "fixture ล้าสมัย" ออกจาก "ภาพเปลี่ยน": ถ้า `openReplay` ไม่คืน `ready` เพราะ `engineVersion` หรือ `dataHash` ไม่ตรง ให้ job พิมพ์ข้อความชัดเจนว่า Replay fixture ล้าสมัย ให้รัน `visual:fixtures` แล้วตรวจ baseline ด้วยตา (เปิด ticket `Owner: codex` ตาม AGENTS.md) ไม่ปล่อยให้เห็นเป็น stack trace ของ harness ทำได้โดยให้ harness โยน error ที่มีข้อความนี้ (แก้ใน `packages/web/visual/` เป็นงาน Codex ถ้าต้องแก้ ให้เปิด ticket `Owner: codex`) หรือให้ step ใน ci.yml ตรวจ output
 
-**Blocked by:** 25 — test เทียบภาพ screenshot ของ skill visuals, 27 — fixture ต้องตรงกับ main ก่อนเปิด job
+**Blocked by:** 25 — test เทียบภาพ screenshot ของ skill visuals, 28 — fixture ต้องตรงกับ main ก่อนเปิด job (ticket 29 ถูกรวมใน 28)
 
 **Status:** ready-for-agent
 

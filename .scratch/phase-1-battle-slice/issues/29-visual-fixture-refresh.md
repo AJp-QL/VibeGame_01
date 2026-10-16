@@ -1,4 +1,4 @@
-# 27 — สร้าง fixture และ baseline ของ test ภาพใหม่ให้ตรงกับ data/engine ปัจจุบัน
+# 29 — สร้าง fixture และ baseline ของ test ภาพใหม่ให้ตรงกับ data/engine ปัจจุบัน
 
 **Owner:** codex
 
@@ -8,7 +8,7 @@ ticket ประเภทนี้ต้องเปิดซ้ำทุกค�
 
 **Blocked by:** 25 — merge PR #7 ก่อน
 
-**Status:** ready-for-agent
+**Status:** wontfix (covered by ticket 28)
 
 - [ ] fixture ทุกไฟล์เปิดด้วย `openReplay` ได้ `ready` บน main ปัจจุบัน
 - [ ] baseline ทั้ง 19 ใบอัปเดตบน Linux + Chromium ที่ pin และตรวจด้วยตาแล้ว
@@ -16,3 +16,5 @@ ticket ประเภทนี้ต้องเปิดซ้ำทุกค�
 - [ ] `pnpm typecheck`, `pnpm test`, `pnpm build` ผ่าน; path check ผ่าน
 
 ## Comments
+
+- Covered by ticket 28: its item 5 and last checkbox re-record the fixtures and baselines for engine 0.9.0 on current main. No separate work; kept as the model for the AGENTS.md rule.
