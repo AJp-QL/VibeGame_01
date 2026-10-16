@@ -8,7 +8,7 @@ job ต้องแยก "fixture ล้าสมัย" ออกจาก "�
 
 **Blocked by:** 25 — test เทียบภาพ screenshot ของ skill visuals, 28 — fixture ต้องตรงกับ main ก่อนเปิด job (ticket 29 ถูกรวมใน 28)
 
-**Status:** ready-for-agent
+**Status:** in progress (PR open; verify on branches, then tick)
 
 - [ ] job ใหม่ใน ci.yml รัน test ภาพบน ubuntu-latest และผ่านบน main หลัง merge ticket 25
 - [ ] ภาพ diff ถูก upload เป็น artifact เมื่อล้ม (ทดลองด้วย branch ที่ทำให้ภาพเปลี่ยน แล้วลบ branch)
