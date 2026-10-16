@@ -90,25 +90,31 @@ report with a Board attachment for every test). Open a trace with
 Do not add the visual suite to root `pnpm test`. CI configuration is Claude-owned
 and belongs to ticket 26.
 
-## Current validation status
+## Pinned baseline verification
 
-The implementation has 19 passing Linux browser smoke cases on the available
-system Chromium 154.0.8037.57. These are **not pinned baseline verification**. Temporary system-browser references
-passed three consecutive comparisons (57/57). A temporary blue-to-magenta Guarded
-icon change failed with 171 differing pixels, and the restored colour passed.
-Those temporary references were removed rather than committed. Captures
-were inspected: Burst area/order, Blink fading/landing, push sliding/landing,
-Counter's Thai label, Bleed numbers, Attune's frame/count, Command/Cover, and all
-status glyphs are visible. No renderer defect was found in these smoke captures.
+The browser download blocker is resolved. All 19 committed baselines were made
+on Linux with Playwright 1.62.1's Chromium 151.0.7922.34 (build 1234), using the
+locked Latin/Thai fonts. Each frame was inspected; no visual defect was found.
+Three consecutive comparisons passed (57/57). Changing Guarded's blue icon
+colour to magenta failed with 171 differing pixels; restoring it passed again.
 
-The environment rejects `https://cdn.playwright.dev` with HTTP 403 "Domain
-forbidden", so pinned Chromium installation, committed baselines, three repeated
-baseline comparisons, and the deliberate-colour-change failure check remain
-pending. Allow `cdn.playwright.dev` and its browser-download redirect destination
-`storage.googleapis.com` in the environment and apply the configuration, then run
-the commands above. No system-browser captures have been committed as baselines.
+See [the evidence index](../../../.scratch/phase-1-battle-slice/evidence/25-visual-regression/README.md)
+for every capture.
 
-A local smoke check (no comparisons or baseline writes) is available while waiting:
+For a fresh cloud environment, include the frozen dependency install and browser
+installation in its install script:
+
+```sh
+corepack pnpm install --frozen-lockfile
+corepack pnpm --filter @mt/web exec playwright install --with-deps chromium
+```
+
+Allow `cdn.playwright.dev` and `storage.googleapis.com` for the pinned browser
+download. Keep the downloaded browser available to later test commands (use the
+same `PLAYWRIGHT_BROWSERS_PATH` if configuring a custom cache).
+
+A local system-browser smoke check remains available without comparisons or
+baseline writes:
 
 ```sh
 VISUAL_CHROMIUM=/usr/bin/chromium pnpm --filter @mt/web test:visual --ignore-snapshots
