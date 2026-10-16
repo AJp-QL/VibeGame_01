@@ -1,5 +1,7 @@
 # 09 — Wispling
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** Wispling ใช้ loadout ได้ครบ: Element Bolt (ธาตุ เทียบ Ward, damage + INT mod), Burst (พื้นที่ 3x3 ศัตรูสูงสุด 2 ตัวที่ผู้ใช้เลือก), Hex (Weakened), Blink (ใช้แทน Move เทเลพอร์ตข้ามทุกอย่าง)
 
 **Blocked by:** 07 — ระบบ skill และ status ด้วย Fangrel

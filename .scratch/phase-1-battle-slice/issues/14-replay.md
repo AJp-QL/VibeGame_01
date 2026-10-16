@@ -1,5 +1,7 @@
 # 14 — Replay
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** playtester export ไฟล์ Replay ของ Battle ล่าสุดได้ ผู้พัฒนา import แล้วเล่นซ้ำทีละ action หรือข้ามไปท้ายเกมได้ตรงเป๊ะ Replay เก็บ Dice Seed, Scenario, Board, โหมด, ลำดับ action, hash ของ data และเวอร์ชัน engine
 
 **Blocked by:** 05 — Basic Attack ครบวง

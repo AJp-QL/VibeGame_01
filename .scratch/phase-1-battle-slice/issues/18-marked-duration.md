@@ -1,5 +1,7 @@
 # 18 — Tuning: Marked อยู่ถึงจบ Turn ถัดไปของฝั่งผู้ Mark
 
+**Owner:** claude
+
 **What to build:** Mark มีประโยชน์จริงในการเล่น: Marked ไม่หมดไปทันทีหลัง Turn ที่ถูก Mark แต่อยู่จนจบ Turn ถัดไปของฝั่งที่ใช้ Mark ทำให้พวกเดียวกันที่เล่นใน Turn ถัดไปได้ advantage ด้วย ตามที่ตกลงไว้ใน rules §23 D-03 และ decision log (2026-10-15) แก้กติกาใน rules ฉบับรวม แก้ data ของ Marked และวัดผลด้วย simulator
 
 **Blocked by:** None — can start immediately

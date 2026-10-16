@@ -1,5 +1,7 @@
 # 13 — Scenario 2, Board ที่ 2 และเมนู
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** เมนูเลือก Scenario (ต้นเกมหรือกลางเกม), Board (Crossroads หรือ Board ที่ 2), โหมด และทีม พร้อม data ของ Scenario 2 (Tamer Lv 6, Monster 4 Star) และ Board ที่ 2 ที่ออกแบบใหม่
 
 **Blocked by:** 05 — Basic Attack ครบวง

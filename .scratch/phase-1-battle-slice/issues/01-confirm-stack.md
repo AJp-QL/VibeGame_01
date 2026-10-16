@@ -1,5 +1,7 @@
 # 01 — ยืนยัน stack ด้วย research
 
+**Owner:** claude
+
 **What to build:** เอกสาร research ที่อ้างอิง docs จริงของ pnpm (workspaces), Vite, Vitest, React และ Phaser ระบุเวอร์ชันที่จะใช้ วิธีตั้ง monorepo ตาม dependency ที่กำหนด (shared ← engine ← ai / battle / web, tools ใช้ engine + ai) วิธีฝัง Phaser ใน React โดย state อยู่ใน engine (ADR 0003) และการตั้งค่า pixel art (nearest-neighbor, integer scale) เพื่อให้ ticket 03 ตั้ง workspace ได้โดยไม่เดาเวอร์ชัน ตามกฎ "ยืนยันชื่อ library และเวอร์ชันจาก docs จริงก่อน implement"
 
 **Blocked by:** None — can start immediately

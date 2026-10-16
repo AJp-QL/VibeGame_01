@@ -1,5 +1,7 @@
 # 10 — Quillfox
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** Quillfox ใช้ loadout ได้ครบ: Long Shot (ระยะ 4, damage + SEN mod), Pin (1d6 + Pin, save VIT), Mark (Marked: ผู้โจมตีทุกตัวได้ advantage), Camouflage (Hidden ขณะยืนในช่องป่า)
 
 **Blocked by:** 07 — ระบบ skill และ status ด้วย Fangrel

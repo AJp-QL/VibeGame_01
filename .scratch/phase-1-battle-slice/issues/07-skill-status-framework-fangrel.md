@@ -1,5 +1,7 @@
 # 07 — ระบบ skill และ status ด้วย Fangrel
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** Monster ใช้ skill ใน loadout ได้ตาม tier (Minor, Major cooldown 2 Turn, Signature 1 ครั้งต่อ Battle, Passive) และ status ทำงานตามตาราง status เริ่มจาก Fangrel ครบ loadout: Heavy Blow, Rend (Bleed), Hit and Run, Pack Howl (Rallied) UI แสดง cooldown เป็นตัวเลขบนไอคอน skill และแสดง status เป็นไอคอนบน Unit แตะเพื่อดูรายละเอียดและระยะเวลาที่เหลือ
 
 **Blocked by:** 06 — Terrain, ธาตุ, line of sight และการป้องกัน Tamer
