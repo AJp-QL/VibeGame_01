@@ -69,8 +69,8 @@ describe('lookahead (ticket 23)', () => {
       return n
     }
     expect(count('scenario_1', 'crossroads', 'mark', 10)).toBeGreaterThan(0)
-    // Camouflage is rare after the ticket 19 tuning (about 0.015 per Battle here).
-    expect(count('scenario_1', 'crossroads', 'camouflage', 200)).toBeGreaterThan(0)
+    // Camouflage uses no Action since ticket 27 ("act, then hide"): about 0.5 per Battle here.
+    expect(count('scenario_1', 'crossroads', 'camouflage', 20)).toBeGreaterThan(0)
     expect(count('scenario_1', 'shallows', 'hex', 20)).toBeGreaterThan(0)
     expect(count('scenario_2', 'shallows', 'pin', 10)).toBeGreaterThan(0)
   }, 300000)
