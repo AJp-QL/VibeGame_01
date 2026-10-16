@@ -7,6 +7,7 @@ Working state for the lead session. Survives compaction; read this first when re
 - Done on main: tickets 01-17 (phase 1 slice complete). Tests: 714 passing. ENGINE_VERSION 0.7.0.
 - Done: 16 simulator (parity passed; baseline in docs/balance/phase-1-baseline.md).
 - Deployed v0.1.1 (tickets 01-17). Verified live 2026-10-16: full Battle vs AI to result screen (desktop), menu stats, back-to-menu, 375px mobile board 336px single canvas no h-scroll, no console errors. NOT distributed -- next: tuning tickets 18+ (team A near 50%).
+- Tuning: 18 Marked duration (in progress) -> 19 team balance.
 
 ## Process rules
 
