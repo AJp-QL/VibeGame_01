@@ -33,4 +33,4 @@ Working state for the lead session. Survives compaction; read this first when re
 - Major cooldown 2 is a code constant, not data.
 - Known balance issues from sim v4: S1 stalls to turn limit 16%, S2 team A ~68-80%, unused skills (Hex, Blink, Mark, Camouflage, Pin), Tidewall/Tamer too tanky.
 - Node 26 LTS from 2026-10-28: upgrade ticket.
-- Cloudflare deploy not yet done (needs user account).
+- Deployed v0.1.0 (pre-ticket-17, pre-tuning) 2026-10-16: https://monster-tactics.claudejpql01.workers.dev -- public URL, do not share until tuning. Redeploy: tag, `corepack pnpm build`, `npx wrangler@4 deploy` in packages/web.
