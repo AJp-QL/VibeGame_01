@@ -52,7 +52,7 @@ prompt ตัวอย่าง (ticket แรก):
 
 ### 5. หลัง Codex เปิด PR
 
-1. รอ CI เขียวทั้งสอง job (Typecheck, test, build / Path ownership check)
+1. รอ CI เขียวทั้งสาม job (Typecheck, test, build / Path ownership check / Board visual regression) ถ้า job ภาพขึ้นคำเตือน "Visual fixtures are stale" จะยังเขียว แต่ไม่ได้เทียบภาพ ให้เปิด ticket สร้าง fixture ใหม่ตาม AGENTS.md
 2. ให้ Claude review: เปิด Claude Code แล้วสั่ง `/code-review` กับ PR นั้น
 3. ผู้ใช้กด merge เอง (ช่วงแรก) เมื่อ CI เขียวและ review ผ่าน
 
@@ -81,6 +81,8 @@ pnpm test
 pnpm build
 node tools/path-check/src/bin.ts --branch "$(git branch --show-current)" --base origin/main
 ```
+
+แก้ `packages/web` หรือ `packages/battle` ที่เปลี่ยนภาพบน Board ให้รัน test ภาพด้วย (Linux เท่านั้น, ดู `packages/web/visual/README.md`): `pnpm --filter @mt/web exec playwright install --with-deps chromium` แล้ว `pnpm --filter @mt/web test:visual` CI รัน job นี้ให้ทุก push
 
 If `origin/main` is missing in the container, use `--base main` or fetch it first. `packages/web/test/uiStrings.test.ts` scans `packages/web/src`, `packages/battle/src` and `packages/session/src` and fails on visible text written into code — put player-facing text in the string table `packages/web/src/strings.ts`.
 

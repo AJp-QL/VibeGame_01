@@ -38,7 +38,7 @@ The engine's public interface, the types in `packages/shared`, and the `@mt/sess
 ## Workflow
 
 - Branches: Claude works on `claude/<ticket>-<slug>`, Codex on `codex/<…>`. Any other branch name fails the path check. Never push to `main` directly.
-- Every change goes through a PR to `main`. **Do not merge unless CI is green** (both jobs: build and path check). The repo is GitHub Free + private, so there is no branch protection — this is an agreement, and whoever merges checks CI first.
+- Every change goes through a PR to `main`. **Do not merge unless CI is green** (all three jobs: build, path check, and Board visual regression). If the visual job shows the warning "Visual fixtures are stale", it is still green: the screenshots were not compared; the `Owner: codex` refresh ticket (see ENGINE_VERSION) covers it. The repo is GitHub Free + private, so there is no branch protection — this is an agreement, and whoever merges checks CI first.
 - Who merges: Claude merges its own PRs after green CI. Codex PRs are reviewed by Claude (`/code-review`) and merged by the human for now.
 - Cross-side work is two tickets: the engine/session ticket (`Owner: claude`) and the UI ticket (`Owner: codex`, `Blocked by:` the engine ticket).
 - Concurrency: one Claude agent at a time; one Codex task plus one Claude agent in parallel is fine (their paths do not overlap except `.scratch/**` and `pnpm-lock.yaml` — avoid lockfile changes in parallel).
@@ -53,6 +53,14 @@ corepack pnpm typecheck
 corepack pnpm test
 corepack pnpm build
 node tools/path-check/src/bin.ts --branch <your-branch> --base origin/main   # same check as CI
+```
+
+Board screenshot tests (`packages/web/visual`, not part of `pnpm test`; Linux only, baselines come only from Playwright's pinned Chromium, see `packages/web/visual/README.md`):
+
+```sh
+corepack pnpm --filter @mt/web exec playwright install --with-deps chromium
+corepack pnpm --filter @mt/web test:visual
+corepack pnpm --dir tools/simulator check-replays   # exit 3 = stale; are the Replay fixtures still playable by this build?
 ```
 
 Run all of these before opening a PR and list them in the PR description.

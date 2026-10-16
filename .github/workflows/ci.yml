@@ -3,10 +3,12 @@
 # block a merge by itself: "do not merge unless CI is green" is an agreement.
 #
 # Actions are pinned to full commit SHAs, each at least two weeks old on
-# 2026-10-16 (same rule as pnpm-workspace.yaml minimumReleaseAge). SHAs were read
+# 2026-10-17 (same rule as pnpm-workspace.yaml minimumReleaseAge). SHAs were read
 # with `git ls-remote --tags` from the official repos:
 #   actions/checkout v7.0.1 (2026-07-20)  https://github.com/actions/checkout/releases/tag/v7.0.1
 #   pnpm/setup       v3.0.0 (2026-09-20)  https://github.com/pnpm/setup/releases/tag/v3.0.0
+#   actions/upload-artifact v7.0.1 (2026-04-10)  https://github.com/actions/upload-artifact/releases/tag/v7.0.1
+#     (v7.0.2 is from 2026-10-07, too new for the two-week rule; the SHA is the commit, checked with the commits API)
 # pnpm/setup reads the pnpm version from package.json "packageManager" and installs
 # Node from `runtime` (docs/research/phase-1-stack.md §5, pnpm/setup README).
 name: CI
@@ -77,3 +79,72 @@ jobs:
           BRANCH: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
           BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'origin/main' }}
         run: node tools/path-check/src/bin.ts --branch "$BRANCH" --base "$BASE"
+
+  # Ticket 26. Board screenshot tests (packages/web/visual, ticket 25), kept out of
+  # the root `pnpm test`. Baselines come only from Playwright's pinned Chromium on
+  # Linux, so this job runs on ubuntu-latest.
+  visual:
+    name: Board visual regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout (full history, for git describe)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm and Node 24
+        uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # A rules or data change makes the Replay fixtures stale (engineVersion /
+      # dataHash differ). Then the screenshots cannot be compared until Codex
+      # refreshes them (AGENTS.md, ENGINE_VERSION), so warn and skip instead of
+      # failing every rules PR. Real screenshot diffs still fail the job.
+      - name: Check the Replay fixtures match this build
+        id: fixtures
+        run: |
+          # GitHub runs this with -e -o pipefail; --dir (not --filter) keeps the script's exit code.
+          set +e
+          pnpm --dir tools/simulator --silent check-replays | tee "$RUNNER_TEMP/fixtures.txt"
+          code=${PIPESTATUS[0]}
+          set -e
+          if [ "$code" = 3 ]; then
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Visual fixtures are stale::Board screenshots were NOT compared. Run 'pnpm --filter @mt/web visual:fixtures', refresh the baselines on Linux with the pinned Chromium, inspect every image, and open an Owner: codex ticket (AGENTS.md, ENGINE_VERSION)."
+            {
+              echo "### Visual fixtures are stale - screenshots not compared"
+              echo '```'
+              cat "$RUNNER_TEMP/fixtures.txt"
+              echo '```'
+              echo "Fix: \`pnpm --filter @mt/web visual:fixtures\`, then refresh baselines on Linux with the pinned Chromium and inspect every image. Open an \`Owner: codex\` ticket (AGENTS.md, ENGINE_VERSION)."
+            } >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$code" != 0 ]; then
+            exit "$code"
+          fi
+
+      - name: Install the pinned Chromium
+        if: steps.fixtures.outputs.stale != 'true'
+        run: pnpm --filter @mt/web exec playwright install --with-deps chromium
+
+      - name: Compare Board screenshots
+        if: steps.fixtures.outputs.stale != 'true'
+        run: pnpm --filter @mt/web test:visual
+
+      - name: Upload screenshot diffs and report
+        if: failure() && steps.fixtures.outputs.stale != 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: visual-regression
+          path: |
+            packages/web/.cache/visual-results/
+            packages/web/.cache/visual-report/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14

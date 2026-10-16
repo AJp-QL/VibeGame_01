@@ -6,7 +6,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "sim": "node src/bin.ts"
+    "sim": "node src/bin.ts",
+    "check-replays": "node src/replays-check.ts"
   },
   "dependencies": {
     "@mt/ai": "workspace:*",
