@@ -1,0 +1,79 @@
+# CI for every push and PR (ticket 21, ADR 0004, decision log 2026-10-16).
+# GitHub Free + private repo has no branch protection, so a red run does not
+# block a merge by itself: "do not merge unless CI is green" is an agreement.
+#
+# Actions are pinned to full commit SHAs, each at least two weeks old on
+# 2026-10-16 (same rule as pnpm-workspace.yaml minimumReleaseAge). SHAs were read
+# with `git ls-remote --tags` from the official repos:
+#   actions/checkout v7.0.1 (2026-07-20)  https://github.com/actions/checkout/releases/tag/v7.0.1
+#   pnpm/setup       v3.0.0 (2026-09-20)  https://github.com/pnpm/setup/releases/tag/v3.0.0
+# pnpm/setup reads the pnpm version from package.json "packageManager" and installs
+# Node from `runtime` (docs/research/phase-1-stack.md §5, pnpm/setup README).
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  build:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout (full history, for git describe)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm and Node 24
+        uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  path-check:
+    name: Path ownership check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout (full history, to find the merge base with main)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node 24
+        uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
+        with:
+          runtime: node@24
+          install: false
+
+      # PR: the PR's head branch against its base branch.
+      # Push: the pushed branch against origin/main (main itself is skipped).
+      # Branch names go through env, never straight into the script.
+      - name: Check changed paths against .github/ownership.json
+        env:
+          BRANCH: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'origin/main' }}
+        run: node tools/path-check/src/bin.ts --branch "$BRANCH" --base "$BASE"

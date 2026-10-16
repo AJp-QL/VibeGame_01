@@ -76,6 +76,55 @@ wrangler อ่าน `wrangler.jsonc` (ชื่อ Worker `monster-tactics`) �
 
 ลิงก์ต้องขึ้นต้นด้วย `https://` หรือ `http://` ปุ่มอยู่ที่เมนู หน้า "วิธีเล่น" และหน้าสรุปผล
 
+## Deploy อัตโนมัติเมื่อ push tag (GitHub Actions)
+
+ทางหลักหลังตั้งครั้งแรก (decision log 2026-10-16: deploy ด้วย GitHub Action เมื่อ push tag `v*`, Claude เป็นคนติด tag) workflow อยู่ที่ `.github/workflows/deploy.yml`: checkout commit ที่ติด tag → `pnpm install --frozen-lockfile` → typecheck + test → `pnpm build` ด้วย `APP_VERSION=<ชื่อ tag>` → `npx wrangler@4.146.0 deploy` ใน `packages/web` ต้องมี secret 2 ตัวที่คนตั้งเองครั้งเดียว agent ไม่สร้าง token ไม่ใส่ secret และ repo ไม่มีค่าทั้งสอง
+
+ตรวจกับเอกสารปัจจุบันเมื่อ 2026-10-16:
+- https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/ (token จาก template "Edit Cloudflare Workers", secret `CLOUDFLARE_API_TOKEN` และ `CLOUDFLARE_ACCOUNT_ID`)
+- https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/ (หา account ID)
+- https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets (สร้าง repository secret)
+
+### 1. สร้าง Cloudflare API token (สิทธิ์น้อยที่สุดสำหรับ deploy Worker)
+
+1. Cloudflare dashboard → **Account API tokens** (https://dash.cloudflare.com/?to=/:account/api-tokens) → **Create Token**
+2. ใต้ **Permission policies** เปิด dropdown **Custom** แล้วเลือก template **Edit Cloudflare Workers** (เป็นชุดสิทธิ์ที่ Cloudflare แนะนำสำหรับ `wrangler deploy` ใน CI)
+3. ตั้งชื่อ token เช่น `monster-tactics-github-deploy`
+4. จำกัดขอบเขตให้แคบที่สุด: Account Resources เลือก **เฉพาะ account ที่จะ deploy** (ไม่ใช่ All accounts) Zone Resources เลือกเฉพาะ zone ที่ใช้ ถ้าใช้แค่ `*.workers.dev` ไม่ต้องให้ zone ใด (ตามที่ dashboard อนุญาต) ตั้งวันหมดอายุได้ถ้าต้องการ
+5. **Continue to summary** → **Create Token** แล้ว copy ค่า token ทันที (dashboard แสดงครั้งเดียว) อย่าวางในไฟล์ใน repo หรือในแชต
+
+### 2. หา account ID
+
+ทางใดก็ได้:
+- dashboard: **Workers & Pages** → ส่วน **Account Details** → ปุ่ม copy ข้าง **Account ID** (หรือกด `Ctrl+K` พิมพ์ `Copy account ID`)
+- เครื่องที่ login wrangler ไว้แล้ว: `cd packages/web && npx wrangler@4 whoami` ตารางที่พิมพ์ออกมามีคอลัมน์ Account ID
+
+account ID ไม่ใช่ความลับเท่า token แต่ก็เก็บเป็น secret เพื่อไม่ต้องใส่ในไฟล์
+
+### 3. ใส่เป็น repository secret ของ GitHub
+
+1. หน้า repo บน GitHub → **Settings** → (ส่วน Security) **Secrets and variables** → **Actions** → แท็บ **Secrets** → **New repository secret**
+2. สร้าง 2 ตัว ชื่อต้องตรงตัวอักษร:
+   - `CLOUDFLARE_API_TOKEN` = token จากข้อ 1
+   - `CLOUDFLARE_ACCOUNT_ID` = account ID จากข้อ 2
+
+หรือใช้ `gh` (ติดตั้งใน ticket 22): `gh secret set CLOUDFLARE_API_TOKEN` แล้ววางค่าเมื่อถาม (ไม่ใส่ค่าใน command line เพื่อไม่ให้ค้างใน history) ทำซ้ำกับ `CLOUDFLARE_ACCOUNT_ID` ตรวจด้วย `gh secret list`
+
+### 4. ติด tag แล้ว push เพื่อ deploy
+
+```sh
+git switch main && git pull
+git tag -a v0.1.0-playtest.2 -m "Playtest build 2"
+git push origin v0.1.0-playtest.2
+```
+
+push tag ที่ขึ้นต้นด้วย `v` จะเริ่ม workflow **Deploy** (ดูที่แท็บ Actions) เวอร์ชันท้ายหน้าเกมเท่ากับชื่อ tag เพราะ build ตั้ง `APP_VERSION` จาก `github.ref_name` จบแล้วตรวจตาม "5. ตรวจหลัง deploy" ด้านบน
+
+- ถ้า secret ยังไม่ตั้ง ขั้น deploy จะ fail แต่ไม่มีอะไรขึ้น Cloudflare
+- ถ้า typecheck หรือ test ไม่ผ่าน จะไม่ build และไม่ deploy
+- deploy ซ้ำ tag เดิม: Actions → run นั้น → **Re-run jobs** (อย่าย้าย tag เดิมไป commit อื่น ให้ติด tag ใหม่)
+- token รั่วหรือไม่ใช้แล้ว: Account API tokens → **Roll** หรือ **Delete** แล้วอัปเดต secret
+
 ## ทางเลือก: deploy อัตโนมัติจาก Git (Workers Builds)
 
 เชื่อม repo กับ Cloudflare ใน dashboard (Workers & Pages → Create → Import a repository) แล้วตั้ง:
