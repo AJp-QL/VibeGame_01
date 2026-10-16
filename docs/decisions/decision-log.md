@@ -53,3 +53,4 @@
 | 2026-10-15 | PRNG | xoshiro128** 1.1, seed ด้วย SplitMix64 จาก Dice Seed 64 บิต, rejection sampling, AI ใช้ stream แยกด้วย jump() | PCG32, mulberry32, sfc32 | docs/research/phase-1-stack.md §6, rules §21.5 |
 | 2026-10-15 | stack phase 1 | Node 24 LTS, pnpm 12.11.2 (ยกเว้นกฎอายุ 2 สัปดาห์เพราะมี security fix), TypeScript 7 (ถอยเป็น 6 ถ้า ticket 03 พบปัญหา), Vite 8, Vitest 5, React 19.3, Phaser 4.2 | pnpm 12.8.2, Node 26, TypeScript 6 | docs/research/phase-1-stack.md |
 | 2026-10-15 | ที่ deploy เว็บ static | Cloudflare (repo เป็น private, GitHub Pages ฟรีต้องเป็น public) | GitHub Pages | docs/research/phase-1-stack.md §5 |
+| 2026-10-16 | สิ่งที่ simulator ใช้เทียบ ±5 pp กับ sim v4 | เทียบใต้เงื่อนไขเดียวกับ sim (test-only: Tidewall เดิน 3, stat ของ sim v4) เพื่อยืนยันว่า engine ถูก แล้วรายงานกติกาจริง (Tidewall เดิน 2) แยกเป็น baseline บาลานซ์ใหม่ | เทียบกติกาจริงตรงๆ, คืนข้อยกเว้น Tidewall เดิน 3 ในเกม | ticket 15 (กติกาจริง S1 ทีม A ~79%, S2 ~90%) |
