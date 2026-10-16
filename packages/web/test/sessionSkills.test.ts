@@ -83,7 +83,8 @@ describe('BattleSession: skills (rules §13, §15)', () => {
     s.confirmAttack()
     expect(s.getSnapshot().log.map((e) => e.type)).toEqual(['skillUsed', 'attackRolled', 'damageDealt'])
     expect(s.getSnapshot().actions).toEqual([action])
-    s.input({ type: 'tapUnit', unit: 'A.m1' })
+    // Still selected (it can Move): the skill now shows its cooldown.
+    expect(s.getSnapshot().selectedUnit).toBe('A.m1')
     expect(s.getSnapshot().skills.find((b) => b.skill === 'heavy_blow')).toMatchObject({ cooldown: 2, usable: false })
   })
 
@@ -131,8 +132,8 @@ describe('BattleSession: skills (rules §13, §15)', () => {
     s.input({ type: 'tapTile', tile: tileFromName('d5') })
     snapshot = s.getSnapshot()
     expect(snapshot.log.at(-1)).toEqual({ type: 'unitRetreated', unit: 'A.m1', from: tileFromName('d6'), to: tileFromName('d5') })
-    s.input({ type: 'tapUnit', unit: 'A.m1' })
-    expect(s.getSnapshot().reachable.length).toBeGreaterThan(0)
+    expect(snapshot.selectedUnit).toBe('A.m1')
+    expect(snapshot.reachable.length).toBeGreaterThan(0)
   })
 
   it('"stay" answers the step without moving', () => {
