@@ -171,7 +171,9 @@ function attackValue(ctx: Ctx, st: BattleState, unit: UnitState, enemy: UnitStat
   let val: number
   let pk = 0
   const hitp = chance(p.hitChance)
-  if (skill.damage === undefined) {
+  if (skill.damage === undefined && ctx.profile.heuristics.lookahead > 0) {
+    val = hitp * markValue(ctx, st, unit, enemy)
+  } else if (skill.damage === undefined) {
     // Mark: what advantage on the target is worth to allies still to play.
     let gain = 0
     for (const ally of alliesOf(st, unit)) {
@@ -200,6 +202,10 @@ function attackValue(ctx: Ctx, st: BattleState, unit: UnitState, enemy: UnitStat
       const pf = chance(status.save.failChance)
       if (statusHas(ctx, status.status, 'startOfTurnDamage')) {
         if (!hasStatus(enemy, status.status)) val += hitp * (1 - pk) * pf * 2.5 * 2.5 * ctx.w(enemy)
+      } else if (statusHas(ctx, status.status, 'immobile') && ctx.profile.heuristics.lookahead > 0) {
+        // Pin: the enemy's threat it can no longer bring by moving (Blink still moves it).
+        const move = pinnedMove(ctx, enemy)
+        val += hitp * (1 - pk) * pf * relief(ctx, st, unit, (ours) => ctx.threatFrom(st, enemy, ours) - ctx.threatFrom(st, enemy, ours, { move }))
       } else if (statusHas(ctx, status.status, 'immobile')) {
         val += hitp * (1 - pk) * pf * (ctx.maxRange(enemy) <= 1 ? 2 : 1)
       }
@@ -210,6 +216,92 @@ function attackValue(ctx: Ctx, st: BattleState, unit: UnitState, enemy: UnitStat
     val -= (1 - pk) * (ctx.wdef(unit) * cexp + cpk * ctx.kbdef(st, unit))
   }
   return val
+}
+
+// ------------------------------------------------------------- lookahead
+
+/**
+ * Mark with `lookahead` (ticket 23): what advantage on `enemy` is worth to
+ * allies still to act this Turn plus, weighted by `lookahead`, to every Unit
+ * of ours on our next Turn (Marked lasts until the end of the marking side's
+ * next Turn). Counts expected damage and the extra chance that one of those
+ * attacks drops the target.
+ */
+function markValue(ctx: Ctx, st: BattleState, unit: UnitState, enemy: UnitState): number {
+  const now = alliesOf(st, unit).filter((a) => !hasActed(ctx, a) && distance(a.tile, enemy.tile) <= moveRangeNow(st, a) + ctx.maxRange(a))
+  const next = [unit, ...alliesOf(st, unit)].filter((a) => distance(a.tile, enemy.tile) <= ctx.baseMove(a) + ctx.maxRange(a) + 1)
+  return advantageWorth(ctx, st, now, enemy, true) + ctx.profile.heuristics.lookahead * advantageWorth(ctx, st, next, enemy, false)
+}
+
+function advantageWorth(ctx: Ctx, st: BattleState, attackers: readonly UnitState[], enemy: UnitState, readyNow: boolean): number {
+  let exp = 0
+  let surviveBase = 1
+  let surviveAdv = 1
+  for (const a of attackers) {
+    const base = ctx.advAgainst(st, a, enemy)
+    const [e0, k0] = ctx.bestAttack(st, a, enemy, base, readyNow)
+    surviveBase *= 1 - k0
+    if (base >= 1) {
+      surviveAdv *= 1 - k0
+      continue
+    }
+    const [e1, k1] = ctx.bestAttack(st, a, enemy, base < 0 ? 0 : 1, readyNow)
+    exp += e1 - e0
+    surviveAdv *= 1 - k1
+  }
+  const taker = damageTaker(st, enemy)
+  return ctx.w(taker) * exp + ctx.kb(st, taker) * (surviveBase - surviveAdv)
+}
+
+/**
+ * How much a change in the enemy's threat (`lowered(ours)`: the threat it no
+ * longer brings on that Unit) lowers sim.py's `pen` on the Unit of ours it
+ * helps most (the enemy attacks one Unit a Turn). `certain`: the enemy makes
+ * that attack anyway, only weaker (Weakened), so the damage it no longer does
+ * counts in full instead of at `pen`'s half ("it may attack someone else").
+ */
+function relief(ctx: Ctx, st: BattleState, unit: UnitState, lowered: (ours: UnitState) => number, certain = false): number {
+  let best = 0
+  for (const ours of st.units) {
+    if (ours.side !== unit.side) continue
+    const cut = lowered(ours)
+    if (cut <= 0) continue
+    const threat = ctx.threat(st, ours)
+    const extra = certain ? 0.5 * ctx.wdef(ours) * Math.min(cut, ours.hp) : 0
+    best = Math.max(best, ctx.pen(st, ours, threat) - ctx.pen(st, ours, Math.max(0, threat - cut)) + extra)
+  }
+  return best
+}
+
+/**
+ * Hex on an enemy that strikes back (a counterattack Passive, Countering, or
+ * Counter ready): the damage its counterattack no longer does to the melee
+ * Monster of ours most likely to attack it, once a Turn.
+ */
+function counterRelief(ctx: Ctx, st: BattleState, unit: UnitState, enemy: UnitState, damageDelta: number): number {
+  const passive = enemy.skills.some((id) => ctx.base.skills[id]?.tier === 'passive' && ctx.base.skills[id]?.effects?.counterattackDamage !== undefined)
+  const counter = enemy.skills.find((id) => ctx.base.skills[id]?.applies?.some((a) => statusHas(ctx, a.status, 'counterattack')))
+  if (!passive && !isCountering(ctx, enemy) && (counter === undefined || ctx.cooldown(enemy, counter) > 1)) return 0
+  let best = 0
+  for (const ours of st.units) {
+    if (ours.side !== unit.side || ours.kind !== 'monster' || ctx.maxRange(ours) > 1) continue
+    if (distance(ours.tile, enemy.tile) > ctx.baseMove(ours) + 1) continue
+    const p = ctx.preview(st, enemy, ours, BASIC_ATTACK)
+    const dice = counterDice(ctx, enemy)
+    const cut = ctx.evOf(st, p, ours, { dice })[0] - ctx.evOf(st, p, ours, { dice, damageDelta })[0]
+    best = Math.max(best, cut * ctx.wdef(ours))
+  }
+  return best
+}
+
+/** How far a Pinned enemy still moves: the range of a ready skill that replaces its Move (Blink, usable while Pinned), else 0. */
+function pinnedMove(ctx: Ctx, enemy: UnitState): number {
+  let move = 0
+  for (const id of enemy.skills) {
+    const skill = ctx.base.skills[id]
+    if (skill?.effects?.replacesMove === true && ctx.cooldown(enemy, id) <= 1) move = Math.max(move, skill.range)
+  }
+  return move
 }
 
 // --------------------------------------------------------------- actions
@@ -271,6 +363,14 @@ function actionsOf(ctx: Ctx, st: BattleState, unit: UnitState, moveFirst: boolea
             v += pf * 0.3 * counterEv(ctx, st, unit, enemy)[0] * ctx.w(enemy)
           }
           if (enemy.kind === 'tamer') v += pf * 2
+        } else if (statusHas(ctx, status, 'damageDealt') && ctx.profile.heuristics.lookahead > 0) {
+          // Hex: the enemy's threat with its damage lowered, over the Turns Weakened lasts.
+          if (hasStatus(enemy, status)) continue
+          const type = ctx.base.statusTypes[status]
+          const damageDelta = type?.effects.damageDealt ?? 0
+          const turns = type?.duration.kind === 'turns' ? type.duration.turns : 1
+          const once = relief(ctx, st, unit, (ours) => ctx.threatFrom(st, enemy, ours) - ctx.threatFrom(st, enemy, ours, { damageDelta }), true)
+          v = pf * (once + counterRelief(ctx, st, unit, enemy, damageDelta)) * (1 + ctx.profile.heuristics.lookahead * (turns - 1))
         } else if (statusHas(ctx, status, 'damageDealt')) {
           if (hasStatus(enemy, status) || enemy.kind === 'tamer') continue
           v = pf * 2 * 2 * 0.65 * 1.4
@@ -306,7 +406,11 @@ function actionsOf(ctx: Ctx, st: BattleState, unit: UnitState, moveFirst: boolea
         out.push({ value: v, action, targets: [] })
       } else if (statusHas(ctx, status, 'untargetableFrom')) {
         if (hiddenOn(ctx, st, unit, here)) continue
-        const v = ctx.pen(st, unit, ctx.threat(st, unit)) - ctx.pen(st, unit, ctx.threat(st, unit, 0, true))
+        let v = ctx.pen(st, unit, ctx.threat(st, unit)) - ctx.pen(st, unit, ctx.threat(st, unit, 0, true))
+        // Lookahead: terrain only changes the roll of an attack made from the tile. A Unit that
+        // hides makes none this Turn and moves before its Action next Turn, so the position
+        // value's terrain penalty for the hiding tile (forest under a Water Monster) is no cost.
+        if (ctx.profile.heuristics.lookahead > 0) v += 0.8 * Math.max(0, -ctx.terrainMod(st, unit, here))
         out.push({ value: v, action, targets: [] })
       }
     } else if (skill.target === 'selfAndAllies') {
