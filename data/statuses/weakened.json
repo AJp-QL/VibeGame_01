@@ -8,6 +8,6 @@
   },
   "stacking": "reset",
   "effects": {
-    "damageDealt": -2
+    "damageDealt": -3
   }
 }

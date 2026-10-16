@@ -6,7 +6,7 @@
     "A": {
       "tamer": {
         "level": 6,
-        "stats": { "pow": 10, "agi": 14, "vit": 14, "int": 10, "sen": 14, "spi": 16 },
+        "stats": { "pow": 10, "agi": 14, "vit": 14, "int": 10, "sen": 14, "spi": 12 },
         "skills": ["cover", "attune", "first_aid", "distract"]
       },
       "monsters": [
@@ -29,7 +29,7 @@
     "B": {
       "tamer": {
         "level": 6,
-        "stats": { "pow": 10, "agi": 14, "vit": 14, "int": 10, "sen": 14, "spi": 16 },
+        "stats": { "pow": 10, "agi": 14, "vit": 14, "int": 10, "sen": 14, "spi": 12 },
         "skills": ["cover", "attune", "first_aid", "distract"]
       },
       "monsters": [
@@ -37,14 +37,14 @@
           "species": "tidewall",
           "element": "desert",
           "star": 4,
-          "stats": { "pow": 20, "agi": 10, "vit": 22, "int": 10, "sen": 14, "spi": 18 },
+          "stats": { "pow": 26, "agi": 10, "vit": 22, "int": 10, "sen": 14, "spi": 18 },
           "skills": ["taunt", "shield_bash", "counter", "pincer_guard"]
         },
         {
           "species": "quillfox",
           "element": "water",
           "star": 4,
-          "stats": { "pow": 16, "agi": 18, "vit": 12, "int": 10, "sen": 22, "spi": 16 },
+          "stats": { "pow": 16, "agi": 18, "vit": 20, "int": 10, "sen": 24, "spi": 16 },
           "skills": ["long_shot", "pin", "mark", "camouflage"]
         }
       ]
