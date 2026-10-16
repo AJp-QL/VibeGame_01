@@ -26,3 +26,4 @@
 - engine ใช้ได้แล้ว: Basic Attack, Defend, Fangrel (ticket 07), Tidewall (08), Wispling (09), Quillfox (10: Long Shot, Pin, Mark, Camouflage)
 - skill ของ Tamer มีข้อมูลแล้วแต่ engine ยังไม่เปิด (ticket 11) ดู packages/engine/src/skillHandler.ts
 - `effects.requiresTerrain` (Camouflage): ใช้ได้เฉพาะเมื่อผู้ใช้ยืนบน terrain นั้น และ status ที่ skill ให้อยู่ได้เฉพาะขณะยืนบน terrain นั้น (`UnitStatus.whileOn`)
+- `effects.free` (Camouflage, ticket 27, D-28): skill ฟรี ไม่ใช้ Move และ Action ใช้ได้ไม่เกิน 1 ครั้งต่อ activation ณ จุดใดก็ได้ของ activation

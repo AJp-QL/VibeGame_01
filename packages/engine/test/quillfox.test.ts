@@ -62,7 +62,7 @@ describe('Quillfox loadout', () => {
       { skill: 'long_shot', tier: 'minor', cooldown: 0, spent: false, implemented: true },
       { skill: 'pin', tier: 'major', cooldown: 0, spent: false, implemented: true },
       { skill: 'mark', tier: 'minor', cooldown: 0, spent: false, implemented: true },
-      { skill: 'camouflage', tier: 'minor', cooldown: 0, spent: false, implemented: true },
+      { skill: 'camouflage', tier: 'minor', cooldown: 0, spent: false, implemented: true, free: true, usedThisActivation: false },
     ])
   })
 
@@ -363,7 +363,8 @@ describe('Camouflage: Minor, Hidden while on forest (rules §8.2, §15.1, D-18)'
       { type: 'skillUsed', unit: 'B.m2', skill: 'camouflage', targets: ['B.m2'] },
       { type: 'statusApplied', unit: 'B.m2', status: HIDDEN },
     ])
-    expect(unit(state, 'B.m2')).toMatchObject({ hasActed: true, statuses: [HIDDEN] })
+    // A free skill (D-28): neither the Move nor the Action is used.
+    expect(unit(state, 'B.m2')).toMatchObject({ hasActed: false, hasMoved: false, statuses: [HIDDEN] })
     // No duration: it stays through the end of Turns while Quillfox stays on forest.
     expect(unit(endTurn(endTurn(state)), 'B.m2')?.statuses).toEqual([HIDDEN])
   })
@@ -382,6 +383,52 @@ describe('Camouflage: Minor, Hidden while on forest (rules §8.2, §15.1, D-18)'
       ok: true,
       preview: { type: 'effect', skill: 'camouflage', user: 'B.m2', units: ['B.m2'], statuses: ['hidden'] },
     })
+  })
+})
+
+describe('Camouflage is free: no Move, no Action, once per activation (rules §15.1, §17.4, D-28)', () => {
+  const longShot = skill('B.m2', 'long_shot', 'A.m1')
+
+  it('hide, then act: the Action is still there (and the attack roll ends Hidden)', () => {
+    const hidden = act(battle(), skill('B.m2', 'camouflage')).state
+    expect(code(applyAction(hidden, longShot))).toBe('accepted')
+    expect(unit(act(hidden, longShot).state, 'B.m2')?.statuses).toEqual([])
+  })
+
+  it('act, then hide: after Long Shot and a Move onto forest Camouflage is still legal, and Hidden lasts the Turn', () => {
+    const state = battle({ tiles: { A: TILES.A, B: ['g7', 'f3', 'e6'] } })
+    let s = act(state, { type: 'move', unit: 'B.m2', to: t('e7') }).state
+    s = act(s, longShot).state
+    expect(unit(s, 'B.m2')).toMatchObject({ hasMoved: true, hasActed: true })
+    expect(legalUses(s, 'camouflage')).toEqual([skill('B.m2', 'camouflage')])
+    s = act(s, skill('B.m2', 'camouflage')).state
+    expect(unit(endTurn(s), 'B.m2')?.statuses).toEqual([HIDDEN])
+  })
+
+  it('once per activation: a second use is refused; usable again in its next activation', () => {
+    const s = act(act(battle(), skill('B.m2', 'camouflage')).state, longShot).state
+    expect(code(applyAction(s, skill('B.m2', 'camouflage')))).toBe('on-cooldown')
+    expect(legalUses(s, 'camouflage')).toEqual([])
+    expect(unitSkills(s, 'B.m2').find((x) => x.skill === 'camouflage')).toMatchObject({ cooldown: 0, free: true, usedThisActivation: true })
+    const next = endTurn(endTurn(s))
+    expect(unitSkills(next, 'B.m2').find((x) => x.skill === 'camouflage')?.usedThisActivation).toBe(false)
+    expect(code(applyAction(next, skill('B.m2', 'camouflage')))).toBe('accepted')
+  })
+
+  it('it starts the activation, and ends with it like any other use', () => {
+    const s = act(battle(), skill('B.m2', 'camouflage')).state
+    expect(s.activations.current).toBe('B.m2')
+    expect(s.activations.started).toEqual(['B.m2'])
+    // Another Unit starts: Quillfox's activation is over, Camouflage included.
+    const other = act(act(battle(), longShot).state, { type: 'defend', unit: 'B.m1' }).state
+    expect(code(applyAction(other, skill('B.m2', 'camouflage')))).toBe('activation-over')
+  })
+
+  it('Taunted binds the Move and the Action, not Camouflage', () => {
+    const taunted = withStatus(battle(), 'B.m2', { id: 'taunted', turnsLeft: 1, source: 'A.m1' })
+    expect(code(applyAction(taunted, { type: 'defend', unit: 'B.m2' }))).toBe('taunted')
+    const hidden = act(taunted, skill('B.m2', 'camouflage')).state
+    expect(code(applyAction(hidden, longShot))).toBe('accepted')
   })
 })
 

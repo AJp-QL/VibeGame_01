@@ -239,6 +239,8 @@ function planSteps(plan: Plan): Action[] {
     if (plan.action !== null) steps.push(plan.action)
     if (plan.move !== null) steps.push(plan.move)
   }
+  // A free skill (Camouflage, D-28) last: after the attack roll that would end Hidden.
+  if (plan.free !== undefined) steps.push(plan.free)
   if (commandAction !== null && command?.when === 'end') steps.push(commandAction)
   return steps
 }

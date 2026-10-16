@@ -78,6 +78,20 @@ function isSpent(unit: UnitState, skill: Skill): boolean {
   return skill.tier === 'signature' && unit.skillsUsed[skill.id] !== undefined
 }
 
+/** A free skill (`effects.free`, Camouflage): uses neither the Move nor the Action (rules §15.1, D-28). */
+export function isFreeSkill(skill: Skill): boolean {
+  return skill.effects?.free === true
+}
+
+/**
+ * A free skill already used in the Unit's activation this Turn: at most once
+ * per activation (D-28). A Unit has one activation per Turn, so this is the
+ * use booked on the side's current Turn.
+ */
+function freeUsed(state: BattleState, unit: UnitState, skill: Skill): boolean {
+  return isFreeSkill(skill) && unit.skillsUsed[skill.id] === state.turnNumber[unit.side]
+}
+
 /** One loadout skill of a Unit, as the UI shows it. */
 export interface SkillAvailability {
   readonly skill: string
@@ -88,6 +102,10 @@ export interface SkillAvailability {
   readonly spent: boolean
   /** The engine can resolve it (its ticket has landed); Passive skills are never used. */
   readonly implemented: boolean
+  /** Present (true) for a free skill (Camouflage): it uses neither the Move nor the Action (rules §15.1, D-28). */
+  readonly free?: true
+  /** Free skills only: already used in this Turn's activation of the Unit, so not again until its next one (D-28). */
+  readonly usedThisActivation?: boolean
 }
 
 /** The loadout of a Unit on the Board or fallen, in loadout order. */
@@ -102,6 +120,7 @@ export function loadoutOf(state: BattleState, unit: UnitState): SkillAvailabilit
         cooldown: cooldownOf(state, unit, skill),
         spent: isSpent(unit, skill),
         implemented: handlerOf(skill) !== undefined,
+        ...(isFreeSkill(skill) ? { free: true as const, usedThisActivation: freeUsed(state, unit, skill) } : {}),
       },
     ]
   })
@@ -162,7 +181,9 @@ function genericTargets(state: BattleState, user: UnitState, skill: Skill, actio
  */
 export function checkSkillUse(state: BattleState, action: UseSkillAction): SkillUse | Rejection {
   const skill: Skill | undefined = state.skills[action.skill]
-  const user = checkActor(state, action.unit, skill?.effects?.replacesMove ? 'move' : 'action')
+  // A free skill (Camouflage, D-28) needs neither the Move nor the Action left.
+  const uses = skill === undefined ? 'action' : isFreeSkill(skill) ? 'neither' : skill.effects?.replacesMove ? 'move' : 'action'
+  const user = checkActor(state, action.unit, uses)
   if (isRejection(user)) return user
   if (skill === undefined) return rejection('unknown-skill', `No skill "${action.skill}"`)
   if (!user.skills.includes(skill.id)) return rejection('not-in-loadout', `${skill.name} is not in ${user.id}'s loadout`)
@@ -176,6 +197,7 @@ export function checkSkillUse(state: BattleState, action: UseSkillAction): Skill
   const cooldown = cooldownOf(state, user, skill)
   if (cooldown > 0) return rejection('on-cooldown', `${skill.name} is on cooldown for ${cooldown} more Turn(s)`)
   if (isSpent(user, skill)) return rejection('on-cooldown', `${skill.name} was already used this Battle`)
+  if (freeUsed(state, user, skill)) return rejection('on-cooldown', `${skill.name} was already used in this activation`)
   const targets = (handler.targets ?? genericTargets)(state, user, skill, action)
   if (isRejection(targets)) return targets
   const use: SkillUse = { action, user, skill, targets }
@@ -221,18 +243,22 @@ function genericCandidates(state: BattleState, user: UnitState, skill: Skill): U
 
 // --------------------------------------------------------------- resolve
 
-/** Book the use (rules §13.2, §17.4): start the activation, use the Action (or the Move), start the cooldown. */
+/**
+ * Book the use (rules §13.2, §17.4): start the activation, use the Action (or
+ * the Move; a free skill uses neither, D-28), start the cooldown.
+ */
 function book(state: BattleState, use: SkillUse): BattleState {
   const active = activate(state, use.user.id)
   const turn = state.turnNumber[use.user.side]
   const replacesMove = use.skill.effects?.replacesMove === true
+  const free = isFreeSkill(use.skill)
   return {
     ...active,
     units: active.units.map((u) =>
       u.id === use.user.id
         ? {
             ...u,
-            ...(replacesMove ? { hasMoved: true } : { hasActed: true }),
+            ...(free ? {} : replacesMove ? { hasMoved: true } : { hasActed: true }),
             skillsUsed: { ...u.skillsUsed, [use.skill.id]: turn },
           }
         : u,

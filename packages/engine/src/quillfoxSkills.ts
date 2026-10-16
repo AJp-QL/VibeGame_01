@@ -18,7 +18,9 @@
  *   (`untargetableFrom` 2, rules §8.2) that lasts while the Unit stays on
  *   that terrain (`UnitStatus.whileOn`, checked after Move, Hit and Run's
  *   step, a skill, a push and at the end of every Turn) and until it makes
- *   an attack roll (statuses.ts).
+ *   an attack roll (statuses.ts). A free skill (`effects.free`, D-28,
+ *   ticket 27): it uses neither the Move nor the Action, once per
+ *   activation at any point of it (skills.ts), so "act, then hide" works.
  */
 import type { Rejection } from './battle.ts'
 import { GENERIC, type SkillHandler, type SkillHandlers } from './skillHandler.ts'
