@@ -151,7 +151,10 @@ export function PreviewCard({
     const statuses = preview.statuses.map((id) => statusName(data.statuses, id)).join(', ')
     return (
       <div className="preview" aria-live="polite">
-        <strong>{th.logSkillUsed(name(preview.user), skillName(data, preview.skill), '')}</strong>
+        <strong>
+          {th.logSkillUsed(name(preview.user), skillName(data, preview.skill), '')}
+          {data.skills[preview.skill]?.effects?.free === true && ` ${th.noAction}`}
+        </strong>
         <div>{th.previewEffect(statuses, preview.units.map(name).join(', '))}</div>
       </div>
     )

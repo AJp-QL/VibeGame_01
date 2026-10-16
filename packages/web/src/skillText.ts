@@ -73,6 +73,7 @@ export function skillSummary(skill: Skill, statuses: Readonly<Record<string, Sta
   } else {
     parts.push(skill.target === 'selfAndAllies' ? th.skillRangeAllies(skill.range) : th.skillRange(skill.range))
   }
+  if (skill.effects?.free === true) parts.push(th.skillFree)
   if (skill.attack !== undefined) parts.push(th.skillAttack[skill.attack])
   if (skill.damage !== undefined) parts.push(th.skillDamage(diceText(skill.damage)))
   for (const application of skill.applies ?? []) {

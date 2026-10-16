@@ -81,7 +81,8 @@ export function logLines(event: BattleEvent, name: (id: string) => string, state
       }
       // Blink says it in its teleport line; attack skills in their attack roll line; the others here.
       if (used?.effects?.replacesMove === true || used?.attack !== undefined) return []
-      return [th.logSkillUsed(name(event.unit), skillName(data, event.skill), event.targets.filter((t) => t !== event.unit).map(name).join(', '))]
+      const line = th.logSkillUsed(name(event.unit), skillName(data, event.skill), event.targets.filter((t) => t !== event.unit).map(name).join(', '))
+      return [used?.effects?.free === true ? `${line} ${th.noAction}` : line]
     }
     case 'saveRolled':
       return [
