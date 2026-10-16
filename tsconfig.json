@@ -14,6 +14,8 @@
     { "path": "packages/web/test" },
     { "path": "packages/web/tsconfig.node.json" },
     { "path": "tools/simulator" },
-    { "path": "tools/simulator/test" }
+    { "path": "tools/simulator/test" },
+    { "path": "tools/path-check" },
+    { "path": "tools/path-check/test" }
   ]
 }
