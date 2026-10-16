@@ -330,9 +330,17 @@ function firstUnplaced(state: BattleState): UnitId | null {
   return deployment.roster.find((u) => u.side === state.sideToAct && placed[u.id] === undefined)?.id ?? null
 }
 
-/** Who is selected after an accepted action: the Unit owing a step, a Unit to place, or nobody. */
-function selectionAfter(state: BattleState): UnitId | null {
-  return state.pending?.kind === 'retreat' ? state.pending.unit : firstUnplaced(state)
+/**
+ * Who is selected after an accepted action: the Unit owing a step, a Unit to
+ * place, the Unit that just acted while it can still do something (a Move
+ * then its Action, or the other way round), or nobody.
+ */
+function selectionAfter(state: BattleState, action: Action): UnitId | null {
+  if (state.pending?.kind === 'retreat') return state.pending.unit
+  if (state.phase === 'deployment') return firstUnplaced(state)
+  const actor = 'unit' in action ? action.unit : null
+  if (actor === null || state.outcome !== null) return null
+  return legalActions(state).some((a) => 'unit' in a && a.unit === actor) ? actor : null
 }
 
 /**
@@ -540,7 +548,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       state: result.state,
       events: result.events,
       revision: snapshot.revision + 1,
-      selectedUnit: humanMayAct(result.state) ? selectionAfter(result.state) : null,
+      selectedUnit: humanMayAct(result.state) ? selectionAfter(result.state, action) : null,
       ...NO_AIM,
       inspectedUnit: null,
       rejection: null,

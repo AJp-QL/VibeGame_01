@@ -81,9 +81,8 @@ describe('BattleSession: Command (Monster in range → option → confirm)', () 
     expect(snap.actions.at(-1)).toEqual({ ...action, option: 'move' })
     expect(snap.state.command).toMatchObject({ target: 'A.m1', option: 'move' })
     expect(snap.log.at(-1)).toEqual({ type: 'commandIssued', unit: 'A.tamer', target: 'A.m1', option: 'move' })
-    // One per Turn: no more Command, but the Tamer still has its Move and Action.
-    s.input({ type: 'tapUnit', unit: 'A.tamer' })
-    snap = s.getSnapshot()
+    // One per Turn: no more Command, but the Tamer stays selected with its Move and Action.
+    expect(snap.selectedUnit).toBe('A.tamer')
     expect(snap.canCommand).toBe(false)
     expect(snap.reachable.length).toBeGreaterThan(0)
     expect(snap.skills.some((b) => b.usable)).toBe(true)

@@ -150,7 +150,8 @@ describe('BattleSession: a Turn (tap Unit → see reachable tiles → tap tile)'
     expect(snapshot.state.units.find((u) => u.id === 'A.m1')?.tile).toEqual(tileFromName('c4'))
     expect(snapshot.events).toMatchObject([{ type: 'unitMoved', unit: 'A.m1' }])
     expect(snapshot.revision).toBe(1)
-    expect(snapshot.selectedUnit).toBeNull()
+    // It still has its Action, so it stays selected.
+    expect(snapshot.selectedUnit).toBe('A.m1')
     expect(notified).toBe(2)
   })
 
@@ -238,7 +239,7 @@ describe('BattleSession: attack flow (select → Attack → target → preview �
     expect(session.getSnapshot()).toMatchObject({ selectedUnit: null, revision: 0 })
   })
 
-  it('confirm applies the attack; its events go to the log and the selection clears', () => {
+  it('confirm applies the attack; its events go to the log and the Unit stays selected for its Move', () => {
     const session = playingSession(NEAR, { rolls: [9, 5] })
     session.input({ type: 'tapUnit', unit: 'A.m1' })
     session.chooseAttack()
@@ -248,7 +249,7 @@ describe('BattleSession: attack flow (select → Attack → target → preview �
     expect(snapshot.revision).toBe(1)
     expect(snapshot.log.map((e) => e.type)).toEqual(['attackRolled', 'damageDealt'])
     expect(snapshot.state.units.find((u) => u.id === 'B.tamer')?.hp).toBe(18)
-    expect(snapshot).toMatchObject({ selectedUnit: null, pendingTarget: null, preview: null, mode: 'move' })
+    expect(snapshot).toMatchObject({ selectedUnit: 'A.m1', pendingTarget: null, preview: null, mode: 'move' })
   })
 
   it('tapping a Unit that is not a target while choosing one does not attack', () => {
@@ -317,7 +318,7 @@ describe('BattleSession: line of sight (targets behind a Unit are not selectable
 })
 
 describe('BattleSession: Defend', () => {
-  it('Defend uses the selected Unit\'s Action: Guarded, logged, selection cleared', () => {
+  it('Defend uses the selected Unit\'s Action: Guarded, logged, the Unit stays selected for its Move', () => {
     const s = playingSession()
     s.input({ type: 'tapUnit', unit: 'A.m1' })
     expect(s.getSnapshot().canDefend).toBe(true)
@@ -325,8 +326,8 @@ describe('BattleSession: Defend', () => {
     const snapshot = s.getSnapshot()
     expect(snapshot.log.map((e) => e.type)).toEqual(['defended', 'statusApplied'])
     expect(snapshot.state.units.find((u) => u.id === 'A.m1')?.statuses).toEqual([{ id: 'guarded', bonus: 2 }])
-    expect(snapshot.selectedUnit).toBeNull()
-    s.input({ type: 'tapUnit', unit: 'A.m1' })
-    expect(s.getSnapshot().canDefend).toBe(false)
+    expect(snapshot.selectedUnit).toBe('A.m1')
+    expect(snapshot.canDefend).toBe(false)
+    expect(snapshot.reachable.length).toBeGreaterThan(0)
   })
 })

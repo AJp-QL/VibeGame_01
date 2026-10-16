@@ -136,8 +136,8 @@ describe('BattleSession: Blink (destination → preview → confirm)', () => {
     s.confirmAttack()
     snap = s.getSnapshot()
     expect(snap.log.at(-1)).toEqual({ type: 'unitTeleported', unit: 'A.m2', skill: 'blink', from: t('d2'), to: t('f3') })
-    s.input({ type: 'tapUnit', unit: 'A.m2' })
-    snap = s.getSnapshot()
+    // Still selected: it has its Action left.
+    expect(snap.selectedUnit).toBe('A.m2')
     expect(snap.reachable).toEqual([])
     expect(snap.skills.map((b) => [b.skill, b.usable])).toEqual([
       ['element_bolt', true],
