@@ -295,7 +295,7 @@ Tamer ที่ได้รับการป้องกันยังถู�
 ### 10.3 Damage [v1, v2, PRD]
 1. ทอย dice ของ skill ถ้า critical ทอยจำนวนลูก 2 เท่า (เช่น 2d8 เป็น 4d8) modifier บวกครั้งเดียว
 2. บวก damage mod ตาม §10.1
-3. ถ้าผู้โจมตีติด Weakened ลบ 2
+3. ถ้าผู้โจมตีติด Weakened ลบ 3 [ticket 19]
 4. damage ขั้นต่ำ 1 เมื่อโจมตีโดน (สำหรับ skill ที่ทำ damage)
 5. ลด HP ของเป้า (หรือของ Tamer ถ้าเป้าได้ Cover §15.4)
 
@@ -382,7 +382,7 @@ Tamer ที่ได้รับการป้องกันยังถู�
 | Bleed | ลบ | เสีย HP 1d4 ตอนเริ่ม Turn ของฝั่งที่ติด (§17.4) | 3 | VIT | Rend |
 | Pin | ลบ | ระยะเดิน = 0 (รวมขั้นถอยของ Hit and Run) แต่ยังใช้ Action ได้ และยังถูกผลักได้ | 1 | VIT | Pin |
 | Taunted | ลบ | บังคับเป้าการโจมตีและการเดิน ดู §14.3 | 1 | SPI | Taunt |
-| Weakened | ลบ | damage ทุกครั้งที่ Unit นี้ทำ −2 (รวม counterattack, ขั้นต่ำ 1) | 2 | SPI | Hex |
+| Weakened | ลบ | damage ทุกครั้งที่ Unit นี้ทำ −3 (รวม counterattack, ขั้นต่ำ 1; เดิม −2, ticket 19) | 2 | SPI | Hex |
 | Marked | ลบ | ผู้โจมตีทุกตัวได้ advantage เมื่อโจมตี Unit นี้ | 1 (นับตามฝั่งที่ Mark, §14.1) | ไม่มี (ติดเมื่อ Mark โดน) | Mark |
 | Off-balance | ลบ | attack roll ครั้งถัดไปของ Unit นี้ได้ disadvantage หลุดหลัง attack roll นั้น (ข้าม Turn ได้) | จนถึง attack roll ครั้งถัดไป | SPI | Distract |
 | Hidden | บวก | ดู §8.2 | จนกว่าจะหลุด | ไม่มี | Camouflage |
@@ -628,18 +628,18 @@ Tamer ทั้งสอง Scenario ใช้แค่ basic skill [PRD kit]
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Fangrel 1 Star | 14 | 12 | 10 | 8 | 12 | 8 | 19 | 4 | 11 / 9 | +2 | 11 | 1d8+2 |
 | Fangrel 4 Star | 22 | 18 | 14 | 10 | 16 | 12 | 31 | 5 | 14 / 11 | +5 | 16 | 1d8+6 |
-| Tidewall 1 Star | 12 | 8 | 14 | 8 | 10 | 12 | 31 | **2** | 11 / 11 | +1 | 11 | Shield Bash 2d6+1 |
-| Tidewall 4 Star | 20 | 10 | 22 | 10 | 14 | 18 | 50 | **2** | 12 / 14 | +4 | 16 | Shield Bash 2d6+5 |
+| Tidewall 1 Star | **16** | 8 | 14 | 8 | 10 | 12 | 31 | **2** | 11 / 11 | +1 | 11 | Shield Bash 2d6+3 |
+| Tidewall 4 Star | **26** | 10 | 22 | 10 | 14 | 18 | 50 | **2** | 12 / 14 | +4 | 16 | Shield Bash 2d6+8 |
 | Wispling 1 Star | 8 | 12 | 8 | 14 | 12 | 12 | 17 | 4 | 11 / 11 | +2 | 11 | Bolt 1d8+2 |
 | Wispling 4 Star | 10 | 16 | 12 | 22 | 18 | 18 | 29 | 4 | 13 / 14 | +6 | 16 | Bolt 1d8+6 |
-| Quillfox 1 Star | 12 | 12 | 10 | 8 | 14 | 8 | 19 | 4 | 11 / 9 | +3 | 11 | Long Shot 1d8+2 |
-| Quillfox 4 Star | 16 | 18 | 12 | 10 | 22 | 16 | 29 | 5 | 14 / 13 | +8 | 16 | Long Shot 1d8+6 |
-| Tamer Level 1 | 10 | 12 | 12 | 10 | 12 | 12 | 25 | 3 | 11 / 11 | +3 | 11 | 1d6 |
-| Tamer Level 6 | 10 | 14 | 14 | 10 | 14 | 16 | 45 | 3 | 12 / 13 | +5 | 14 | 1d6 |
+| Quillfox 1 Star | 12 | 12 | **14** | 8 | **16** | 8 | 22 | 4 | 11 / 9 | +4 | 12 | Long Shot 1d8+3 |
+| Quillfox 4 Star | 16 | 18 | **20** | 10 | **24** | 16 | 36 | 5 | 14 / 13 | +9 | 17 | Long Shot 1d8+7 |
+| Tamer Level 1 | 10 | 12 | 12 | 10 | 12 | **8** | 25 | 3 | 11 / 9 | +3 | 9 | 1d6 |
+| Tamer Level 6 | 10 | 14 | 14 | 10 | 14 | **12** | 45 | 3 | 12 / 11 | +5 | 12 | 1d6 |
 
-- ทุกค่าตรงกับตาราง stat block ใน Prototype kit ยกเว้น Move ของ Tidewall ที่เปลี่ยนจาก 3 เป็น 2 ตามสูตรล้วน [DL 2026-10-14]
+- ทุกค่าตรงกับตาราง stat block ใน Prototype kit ยกเว้น Move ของ Tidewall ที่เปลี่ยนจาก 3 เป็น 2 ตามสูตรล้วน [DL 2026-10-14] และ stat ตัวหนาที่ปรับใน ticket 19 (balance, DL 2026-10-16): Tidewall POW +4 (Scenario 2 +6), Quillfox VIT +4 / SEN +2 (Scenario 2 VIT +8 / SEN +2), Tamer SPI −4 ทั้งสองทีม test กติกาใน packages/engine ยังใช้ stat ของ kit เดิมของ Scenario 1 (fixture `scenario1`) ส่วน derived.test.ts ตรวจตารางนี้กับ data จริง
 - Guard ของ Tidewall รวม Guard bonus +2 ของ species (D-06)
-- Tidewall 4 Star POW 20 และ Quillfox 4 Star SPI 16 เป็นค่าทดสอบของ kit ไม่ใช่ค่าจริงของเกม (ดู D-25)
+- Quillfox 4 Star SPI 16 (และ Tidewall 4 Star POW 20 ของ kit ก่อน ticket 19) เป็นค่าทดสอบของ kit ไม่ใช่ค่าของ sim v4 (ดู D-25)
 - initiative mod: Scenario 1 ทั้งสองทีม +1, Scenario 2 ทั้งสองทีม +4
 
 ---
@@ -663,7 +663,7 @@ Tamer ทั้งสอง Scenario ใช้แค่ basic skill [PRD kit]
 | ส่วนของ AGI ในระยะเดิน | `trunc(AGI mod / 4)` ปัดเข้าหาศูนย์ | mod −5 หรือ −4 → −1, −3 ถึง 3 → 0, 4 ถึง 7 → 1, 8 ถึง 10 → 2 |
 | ระยะเดินพื้นฐาน | ต่ำสุด 2 หลังรวมแบบเบา/หนัก | Tidewall AGI 8: 3 + 0 − 1 = 2 |
 | proficiency ของ Monster | `ceil(Star / 2)` = `floor((Star + 1) / 2)` | Star 1 → 1, 4 → 2 |
-| damage | ขั้นต่ำ 1 เมื่อโดน หลังรวม mod และ Weakened | 1 + (−2) → 1 |
+| damage | ขั้นต่ำ 1 เมื่อโดน หลังรวม mod และ Weakened | 1 + (−3) → 1 |
 | heal ของ First Aid | ขั้นต่ำ 0 แล้วไม่เกิน HP สูงสุด | |
 | HP หลังล้ม | ตั้งเป็น 0 | |
 
