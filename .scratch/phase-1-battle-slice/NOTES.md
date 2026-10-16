@@ -8,7 +8,7 @@ Working state for the lead session. Survives compaction; read this first when re
 - Done: 16 simulator (parity passed; baseline in docs/balance/phase-1-baseline.md).
 - Deployed v0.1.1 (tickets 01-17). Verified live 2026-10-16: full Battle vs AI to result screen (desktop), menu stats, back-to-menu, 375px mobile board 336px single canvas no h-scroll, no console errors. NOT distributed -- next: tuning tickets 18+ (team A near 50%).
 - Deployed v0.1.2 (2026-10-16): selection fix + ticket 18 (engine 0.8.0). Ticket 18 had no sim effect: AI values Mark only within the same Turn.
-- Next: 19 team balance.
+- Next (multi-agent, ADR 0004): 20 session package -> 21 CI -> 22 agent docs -> 23 AI values Mark -> 19 balance. Codex starts after 22.
 
 ## Process rules
 

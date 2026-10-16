@@ -2,7 +2,7 @@
 
 **What to build:** ทั้ง 4 ชุด (Scenario 1/2 × Crossroads/Shallows) เล่นกับ AI แล้วทั้งสองทีมมีโอกาสชนะใกล้กัน ผู้เล่นที่เลือกทีม B ไม่รู้สึกว่าเสียเปรียบตั้งแต่ต้น และ Battle ส่วนใหญ่จบก่อน turn limit ตอนนี้ (baseline, engine 0.7.0) ทีม A ชนะ 63–88% และ S1 Crossroads จบด้วย turn limit 26% ดู docs/balance/phase-1-baseline.md ใช้ simulator ปรับตัวเลขใน data/ เป็นหลัก
 
-**Blocked by:** 18 — Tuning: Marked อยู่ถึงจบ Turn ถัดไปของฝั่งผู้ Mark
+**Blocked by:** 23 — AI ในเกมให้คุณค่า Mark ข้าม Turn และ skill ที่ไม่ถูกใช้
 
 **Status:** ready-for-agent
 
