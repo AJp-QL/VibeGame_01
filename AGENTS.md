@@ -61,6 +61,8 @@ Run all of these before opening a PR and list them in the PR description.
 
 `ENGINE_VERSION` (`packages/engine/src/version.ts`) is bumped (0.x: minor, e.g. 0.8.0 → 0.9.0) in the same commit as any change that makes the same data + Dice Seed + actions produce a different result (state, events, dice order, accepted/rejected actions), including new actions and every rules ticket. Details: `packages/engine/README.md`. Only Claude touches it.
 
+Visual-test fixtures (`packages/web/visual/fixtures/`) pin `engineVersion` and `dataHash`, so a bump or a `data/` change makes them stale. In the same PR as the bump, the Claude ticket lists a follow-up `Owner: codex` ticket "refresh visual fixtures and baselines" (`Blocked by:` the rules ticket; model: ticket 27). Codex regenerates with `visual:fixtures`, updates baselines on Linux with the pinned Chromium, and inspects every image.
+
 ## Release
 
 Pushing a tag `v*` runs `.github/workflows/deploy.yml` (build with `APP_VERSION` = tag, deploy `packages/web` to Cloudflare Workers). Only Claude creates tags, from `main` after CI is green. Setup of secrets: `docs/deploy/cloudflare.md`.
