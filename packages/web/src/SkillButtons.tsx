@@ -17,11 +17,13 @@ export function SkillButtons({ snapshot, session, data }: { snapshot: SessionSna
             ? button.tier === 'passive'
               ? th.skillPassive
               : th.skillNotYet
-            : button.spent
-              ? th.skillSpent
-              : button.cooldown > 0
-                ? th.cooldownTitle(button.cooldown)
-                : null
+            : button.usedThisActivation === true
+              ? th.skillUsedThisActivation
+              : button.spent
+                ? th.skillSpent
+                : button.cooldown > 0
+                  ? th.cooldownTitle(button.cooldown)
+                  : null
           return (
             <li key={button.skill}>
               <button

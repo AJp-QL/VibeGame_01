@@ -1,8 +1,14 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
-import { createBattle, menuBoards, menuScenarios, type BattleState } from '@mt/session'
+import { describe, expect, it, vi } from 'vitest'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { TurnPanel } from '../src/TurnPanel.tsx'
+import { SkillButtons } from '../src/SkillButtons.tsx'
+import { PreviewCard } from '../src/ActionPreview.tsx'
+import { logLines } from '../src/EventLog.tsx'
+import { createBattleSession, createBattle, menuBoards, menuScenarios, type BattleState } from '@mt/session'
 import { dataHash, loadGameData, tileFromName, type Side } from '@mt/shared'
 import { loadBundledGameData } from '../src/gameData.ts'
 import { describeAction } from '../src/replay.ts'
@@ -13,6 +19,9 @@ import { th } from '../src/strings.ts'
 // has no player-facing text): Replay action lines, refusal reasons, skill
 // text and the menu's names. The behaviour behind them is tested in
 // packages/session/test.
+
+// Rendering text in Node only needs the palette, not Phaser's browser runtime.
+vi.mock('@mt/battle', () => import('../../battle/src/palette.ts'))
 
 const DATA_DIR = fileURLToPath(new URL('../../../data/', import.meta.url))
 
@@ -103,5 +112,68 @@ describe('menu names (spec user stories 8–9)', () => {
 describe('bundled game data', () => {
   it('the bundled game data (as the browser loads it) has the same data hash as data/ read by Node', () => {
     expect(dataHash(loadBundledGameData())).toBe(dataHash(data))
+  })
+})
+
+describe('Camouflage free skill text (ticket 28)', () => {
+  function session() {
+    return createBattleSession(createBattle({
+      scenario: data.scenarios.scenario_1!, board: data.boards.crossroads!,
+      species: data.species, skills: data.skills, statuses: data.statuses,
+      elementWheel: data.elementWheel, dice: { rolls: [] },
+      preset: { tiles: { A: [t('a1')!, t('e4')!, t('c3')!], B: [t('g7')!, t('f3')!, t('d7')!] }, firstSide: 'B' },
+      inspiration: { A: false, B: false },
+    }))
+  }
+
+  it('offers the remaining free skill after Move and Action, then previews and logs its cost', () => {
+    const s = session()
+    s.selectUnit('B.m2')
+    s.input({ type: 'tapTile', tile: t('e7')! })
+    s.defend()
+    const snapshot = s.getSnapshot()
+    expect(snapshot.units.find(u => u.id === 'B.m2')).toMatchObject({ hasMoved: true, hasActed: true })
+    expect(snapshot.skills.find(b => b.skill === 'camouflage')).toMatchObject({ free: true, usable: true })
+    const panel = renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))
+    expect(panel).toContain(th.hintFreeSkill('Camouflage'))
+    expect(panel).not.toContain(th.hintNothingLeft)
+    expect(panel).toContain(th.skillFree)
+    s.chooseSkill('camouflage')
+    const aimed = s.getSnapshot()
+    expect(aimed.preview?.type).toBe('effect')
+    const preview = renderToStaticMarkup(createElement(PreviewCard, {
+      preview: aimed.preview!, action: aimed.ready, name: id => id, data,
+    }))
+    expect(preview).toContain(`Camouflage ${th.noAction}`)
+    s.confirmAttack()
+    const after = s.getSnapshot()
+    const lines = after.log.flatMap(event => logLines(event, id => id, after.state, data))
+    expect(lines).toContain(`B.m2 ใช้ Camouflage ${th.noAction}`)
+  })
+
+  it('explains the disabled zero-cooldown button after using Camouflage', () => {
+    const s = session()
+    s.selectUnit('B.m2')
+    s.input({ type: 'tapTile', tile: t('e7')! })
+    s.chooseSkill('camouflage')
+    s.confirmAttack()
+    const snapshot = s.getSnapshot()
+    expect(snapshot.skills.find(b => b.skill === 'camouflage')).toMatchObject({ usedThisActivation: true, usable: false, cooldown: 0 })
+    const buttons = renderToStaticMarkup(createElement(SkillButtons, { snapshot, session: s, data }))
+    expect(buttons).toMatch(/disabled=""[^>]*><span class="skill-name">Camouflage/)
+    expect(buttons).toContain(th.skillUsedThisActivation)
+    expect(renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))).not.toContain(th.hintFreeSkill('Camouflage'))
+  })
+
+  it('only describes free skills as free, and only hints when one is usable', () => {
+    expect(skillSummary(data.skills.camouflage!, data.statuses)).toContain('ไม่ใช้ Action และไม่ใช้การเดิน, 1 ครั้งต่อ activation')
+    expect(skillSummary(data.skills.long_shot!, data.statuses)).not.toContain(th.skillFree)
+    const s = session()
+    s.selectUnit('B.m2')
+    s.defend() // d7 is outside forest: no legal Camouflage remains.
+    expect(s.getSnapshot().skills.some(b => b.free === true && b.usable)).toBe(false)
+    expect(renderToStaticMarkup(createElement(TurnPanel, { snapshot: s.getSnapshot(), session: s, data }))).not.toContain(th.hintFreeSkill('Camouflage'))
+    const state = s.getSnapshot().state
+    expect(logLines({ type: 'skillUsed', unit: 'B.m1', skill: 'counter', targets: ['B.m1'] }, id => id, state, data).join('')).not.toContain(th.noAction)
   })
 })

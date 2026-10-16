@@ -16,11 +16,18 @@
 
 **Blocked by:** 27 — กติกา: Camouflage ไม่กิน Action
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Hint ไม่บอกว่า "ไม่มีอะไรเหลือ" เมื่อยัง Camouflage ได้
-- [ ] คำอธิบาย skill ของ Camouflage บอกว่าไม่ใช้ Action / Move และใช้ได้ 1 ครั้งต่อ activation
-- [ ] ปุ่ม Camouflage ที่ใช้แล้วใน activation นี้แสดงเหตุผล
-- [ ] Preview และ log ของ Camouflage บอกว่าไม่ใช้ Action
-- [ ] ข้อความทั้งหมดอยู่ใน packages/web (strings.ts) มี test ข้อความ
-- [ ] fixture visual regression บันทึกใหม่ด้วย engine 0.9.0 และ data ปัจจุบัน และ visual test ผ่าน
+- [x] Hint ไม่บอกว่า "ไม่มีอะไรเหลือ" เมื่อยัง Camouflage ได้
+- [x] คำอธิบาย skill ของ Camouflage บอกว่าไม่ใช้ Action / Move และใช้ได้ 1 ครั้งต่อ activation
+- [x] ปุ่ม Camouflage ที่ใช้แล้วใน activation นี้แสดงเหตุผล
+- [x] Preview และ log ของ Camouflage บอกว่าไม่ใช้ Action
+- [x] ข้อความทั้งหมดอยู่ใน packages/web (strings.ts) มี test ข้อความ
+- [x] fixture visual regression บันทึกใหม่ด้วย engine 0.9.0 และ data ปัจจุบัน และ visual test ผ่าน
+
+## Comments
+
+- Completed the free-skill hint, description, used-this-activation reason, effect preview and event log text using the existing session/data contract. All new player-facing text is in `packages/web/src/strings.ts`; rules and session code are unchanged.
+- Regenerated all 16 fixtures for engine 0.9.0/current data; actions, placements and Dice Seeds stayed identical. Inspected all 19 captures. Sixteen baselines are unchanged; push-slide, push-landed and pin were refreshed for the already-merged balance changes (HP bars; push damage 12 → 16), with before/after evidence.
+- Checks passed: frozen install, typecheck, 756 tests (1 skipped), build, path ownership check, fixture generation, 19 baseline captures, and 57/57 visual comparisons (`--repeat-each=3`) on pinned Linux Chromium 151.0.7922.34. Desktop/360 px captures have no browser errors or horizontal overflow.
+- [Screenshots and baseline review](../evidence/28-ui-camouflage-free/README.md).
