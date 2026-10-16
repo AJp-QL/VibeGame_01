@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:visual": "tsc -b visual/tsconfig.json && playwright test --config visual/playwright.config.ts",
+    "test:visual:update": "pnpm test:visual --update-snapshots",
+    "visual:fixtures": "node visual/generate-fixtures.mjs"
   },
   "dependencies": {
     "@mt/battle": "workspace:*",
@@ -15,6 +18,9 @@
     "react-dom": "catalog:"
   },
   "devDependencies": {
+    "@fontsource/noto-sans-mono": "5.2.5",
+    "@fontsource/noto-sans-thai": "5.2.5",
+    "@playwright/test": "1.62.1",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

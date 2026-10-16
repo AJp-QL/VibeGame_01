@@ -1,0 +1,11 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "../.tsbuild/visual",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "types": ["node", "vite/client"]
+  },
+  "include": ["*.ts"],
+  "references": [{ "path": ".." }, { "path": "../../battle" }, { "path": "../../session" }, { "path": "../../shared" }]
+}

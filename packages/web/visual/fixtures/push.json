@@ -1,0 +1,47 @@
+{
+  "format": "monster-tactics-replay",
+  "formatVersion": 1,
+  "engineVersion": "0.8.0",
+  "dataHash": "3bf7b90a3ef204e83685ad5815a3cf0b0ffd7385e4d0b85027b30df8b172df02",
+  "scenarioId": "scenario_2",
+  "boardId": "crossroads",
+  "mode": "hotseat",
+  "diceSeed": "0000000000000001",
+  "preset": {
+    "tiles": {
+      "A": [
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "B": [
+        {
+          "x": 5,
+          "y": 4
+        },
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 4,
+          "y": 2
+        }
+      ]
+    },
+    "firstSide": "B"
+  },
+  "actions": [
+    {"type":"useSkill","unit":"B.m1","skill":"shield_bash","target":"A.m1"},
+    {"type":"declineInspiration","side":"B"}
+  ]
+}
