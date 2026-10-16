@@ -2,6 +2,8 @@
 
 renderer ของกระดานต่อสู้ 7x7 ด้วย 2D framework
 
+**เจ้าของ:** Codex (ADR 0004) สัญญาที่ใช้ (`BattleSessionPort`, `BattleSnapshot`, `BoardInput` และชื่อจาก engine) มาจาก `@mt/session` ของ Claude ขอเปลี่ยนผ่าน ticket
+
 ## เก็บอะไร
 - การวาดกระดาน, unit, animation, เอฟเฟกต์, input บนกระดาน
 - แสดงผลจาก state ของ engine เท่านั้น ไม่มี logic กติกา
@@ -11,7 +13,8 @@ renderer ของกระดานต่อสู้ 7x7 ด้วย 2D frame
 
 ## แนวทาง/กฎการตั้งชื่อ
 - ใช้ Phaser 4 (ADR 0003, docs/research/phase-1-stack.md)
-- ไม่ import web: ประกาศ interface `BattleSessionPort` ที่ต้องการไว้ใน `src/port.ts` แล้ว web ส่ง implementation เข้ามา
+- dependency: `@mt/session` (port type และชื่อจาก engine ที่ session re-export เช่น `derivedValues`, `UnitState`) และ `@mt/shared` เท่านั้น ไม่ import web หรือ engine ตรง web ส่ง session (หรือ Replay player) ที่ implement `BattleSessionPort` เข้ามา
+- ไม่มีข้อความของตัวเอง: คำที่ Board วาดมาจาก web ผ่าน `BoardLabels` (`src/labels.ts`)
 - ภาพ pixel art ต้องตั้ง nearest-neighbor และ scale เป็นจำนวนเต็ม
 
 ## สถานะ

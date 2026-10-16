@@ -2,6 +2,8 @@
 
 React app สำหรับ ranch, campaign map และเมนู
 
+**เจ้าของ:** Codex (ADR 0004): React components, styles และข้อความ UI interaction model ของ Battle อยู่ที่ `@mt/session` (Claude) ขอเปลี่ยนสัญญาผ่าน ticket
+
 ## เก็บอะไร
 - หน้า ranch (training รายสัปดาห์, lifespan, combine), campaign node map, เมนู, หน้า Tamer
 - ฝังหน้าจอ battle จาก packages/battle
@@ -12,8 +14,9 @@ React app สำหรับ ranch, campaign map และเมนู
 
 ## แนวทาง/กฎการตั้งชื่อ
 - ใช้ React ตาม PRD; ต้องตรวจเวอร์ชันจาก docs จริงก่อนใช้
-- logic เกมทั้งหมดเรียกผ่าน packages/engine
-- `src/session.ts` (BattleSession) เป็น store เดียวที่ทั้ง React (`useSyncExternalStore`) และ Phaser อ่าน ห่อ engine ไว้และไม่มีกติกาของตัวเอง
+- dependency: `@mt/session`, `@mt/battle`, `@mt/shared` ไม่ import `@mt/engine` / `@mt/ai` ตรง: ชื่อจาก engine ที่ใช้ (`createBattle`, `legalActions`, `ENGINE_VERSION`, type ต่างๆ) มาจาก re-export ของ session
+- BattleSession (`@mt/session`) เป็น store เดียวที่ทั้ง React (`useSyncExternalStore`) และ Phaser อ่าน ห่อ engine ไว้และไม่มีกติกาของตัวเอง
+- web เหลือเฉพาะสิ่งที่เป็นข้อความหรือแตะเบราว์เซอร์: `src/strings.ts`, `src/skillText.ts`, `src/replay.ts` (`describeAction`, ดาวน์โหลดไฟล์), `src/storage.ts` (localStorage ของ playStats), delay ของ AI ใน `App.tsx`
 - ข้อความ UI ทุกข้อความมาจาก `src/strings.ts` (ภาษาไทย คำศัพท์เกมเป็นภาษาอังกฤษตาม CONTEXT.md)
 - data/ ถูกตรวจ schema สองจุด: ตอน build/dev (plugin ใน `vite.config.ts`) และตอนโหลดในเบราว์เซอร์ (`src/gameData.ts`)
 
@@ -40,6 +43,7 @@ build ได้โฟลเดอร์ static ที่ `packages/web/dist` (`b
 5. เปิดเว็บแล้วตรวจว่าเวอร์ชันท้ายหน้าตรงกับ tag
 
 ## สถานะ
+- ticket 20: session, battleChoice, playStats และ model ของ Replay ย้ายไป `packages/session` (ชื่อไฟล์ในบรรทัดสถานะด้านล่างเป็นตำแหน่งเดิมก่อนย้าย)
 - ticket 17 (build สำหรับ playtest): สถิติการเล่นในเครื่อง (`src/playStats.ts`: เปิดเกม, Battle ที่เริ่ม/จบพร้อมโหมด Scenario Board ผล, วันที่เล่น) เก็บใน localStorage เท่านั้น ถ้า storage ใช้ไม่ได้นับในหน่วยความจำ ใส่ใน `meta.stats` ของทุก Replay ที่ export และ export เดี่ยวได้จากเมนู ("ส่งออกสถิติการเล่น") ลิงก์แบบฟอร์มจาก `src/config.ts` (`FEEDBACK_FORM_URL` หรือ env `VITE_FEEDBACK_FORM_URL`, ว่าง = ซ่อน) หน้า "วิธีเล่น" (`src/Playtest.tsx`, สำเนา `docs/playtest/playtester-guide.md`) Board (`@mt/battle` `boardFit.ts`): zoom เป็นจำนวนเต็มของ device pixel ต่อ pixel ของ Board (คมที่ devicePixelRatio ไม่เต็ม เช่น 1.5625) ขยับ canvas ให้ตรง device pixel อ่านตำแหน่ง canvas ใหม่ก่อนทุกการแตะ (แก้แตะโดนช่องผิดเมื่อ layout เลื่อน) และถอด canvas ทันทีตอน unmount (แก้ canvas ซ้อนตอน dev double mount) Burst บอกเหตุผลเมื่อศัตรูในพื้นที่เป็น Hidden test `test/uiStrings.test.ts` สแกนข้อความ UI ที่ฝังในโค้ด
 - ticket 03 (walking skeleton): หน้า Battle เดียว แสดง Scenario 1 บน Crossroads เลือก Unit แล้วเดิน และจบ Turn ได้ มี log จากรายการเหตุการณ์ และแสดงเวอร์ชัน
 - ticket 04: deployment แบบ Hotseat (ทีม A วาง → ยืนยัน → หน้าส่งเครื่องปิด Board → ทีม B วาง → ยืนยัน → เปิดเผยพร้อมกัน), หน้าผลทอย initiative และฝั่งที่เริ่มก่อน, ป้ายบอก "2 จาก 3 Unit" ใน Turn แรก, Unit ที่เล่นต่อไม่ได้แสดงจางลง และคำเตือนก่อนจบ Turn ถ้ายังมี Unit ที่ไม่ได้ทำอะไร (`idleUnits` ใน `src/session.ts`)
