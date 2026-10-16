@@ -6,7 +6,7 @@ Working state for the lead session. Survives compaction; read this first when re
 
 - Done on main: tickets 01-16. Tests: 680 passing. ENGINE_VERSION 0.7.0.
 - Done: 16 simulator (parity passed; baseline in docs/balance/phase-1-baseline.md).
-- Next: 17 playtest build. Real-rules baseline from ticket 15: S1 team A ~79%, S2 ~90% (Tidewall move 2 likely cause).
+- In progress: 17 playtest build (do NOT distribute until tuning brings team A near 50%; decision log 2026-10-16). Next: tuning tickets 18+.
 
 ## Process rules
 
