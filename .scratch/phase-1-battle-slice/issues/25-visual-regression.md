@@ -12,14 +12,14 @@
 
 **Blocked by:** None — ticket 24 is merged in PR #4; pinned Chromium download is resolved.
 
-**Status:** in-progress
+**Status:** done
 
 - [x] มีกรณีทดสอบอย่างน้อย 1 ภาพต่อ visual ในรายการข้างบน แต่ละกรณีมาจาก fixture Replay ที่ commit ไว้ และให้ภาพเดิมทุกครั้งที่รัน (รันซ้ำ 3 ครั้งติดกันผ่านหมด)
 - [x] ภาพ baseline commit อยู่ใน `packages/web/**` มีคำสั่งอัปเดต baseline ที่ระบุใน `packages/web/README.md`
 - [x] `pnpm --filter @mt/web test:visual` รันได้บน Linux แบบ headless และล้มเมื่อ visual เปลี่ยน (ลองเปลี่ยนสีหนึ่งจุดแล้วเห็น test ล้ม แล้วคืนค่า)
 - [x] ตรวจภาพ baseline ด้วยตาแล้วว่าแต่ละ visual แสดงถูกต้อง แนบภาพทั้งหมดใน PR (ถ้าพบ visual ที่ผิด เปิด ticket แยก ไม่แก้ใน ticket นี้)
 - [x] `pnpm typecheck`, `pnpm test`, `pnpm build` ผ่าน; `pnpm test` ไม่รัน test ภาพ
-- [ ] PR จาก branch `codex/25-…` ผ่าน CI รวม path check; PR description บอกคำสั่งที่ ticket 26 ต้องใส่ใน CI (ติดตั้ง browser, รัน test, ไฟล์ที่ควร upload เมื่อล้ม)
+- [x] PR จาก branch `codex/25-…` ผ่าน CI รวม path check; PR description บอกคำสั่งที่ ticket 26 ต้องใส่ใน CI (ติดตั้ง browser, รัน test, ไฟล์ที่ควร upload เมื่อล้ม)
 
 ## Comments
 
@@ -32,3 +32,5 @@
 
 - Continuation on 2026-10-16: installed the locked dependencies and pinned Linux Chromium 151.0.7922.34 (Playwright 1.62.1 / build 1234). Generated all 19 baselines under `packages/web/visual/baselines/` and inspected every frame; no visual defect found. Three consecutive comparisons passed (57/57). A temporary Guarded icon blue-to-magenta change failed with 171 differing pixels; source restored and the case passed again.
 - Current validation: frozen install, typecheck, 746 tests passed / 1 skipped, production build and visual TypeScript check passed. Hosted CI verification for the baseline commit remains pending; PR #7 will be marked ready after both checks pass.
+
+- Hosted CI is green for the committed pinned baselines (`4cb81bb`): both Typecheck/test/build and Path ownership check passed on push and PR runs. All ticket acceptance items are complete. PR #7 contains every inspected baseline and the exact ticket 26 CI/artifact commands; ready for Claude review and human merge.
