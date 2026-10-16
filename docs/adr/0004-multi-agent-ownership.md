@@ -1,0 +1,7 @@
+# แบ่งความเป็นเจ้าของ code ระหว่าง Claude (engine) กับ Codex (graphic/UI) โดยมี session เป็นสัญญากลาง
+
+repo มี AI agent สองตัวทำงานพร้อมกัน: Claude Code ดูแลกติกาและทุกอย่างที่ไม่มี UI (shared, engine, ai, session, tools/simulator, data/, docs/rules, docs/balance) ส่วน Codex cloud ดูแล graphic และ UI (battle, web, art/) และส่งงานเป็น PR บน GitHub เราแยก interaction model ของ Battle (การเลือก Unit, การเล็ง, action ที่ทำได้, การสั่ง AI ทีละขั้น, Replay) ออกจาก web เป็น package `session` ที่ Claude ดูแล และย้าย port type มาไว้ที่นั่น ทิศ dependency จึงเป็น `shared ← engine ← ai / session ← battle / web` และ Codex ใช้แค่ snapshot กับคำสั่งของ session ไม่แตะ engine โดยตรง เหตุผลคือ bug ประเภท "action ไหนทำได้หลังทำอะไร" เป็นกติกาของเกมที่ต้อง test แบบไม่มี UI และต้องมีเจ้าของคนเดียว สัญญา (interface ของ engine, type ใน shared, snapshot API ของ session) เป็นของ Claude และเปลี่ยนแบบเพิ่มเท่านั้น Codex ขอการเปลี่ยนผ่าน ticket ข้อความที่ผู้เล่นเห็นทั้งหมดอยู่ใน web ไม่อยู่ใน session
+
+**Considered Options**: ให้ Codex ดูแล web ทั้ง package รวม session (กติกาของ flow เกมจะอยู่กับฝั่งที่ไม่ได้เป็นเจ้าของ engine); คง session ไว้ใน web แต่ให้ Claude ดูแลไฟล์นั้น (เส้นแบ่งข้ามกลาง package ตรวจด้วย path ได้ยากและ port type ยังอยู่ใน battle)
+
+**Consequences**: GitHub Free กับ repo private ตั้ง branch protection ไม่ได้ การบังคับจึงเป็น CI ที่ตรวจ path ตาม prefix ของ branch (`claude/*`, `codex/*`) บวกข้อตกลงว่าไม่ merge ถ้า CI ไม่ผ่าน งานที่ข้ามสองฝั่งต้องแตกเป็นสอง ticket (UI blocked by engine)
