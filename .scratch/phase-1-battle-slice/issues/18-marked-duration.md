@@ -4,10 +4,10 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] rules ฉบับรวม §14 และตาราง D-03 ใน §23 อธิบายระยะเวลาใหม่ของ Marked ชัดเจน และ decision log มีแถวบันทึกการเปลี่ยน
-- [ ] Marked ที่ติดใน Turn ของฝั่ง X มีผลกับผู้โจมตีทุกตัวจนจบ Turn ถัดไปของฝั่ง X (รวม Turn ของอีกฝั่งระหว่างนั้น) ติดซ้ำแล้วรีเซ็ต ไม่ซ้อน
-- [ ] ENGINE_VERSION ขยับตามกฎ และ Replay เก่าถูกปฏิเสธว่าเวอร์ชันไม่ตรง
-- [ ] test ผ่าน interface ของ engine ครอบคลุมระยะเวลาใหม่, advantage ของพวกเดียวกันใน Turn ถัดไป และการหมดอายุ
-- [ ] รายงาน simulator ก่อนและหลัง (S1/S2 × Crossroads/Shallows) แสดงผลต่อการใช้ Mark และอัตราชนะ
+- [x] rules ฉบับรวม §14 และตาราง D-03 ใน §23 อธิบายระยะเวลาใหม่ของ Marked ชัดเจน และ decision log มีแถวบันทึกการเปลี่ยน
+- [x] Marked ที่ติดใน Turn ของฝั่ง X มีผลกับผู้โจมตีทุกตัวจนจบ Turn ถัดไปของฝั่ง X (รวม Turn ของอีกฝั่งระหว่างนั้น) ติดซ้ำแล้วรีเซ็ต ไม่ซ้อน
+- [x] ENGINE_VERSION ขยับตามกฎ และ Replay เก่าถูกปฏิเสธว่าเวอร์ชันไม่ตรง
+- [x] test ผ่าน interface ของ engine ครอบคลุมระยะเวลาใหม่, advantage ของพวกเดียวกันใน Turn ถัดไป และการหมดอายุ
+- [x] รายงาน simulator ก่อนและหลัง (S1/S2 × Crossroads/Shallows) แสดงผลต่อการใช้ Mark และอัตราชนะ
