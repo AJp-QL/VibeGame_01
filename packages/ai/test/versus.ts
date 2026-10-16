@@ -14,9 +14,9 @@ const profileOf = (name: string): AiProfile => {
 }
 const heur = process.env.AI_HEUR?.split(',').map(Number)
 const first0 = profileOf(process.argv[4] ?? 'game:greedy')
-// AI_HEUR="protectTamer,focusFire" tries other heuristic strengths for the first profile.
+// AI_HEUR="protectTamer,focusFire,lookahead" tries other heuristic strengths for the first profile.
 const first: AiProfile =
-  heur === undefined ? first0 : { ...first0, name: `${first0.name}(${heur.join(',')})`, heuristics: { protectTamer: heur[0] ?? 0, focusFire: heur[1] ?? 0 } }
+  heur === undefined ? first0 : { ...first0, name: `${first0.name}(${heur.join(',')})`, heuristics: { protectTamer: heur[0] ?? 0, focusFire: heur[1] ?? 0, lookahead: heur[2] ?? 0 } }
 const second = profileOf(process.argv[5] ?? 'sim:greedy')
 const board = process.argv[6] ?? 'crossroads'
 

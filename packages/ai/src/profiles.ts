@@ -25,6 +25,18 @@ export interface AiHeuristics {
    * the target's maximum HP already lost), so the AI finishes what it started.
    */
   readonly focusFire: number
+  /**
+   * Look past this activation (ticket 23): value what a status is worth
+   * beyond the moment, with our side's next Turn weighted by this.
+   * Mark: advantage for every Unit of ours on our next Turn (Marked lasts
+   * until the end of the marking side's next Turn, rules §14, D-03), not only
+   * for allies still to act now, counting the extra chance to drop the target.
+   * Hex (Weakened), Pin (immobile): the drop in the cost of the enemy's
+   * threat on the Unit of ours it endangers most (sim.py's `pen` of `threat`),
+   * from the engine's numbers with its damage lowered / its movement stopped
+   * (Blink still moves a Pinned Unit). 0 = sim.py's estimates.
+   */
+  readonly lookahead: number
 }
 
 export interface AiProfile {
@@ -42,10 +54,10 @@ export interface AiProfile {
   readonly simQuirks: boolean
 }
 
-export const NO_HEURISTICS: AiHeuristics = { protectTamer: 0, focusFire: 0 }
+export const NO_HEURISTICS: AiHeuristics = { protectTamer: 0, focusFire: 0, lookahead: 0 }
 
 /** The in-game heuristics' strength. */
-export const GAME_HEURISTICS: AiHeuristics = { protectTamer: 0.5, focusFire: 0.5 }
+export const GAME_HEURISTICS: AiHeuristics = { protectTamer: 0.5, focusFire: 0.5, lookahead: 0.6 }
 
 export const AI_MODES: readonly AiMode[] = ['greedy', 'tamer_rush', 'neutral']
 

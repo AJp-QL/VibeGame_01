@@ -53,6 +53,8 @@ export class Ctx {
   private readonly damageSkillsCache = new Map<UnitId, readonly DamageSkill[]>()
   private readonly threats = new Map<string, number>()
   private readonly bestEvs = new Map<string, number>()
+  private readonly bestAttacks = new Map<string, readonly [number, number]>()
+  private readonly threatFroms = new Map<string, number>()
   /** Position values of the plan being made, by Unit and tile (sim.py's `('pv', uid, d)` cache). */
   readonly posValues = new Map<string, number>()
 
@@ -178,7 +180,7 @@ export class Ctx {
     attacker: UnitState,
     target: UnitState,
     skillId: string,
-    options: { adv?: Adv; simple?: boolean; tamerProtection?: boolean; extraDefence?: number } = {},
+    options: { adv?: Adv; simple?: boolean; tamerProtection?: boolean; extraDefence?: number; damageDelta?: number } = {},
   ): readonly [number, number] {
     const p = this.preview(st, attacker, target, skillId)
     return this.evOf(st, p, target, options)
@@ -189,12 +191,55 @@ export class Ctx {
     st: BattleState,
     p: AttackPreview,
     target: UnitState,
-    options: { adv?: Adv; simple?: boolean; tamerProtection?: boolean; extraDefence?: number; dice?: Dice } = {},
+    options: { adv?: Adv; simple?: boolean; tamerProtection?: boolean; extraDefence?: number; dice?: Dice; damageDelta?: number } = {},
   ): readonly [number, number] {
     const dice = options.dice ?? p.damage?.dice
     if (dice === undefined || p.damage === null) return [0, 0]
     const adv = options.adv ?? (options.simple === true ? simpleAdv(p, options.tamerProtection === true) : advOf(p))
-    return attackValue(p.attackBonus, p.defence + (options.extraDefence ?? 0), adv, dice.count, dice.sides, p.damage.modifier, Math.max(1, effectiveHp(st, target)))
+    const mod = p.damage.modifier + (options.damageDelta ?? 0)
+    return attackValue(p.attackBonus, p.defence + (options.extraDefence ?? 0), adv, dice.count, dice.sides, mod, Math.max(1, effectiveHp(st, target)))
+  }
+
+  /**
+   * In-game lookahead (ticket 23): [expected damage, chance to drop] of
+   * `attacker`'s best single-target attack on `target` (by expected damage)
+   * with roll mode `adv`, from where they stand.
+   */
+  bestAttack(st: BattleState, attacker: UnitState, target: UnitState, adv: Adv, readyNow: boolean): readonly [number, number] {
+    const key = `${attacker.id}@${attacker.tile.x}${attacker.tile.y}>${target.id}@${target.tile.x}${target.tile.y}:${adv}:${readyNow ? 1 : 0}:${protectedNow(st, target) ? 1 : 0}`
+    const cached = this.bestAttacks.get(key)
+    if (cached !== undefined) return cached
+    let best: readonly [number, number] = [0, 0]
+    for (const s of this.damageSkills(attacker)) {
+      if (s.area || (readyNow && this.cooldown(attacker, s.id) > 0)) continue
+      const ev = this.ev(st, attacker, target, s.id, { adv })
+      if (ev[0] > best[0]) best = ev
+    }
+    this.bestAttacks.set(key, best)
+    return best
+  }
+
+  /**
+   * In-game lookahead (ticket 23): what `enemy` alone adds to `threat` on
+   * `unit` (its best ready attack within move + reach, sim.py's estimate),
+   * with its movement `move` instead of the engine's (Pinned: 0 or Blink's
+   * range) and `damageDelta` on its damage (Weakened).
+   */
+  threatFrom(st: BattleState, enemy: UnitState, unit: UnitState, options: { move?: number; damageDelta?: number } = {}): number {
+    const prot = protectedNow(st, unit)
+    const mv = options.move ?? moveRangeNow(st, enemy)
+    const delta = options.damageDelta ?? 0
+    const key = `${enemy.id}>${unit.id}@${unit.tile.x}${unit.tile.y}:${mv}:${delta}:${prot ? 1 : 0}`
+    const cached = this.threatFroms.get(key)
+    if (cached !== undefined) return cached
+    const dd = distance(enemy.tile, unit.tile)
+    let best = 0
+    for (const s of this.damageSkills(enemy)) {
+      if (s.area || this.cooldown(enemy, s.id) > 1 || dd > mv + s.range) continue
+      best = Math.max(best, this.ev(st, enemy, unit, s.id, { simple: true, tamerProtection: prot, damageDelta: delta })[0])
+    }
+    this.threatFroms.set(key, best)
+    return best
   }
 
   /**

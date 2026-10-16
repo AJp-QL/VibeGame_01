@@ -30,12 +30,13 @@ Enemy AI ที่ใช้ร่วมกันระหว่างตัว�
 | โปรไฟล์ | ใช้ที่ | ต่างจาก sim.py |
 |---|---|---|
 | `SIM_PROFILES.greedy / tamer_rush / neutral` (sim-parity) | simulator ticket 16 | ไม่ต่าง: รวม quirk ของ cache ใน sim.py (`simQuirks: true`: ค่าตำแหน่งที่ Hit and Run คิดไว้ขณะยังยืนที่ช่องโจมตีถูกใช้ซ้ำเมื่อแผนไปถึงช่องนั้น) |
-| `GAME_PROFILES.*` (in-game) | เว็บ (`DEFAULT_GAME_PROFILE` = greedy) | heuristic ปกป้อง Tamer (`protectTamer` 0.5: โทษของภัยต่อ Tamer ในค่าตำแหน่งของ Monster ×1.5 และ Tamer ได้ +0.5 เมื่อมี Monster ติดกัน) และรุมเป้าเดียว (`focusFire` 0.5: ค่าการโจมตี ×(1 + 0.5 × สัดส่วน HP ที่เป้าเสียไป)) และไม่มี quirk ของ cache |
+| `GAME_PROFILES.*` (in-game) | เว็บ (`DEFAULT_GAME_PROFILE` = greedy) | heuristic ปกป้อง Tamer (`protectTamer` 0.5: โทษของภัยต่อ Tamer ในค่าตำแหน่งของ Monster ×1.5 และ Tamer ได้ +0.5 เมื่อมี Monster ติดกัน) และรุมเป้าเดียว (`focusFire` 0.5: ค่าการโจมตี ×(1 + 0.5 × สัดส่วน HP ที่เป้าเสียไป)) และมองข้าม activation (`lookahead` 0.6, ticket 23: Mark นับ advantage ใน Turn ถัดไปของฝ่ายเรา, Hex/Pin นับจากภัยของศัตรูที่ลดลง, Camouflage ไม่คิดโทษ terrain ของช่องที่ซ่อน; ผลที่ docs/balance/ticket-23-ai-skills.md) และไม่มี quirk ของ cache |
 
 ค่า heuristic มาจากการลองเทียบ game:greedy กับ sim:greedy 200 เกมต่อค่า (`test/versus.ts`): ทุกค่าที่ลองอยู่ในช่วง 47–57% ชนะ (ใกล้ noise) ค่า 0.5/0.5 ได้ 53% (S1) และ 57% (S2)
 
 ## Test และเครื่องมือ
 - `test/ai.test.ts`: เล่นจนจบทุก Scenario × Board × โปรไฟล์ × Dice Seed 2 ค่า (AI ทั้งสองฝั่ง) ทุก action อยู่ใน `legalActions`, deterministic, ไม่กินลูกเต๋าของ Battle (เล่น action ที่บันทึกซ้ำโดยไม่มี AI ได้ state เดียวกัน), deployment อยู่ในโซน, ตอบ Inspiration/ขั้นถอย
+- `test/lookahead.test.ts`: SIM_PROFILES ไม่มี lookahead, เลือก Mark เมื่อฝ่ายเราตามตีได้ใน Turn ถัดไป (sim ไม่เลือก), Battle เต็มด้วยโปรไฟล์เกมใช้ Mark/Hex/Pin/Camouflage
 - `test/simParity.test.ts`: decision parity กับ sim.py: `test/simParity/sim_decisions.json` (107 จุดตัดสินใจจาก sim.py variant U4, S1/S2, ทั้ง 3 โหมด) สร้าง state เดียวกันใน engine แล้วต้องเลือกแผนเดียวกันทุกจุด (Unit, ลำดับ, ช่อง, action, เป้า, Command, ขั้นถอย) สร้างใหม่ด้วย `python packages/ai/test/simParity/dump_sim_decisions.py --games 4 --every 5 --out packages/ai/test/simParity/sim_decisions.json` (ชุดใหญ่ `--games 40 --every 1` ตรง 6,830/6,830 ตรวจด้วย `AI_PROBE=<file> AI_PROBE_OUT=<report> npx vitest run packages/ai/test/simParityProbe.test.ts`) `rebuild.ts` ใช้ stat ของ sim.py และให้ Tidewall เดิน 3 เพื่อเทียบแค่การตัดสินใจ
 - `node packages/ai/test/bench.ts [games] [scenario] [mode] [sim|game]`: เวลาต่อ Battle (AI ทั้งสองฝั่ง ตั้งแต่ deployment จนจบ)
 - `node packages/ai/test/versus.ts [games] [scenario] [game:greedy] [sim:greedy] [board]`: โปรไฟล์ต่อโปรไฟล์ สลับทีม
