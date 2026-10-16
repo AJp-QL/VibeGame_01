@@ -60,3 +60,17 @@ build ได้โฟลเดอร์ static ที่ `packages/web/dist` (`b
 - ticket 14 (Replay, `src/replay.ts`, `src/ReplayScreen.tsx`): session เก็บ action ที่ engine รับทุกตัว (`snapshot.actions`) export ไฟล์ Replay ได้จากหน้าสรุปผลและจาก "เมนู Battle" ระหว่างเล่น (ซึ่งมี "ออกจาก Battle" แบบยืนยันอีกครั้ง) เมนูหลักมี "เปิดไฟล์ Replay": ไฟล์ผิด schema แจ้งรายการปัญหา, เวอร์ชัน engine หรือ hash ของ data ไม่ตรงแจ้ง "เวอร์ชันไม่ตรง" พร้อมค่าทั้งสองฝั่ง, action ถูกปฏิเสธแจ้งลำดับ action ถ้าเปิดได้จะเข้าหน้าดู Replay แบบอ่านอย่างเดียว: ไปต้นเกม, ย้อน/ถัดไปทีละ action, ไปท้ายเกม พร้อม Board, log และ HP ณ ขั้นนั้น สถิติของ playtester (ticket 17) ใส่ใน `meta.stats` ตอน export (`exportReplay` ใน `src/App.tsx`)
 - ticket 12: หลัง d20 ที่ใช้ Inspiration ได้ แผงควบคุมแสดงผลทอยพร้อมปุ่ม "ใช้ Inspiration ทอยใหม่" / "ไม่ใช้" (`useInspiration` / `declineInspiration` ใน `src/session.ts`) ถ้าฝั่งที่ต้องตัดสินไม่ใช่ฝั่งที่ถือเครื่อง (save ระหว่าง Turn ของอีกฝั่ง) จะมีหน้าส่งเครื่อง (`screen: 'decisionHandoff'`) ก่อน และอีกครั้งตอนส่งคืน Inspiration ของ initiative ตอบในหน้าผล initiative แถบบนแสดง Round x/10, damage รวมของแต่ละทีม และ Inspiration ที่เหลือ หน้าสรุปผลบอกผู้ชนะหรือเสมอ สาเหตุ (รวมครบ 10 Round ตัดสินด้วย damage รวม) จำนวน Round และ damage รวม หน้า Replay อธิบาย action ใหม่ (`describeAction` ย้ายมาอยู่ `src/replay.ts`)
 - ticket 15 (เล่นกับ AI): เมนูเปิดโหมด "เล่นกับ AI" พร้อมเลือกทีม (`aiOpponent` ใน `src/battleChoice.ts`, AI เล่นอีกทีมด้วย `DEFAULT_GAME_PROFILE`) `createBattleSession(state, { ai })`: AI คิด deployment ก่อนผู้เล่นวางและซ่อนไว้ (ทีม A: ใส่ทันที, ทีม B: ใส่ทันทีหลังผู้เล่นยืนยัน แล้วเปิดเผยพร้อมกัน) Board แสดงสิ่งที่ทีมของผู้เล่นเห็นตลอด ไม่มีหน้าส่งเครื่อง ผู้เล่นทำได้เฉพาะเมื่อเป็นการตัดสินใจของตัวเอง (`decidingSide`) `snapshot.aiToAct` บอกว่า AI ต้องเล่น และ `session.aiStep()` เล่น 1 action ของ AI ผ่าน engine (บันทึกใน `snapshot.actions` เหมือน action ของผู้เล่น Replay จึงเล่นซ้ำได้) `useBattleSession.ts` เรียก `aiStep` ทีละครั้งหลัง delay 700 ms (400 ms ตอนตอบ Inspiration) ระหว่างนั้นแผงควบคุมบอกว่า AI กำลังเล่น/ตัดสินใจ และ log กับ Board แสดงผลทีละขั้น
+
+## Board visual regression (ticket 25)
+
+Separate from `pnpm test`:
+
+```sh
+corepack pnpm --filter @mt/web exec playwright install --with-deps chromium
+corepack pnpm --filter @mt/web test:visual
+# Review and deliberately replace Linux + pinned Chromium baselines:
+corepack pnpm --filter @mt/web test:visual:update
+```
+
+See [visual/README.md](visual/README.md) for replay fixtures, deterministic animation
+frames, baseline status, three-run verification, and ticket 26's CI/artifact commands.
