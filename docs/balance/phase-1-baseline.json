@@ -1,0 +1,732 @@
+{
+  "command": "corepack pnpm sim baseline --games 1000 --seed 0",
+  "engine": "0.7.0",
+  "dataHash": "94d95e538e88f10e147535e7b185f95fe46186ca35ce30d34aa9013e9acf8830",
+  "seed": "0",
+  "games": 1000,
+  "rows": [
+    {
+      "label": "S1 crossroads game:greedy",
+      "metrics": {
+        "games": 1000,
+        "winA": 0.763,
+        "winB": 0.234,
+        "draw": 0.003,
+        "winFirst": 0.479,
+        "firstA": 0.52,
+        "turnsA": 7.52,
+        "turnsB": 7.343,
+        "roundsMean": 7.605,
+        "roundsMedian": 8,
+        "limit": 0.262,
+        "byTamer": 0.226,
+        "byMonsters": 0.512,
+        "tamerFirstDown": 0.086,
+        "firstDown": {
+          "Fangrel": 0.23500000000000018,
+          "Tamer": 0.08600000000000006,
+          "Tidewall": 0.11300000000000009,
+          "Quillfox": 0.4850000000000004,
+          "Wispling": 0.07900000000000006,
+          "none": 0.002
+        },
+        "decidedBySide": {
+          "A-tamerDown": 0.173,
+          "A-monstersDown": 0.377,
+          "A-turnLimit": 0.213,
+          "B-tamerDown": 0.053,
+          "B-monstersDown": 0.135,
+          "B-turnLimit": 0.046
+        },
+        "tamerADown": 0.053,
+        "tamerBDown": 0.173,
+        "damageByPerGame": {
+          "Wispling": 40.339,
+          "Fangrel": 21.992,
+          "Quillfox": 21.411,
+          "Tidewall": 13.166,
+          "Tamer": 2.258
+        },
+        "attacksPerGame": 20.182,
+        "hitRateByAttacker": {
+          "Wispling": 0.7118423901277333,
+          "Quillfox": 0.8285418285418286,
+          "Fangrel": 0.680650235972732,
+          "Tidewall": 0.7353075170842824,
+          "Tamer": 0.6312849162011173
+        },
+        "hitsTakenPerGame": {
+          "Tidewall": 5.249,
+          "Tamer": 3.217,
+          "Quillfox": 2.363,
+          "Fangrel": 2.037,
+          "Wispling": 1.797
+        },
+        "tamerHitsPerGame": 3.217,
+        "pushesPerGame": 0.963,
+        "skillsPerGame": {
+          "First Aid": 5.601,
+          "Defend": 5.024,
+          "Element Bolt": 4.68,
+          "Long Shot": 3.546,
+          "Counter": 3.438,
+          "Command (advantage)": 2.508,
+          "Burst": 2.292,
+          "Heavy Blow": 2.14,
+          "Shield Bash": 2.064,
+          "Attune": 1.67,
+          "Command (move)": 1.664,
+          "Basic Attack": 1.543,
+          "Pack Howl": 1.34,
+          "Hit and Run": 0.772,
+          "Rend": 0.692,
+          "Cover": 0.655,
+          "Distract": 0.516,
+          "Taunt": 0.336,
+          "(Counter triggered)": 0.12,
+          "Pin": 0.067,
+          "Camouflage": 0.014,
+          "Mark": 0.003
+        },
+        "se": {
+          "winA": 0.013447341744746431,
+          "limit": 0.013905250806799567,
+          "tamerFirstDown": 0.008865889690267977,
+          "turnsA": 0.06876284118859793,
+          "turnsB": 0.07323055177802286
+        }
+      }
+    },
+    {
+      "label": "S1 crossroads sim:greedy",
+      "metrics": {
+        "games": 1000,
+        "winA": 0.784,
+        "winB": 0.214,
+        "draw": 0.002,
+        "winFirst": 0.491,
+        "firstA": 0.52,
+        "turnsA": 7.5,
+        "turnsB": 7.292,
+        "roundsMean": 7.578,
+        "roundsMedian": 8,
+        "limit": 0.258,
+        "byTamer": 0.215,
+        "byMonsters": 0.527,
+        "tamerFirstDown": 0.09,
+        "firstDown": {
+          "Quillfox": 0.5000000000000003,
+          "Tidewall": 0.12700000000000009,
+          "Tamer": 0.09000000000000007,
+          "Fangrel": 0.16300000000000012,
+          "Wispling": 0.11600000000000009,
+          "none": 0.004
+        },
+        "decidedBySide": {
+          "A-tamerDown": 0.163,
+          "A-monstersDown": 0.403,
+          "A-turnLimit": 0.218,
+          "B-tamerDown": 0.052,
+          "B-monstersDown": 0.124,
+          "B-turnLimit": 0.038
+        },
+        "tamerADown": 0.052,
+        "tamerBDown": 0.163,
+        "damageByPerGame": {
+          "Wispling": 39.773,
+          "Fangrel": 23.579,
+          "Quillfox": 21.031,
+          "Tidewall": 13.384,
+          "Tamer": 1.575
+        },
+        "attacksPerGame": 19.884,
+        "hitRateByAttacker": {
+          "Wispling": 0.7139547710976283,
+          "Quillfox": 0.8398291510945008,
+          "Fangrel": 0.664352406033038,
+          "Tidewall": 0.7570963238715682,
+          "Tamer": 0.6666666666666666
+        },
+        "hitsTakenPerGame": {
+          "Tidewall": 5.197,
+          "Tamer": 3.254,
+          "Quillfox": 2.421,
+          "Wispling": 1.83,
+          "Fangrel": 1.816
+        },
+        "tamerHitsPerGame": 3.254,
+        "pushesPerGame": 0.856,
+        "skillsPerGame": {
+          "First Aid": 5.631,
+          "Defend": 4.897,
+          "Element Bolt": 4.553,
+          "Counter": 3.49,
+          "Long Shot": 3.423,
+          "Command (advantage)": 2.785,
+          "Burst": 2.273,
+          "Heavy Blow": 2.265,
+          "Shield Bash": 2.008,
+          "Command (move)": 1.797,
+          "Attune": 1.703,
+          "Pack Howl": 1.361,
+          "Basic Attack": 1.215,
+          "Hit and Run": 0.944,
+          "Distract": 0.772,
+          "Rend": 0.766,
+          "Cover": 0.665,
+          "Taunt": 0.412,
+          "(Counter triggered)": 0.13,
+          "Pin": 0.067,
+          "Camouflage": 0.015,
+          "Hex": 0.001,
+          "Mark": 0.001
+        },
+        "se": {
+          "winA": 0.013013224043256921,
+          "limit": 0.013836039895866157,
+          "tamerFirstDown": 0.009049861877399014,
+          "turnsA": 0.06864920037926671,
+          "turnsB": 0.07299358919839506
+        }
+      }
+    },
+    {
+      "label": "S1 shallows game:greedy",
+      "metrics": {
+        "games": 1000,
+        "winA": 0.68,
+        "winB": 0.317,
+        "draw": 0.003,
+        "winFirst": 0.48,
+        "firstA": 0.52,
+        "turnsA": 6.26,
+        "turnsB": 6.127,
+        "roundsMean": 6.392,
+        "roundsMedian": 6,
+        "limit": 0.173,
+        "byTamer": 0.381,
+        "byMonsters": 0.446,
+        "tamerFirstDown": 0.208,
+        "firstDown": {
+          "Quillfox": 0.45000000000000034,
+          "Wispling": 0.03800000000000003,
+          "Fangrel": 0.2460000000000002,
+          "Tamer": 0.20800000000000016,
+          "Tidewall": 0.058000000000000045
+        },
+        "decidedBySide": {
+          "A-tamerDown": 0.215,
+          "A-monstersDown": 0.322,
+          "A-turnLimit": 0.143,
+          "B-tamerDown": 0.166,
+          "B-monstersDown": 0.124,
+          "B-turnLimit": 0.027
+        },
+        "tamerADown": 0.166,
+        "tamerBDown": 0.215,
+        "damageByPerGame": {
+          "Wispling": 34.58,
+          "Fangrel": 22.591,
+          "Quillfox": 19.853,
+          "Tidewall": 15.139,
+          "Tamer": 1.97
+        },
+        "attacksPerGame": 19.086,
+        "hitRateByAttacker": {
+          "Fangrel": 0.6947658402203857,
+          "Wispling": 0.6949004975124378,
+          "Tidewall": 0.7065217391304348,
+          "Quillfox": 0.8020277481323372,
+          "Tamer": 0.607
+        },
+        "hitsTakenPerGame": {
+          "Tidewall": 4.34,
+          "Tamer": 4.181,
+          "Quillfox": 2.179,
+          "Fangrel": 1.816,
+          "Wispling": 1.091
+        },
+        "tamerHitsPerGame": 4.181,
+        "pushesPerGame": 0.959,
+        "skillsPerGame": {
+          "First Aid": 4.984,
+          "Element Bolt": 3.745,
+          "Long Shot": 3.469,
+          "Defend": 2.938,
+          "Shield Bash": 2.55,
+          "Counter": 2.515,
+          "Command (advantage)": 2.2,
+          "Heavy Blow": 2.198,
+          "Burst": 2.166,
+          "Basic Attack": 1.435,
+          "Attune": 0.852,
+          "Rend": 0.733,
+          "Command (move)": 0.604,
+          "Cover": 0.471,
+          "Distract": 0.451,
+          "Hit and Run": 0.427,
+          "Pack Howl": 0.418,
+          "Taunt": 0.133,
+          "Pin": 0.126,
+          "(Counter triggered)": 0.111
+        },
+        "se": {
+          "winA": 0.014751271131668619,
+          "limit": 0.011961229033840962,
+          "tamerFirstDown": 0.0128349522788361,
+          "turnsA": 0.08425852775535256,
+          "turnsB": 0.08777571176342351
+        }
+      }
+    },
+    {
+      "label": "S1 shallows sim:greedy",
+      "metrics": {
+        "games": 1000,
+        "winA": 0.715,
+        "winB": 0.285,
+        "draw": 0,
+        "winFirst": 0.535,
+        "firstA": 0.52,
+        "turnsA": 6.014,
+        "turnsB": 5.839,
+        "roundsMean": 6.156,
+        "roundsMedian": 6,
+        "limit": 0.14,
+        "byTamer": 0.418,
+        "byMonsters": 0.442,
+        "tamerFirstDown": 0.27,
+        "firstDown": {
+          "Quillfox": 0.4160000000000003,
+          "Fangrel": 0.20800000000000016,
+          "Tamer": 0.2700000000000002,
+          "Tidewall": 0.06600000000000004,
+          "Wispling": 0.04000000000000003
+        },
+        "decidedBySide": {
+          "A-tamerDown": 0.276,
+          "A-monstersDown": 0.314,
+          "A-turnLimit": 0.125,
+          "B-tamerDown": 0.142,
+          "B-monstersDown": 0.128,
+          "B-turnLimit": 0.015
+        },
+        "tamerADown": 0.142,
+        "tamerBDown": 0.276,
+        "damageByPerGame": {
+          "Wispling": 32.88,
+          "Fangrel": 23.953,
+          "Quillfox": 19.494,
+          "Tidewall": 13.875,
+          "Tamer": 1.303
+        },
+        "attacksPerGame": 18.221,
+        "hitRateByAttacker": {
+          "Fangrel": 0.7057428872497366,
+          "Wispling": 0.7007289768289507,
+          "Tidewall": 0.7092198581560284,
+          "Quillfox": 0.8140360458765702,
+          "Tamer": 0.5906432748538012
+        },
+        "hitsTakenPerGame": {
+          "Tamer": 4.405,
+          "Tidewall": 4.035,
+          "Quillfox": 2.109,
+          "Fangrel": 1.546,
+          "Wispling": 1.052
+        },
+        "tamerHitsPerGame": 4.405,
+        "pushesPerGame": 0.83,
+        "skillsPerGame": {
+          "First Aid": 4.856,
+          "Element Bolt": 3.583,
+          "Long Shot": 3.425,
+          "Defend": 2.789,
+          "Counter": 2.649,
+          "Command (advantage)": 2.415,
+          "Shield Bash": 2.301,
+          "Heavy Blow": 2.298,
+          "Burst": 2.069,
+          "Basic Attack": 0.976,
+          "Attune": 0.945,
+          "Rend": 0.888,
+          "Command (move)": 0.551,
+          "Distract": 0.521,
+          "Hit and Run": 0.457,
+          "Pack Howl": 0.429,
+          "Cover": 0.409,
+          "Taunt": 0.123,
+          "Pin": 0.102,
+          "(Counter triggered)": 0.094,
+          "Mark": 0.001
+        },
+        "se": {
+          "winA": 0.014274978108564651,
+          "limit": 0.010972693379476163,
+          "tamerFirstDown": 0.014039230748157109,
+          "turnsA": 0.08314274903271318,
+          "turnsB": 0.08795917130018804
+        }
+      }
+    },
+    {
+      "label": "S2 crossroads game:greedy",
+      "metrics": {
+        "games": 1000,
+        "winA": 0.788,
+        "winB": 0.211,
+        "draw": 0.001,
+        "winFirst": 0.566,
+        "firstA": 0.52,
+        "turnsA": 6.029,
+        "turnsB": 5.793,
+        "roundsMean": 6.165,
+        "roundsMedian": 6,
+        "limit": 0.085,
+        "byTamer": 0.621,
+        "byMonsters": 0.294,
+        "tamerFirstDown": 0.332,
+        "firstDown": {
+          "Tamer": 0.33200000000000024,
+          "Quillfox": 0.4090000000000003,
+          "Fangrel": 0.12700000000000009,
+          "Tidewall": 0.1300000000000001,
+          "Wispling": 0.002
+        },
+        "decidedBySide": {
+          "A-tamerDown": 0.418,
+          "A-monstersDown": 0.289,
+          "A-turnLimit": 0.081,
+          "B-tamerDown": 0.203,
+          "B-monstersDown": 0.005,
+          "B-turnLimit": 0.003
+        },
+        "tamerADown": 0.203,
+        "tamerBDown": 0.418,
+        "damageByPerGame": {
+          "Wispling": 56.099,
+          "Fangrel": 40.381,
+          "Quillfox": 39.581,
+          "Tidewall": 19.537,
+          "Tamer": 0.516
+        },
+        "attacksPerGame": 19.935,
+        "hitRateByAttacker": {
+          "Wispling": 0.6860548271752086,
+          "Fangrel": 0.6797358646306232,
+          "Quillfox": 0.895621301775148,
+          "Tidewall": 0.7460901563937442,
+          "Tamer": 0.6033333333333334
+        },
+        "hitsTakenPerGame": {
+          "Tamer": 7.417,
+          "Tidewall": 3.731,
+          "Quillfox": 1.796,
+          "Fangrel": 1.512,
+          "Wispling": 0.181
+        },
+        "tamerHitsPerGame": 7.417,
+        "pushesPerGame": 1.006,
+        "skillsPerGame": {
+          "First Aid": 4.959,
+          "Long Shot": 3.993,
+          "Element Bolt": 3.031,
+          "Burst": 2.716,
+          "Heavy Blow": 2.572,
+          "Defend": 2.559,
+          "Shield Bash": 2.115,
+          "Counter": 2.105,
+          "Command (advantage)": 1.551,
+          "Rend": 1.441,
+          "Attune": 1.036,
+          "Taunt": 0.753,
+          "Basic Attack": 0.661,
+          "Distract": 0.633,
+          "Hit and Run": 0.626,
+          "Command (move)": 0.602,
+          "Cover": 0.19,
+          "Pin": 0.129,
+          "(Counter triggered)": 0.045,
+          "Pack Howl": 0.039,
+          "Camouflage": 0.001
+        },
+        "se": {
+          "winA": 0.012925014506761683,
+          "limit": 0.008819013550278738,
+          "tamerFirstDown": 0.014892145580808697,
+          "turnsA": 0.07084615852802614,
+          "turnsB": 0.07576206762550051
+        }
+      }
+    },
+    {
+      "label": "S2 crossroads sim:greedy",
+      "metrics": {
+        "games": 1000,
+        "winA": 0.875,
+        "winB": 0.125,
+        "draw": 0,
+        "winFirst": 0.487,
+        "firstA": 0.52,
+        "turnsA": 6.659,
+        "turnsB": 6.347,
+        "roundsMean": 6.716,
+        "roundsMedian": 7,
+        "limit": 0.129,
+        "byTamer": 0.611,
+        "byMonsters": 0.26,
+        "tamerFirstDown": 0.289,
+        "firstDown": {
+          "Quillfox": 0.6000000000000004,
+          "Tidewall": 0.03000000000000002,
+          "Tamer": 0.2890000000000002,
+          "Fangrel": 0.07700000000000005,
+          "Wispling": 0.003,
+          "none": 0.001
+        },
+        "decidedBySide": {
+          "A-tamerDown": 0.494,
+          "A-monstersDown": 0.253,
+          "A-turnLimit": 0.128,
+          "B-tamerDown": 0.117,
+          "B-monstersDown": 0.007,
+          "B-turnLimit": 0.001
+        },
+        "tamerADown": 0.117,
+        "tamerBDown": 0.494,
+        "damageByPerGame": {
+          "Wispling": 59.891,
+          "Fangrel": 44.945,
+          "Quillfox": 36.466,
+          "Tidewall": 20.204,
+          "Tamer": 0.355
+        },
+        "attacksPerGame": 21.249,
+        "hitRateByAttacker": {
+          "Wispling": 0.6570146383160594,
+          "Fangrel": 0.6747923438064283,
+          "Quillfox": 0.8994832041343669,
+          "Tidewall": 0.7617997353330392,
+          "Tamer": 0.627906976744186
+        },
+        "hitsTakenPerGame": {
+          "Tamer": 7.873,
+          "Tidewall": 3.453,
+          "Quillfox": 2.121,
+          "Fangrel": 1.595,
+          "Wispling": 0.187
+        },
+        "tamerHitsPerGame": 7.873,
+        "pushesPerGame": 0.799,
+        "skillsPerGame": {
+          "First Aid": 5.525,
+          "Long Shot": 3.731,
+          "Element Bolt": 3.301,
+          "Burst": 3.08,
+          "Counter": 2.91,
+          "Heavy Blow": 2.89,
+          "Defend": 2.723,
+          "Shield Bash": 2.202,
+          "Command (advantage)": 1.795,
+          "Rend": 1.589,
+          "Attune": 1.32,
+          "Hit and Run": 0.897,
+          "Command (move)": 0.754,
+          "Taunt": 0.682,
+          "Distract": 0.555,
+          "Basic Attack": 0.491,
+          "Cover": 0.152,
+          "Pin": 0.079,
+          "Pack Howl": 0.068,
+          "(Counter triggered)": 0.042,
+          "Camouflage": 0.002
+        },
+        "se": {
+          "winA": 0.010458250331675944,
+          "limit": 0.010599952830083727,
+          "tamerFirstDown": 0.0143345387090063,
+          "turnsA": 0.0706378702163979,
+          "turnsB": 0.0769708744624583
+        }
+      }
+    },
+    {
+      "label": "S2 shallows game:greedy",
+      "metrics": {
+        "games": 1000,
+        "winA": 0.634,
+        "winB": 0.366,
+        "draw": 0,
+        "winFirst": 0.512,
+        "firstA": 0.52,
+        "turnsA": 5.641,
+        "turnsB": 5.531,
+        "roundsMean": 5.827,
+        "roundsMedian": 5,
+        "limit": 0.079,
+        "byTamer": 0.711,
+        "byMonsters": 0.21,
+        "tamerFirstDown": 0.384,
+        "firstDown": {
+          "Fangrel": 0.2410000000000002,
+          "Tamer": 0.3840000000000003,
+          "Quillfox": 0.2810000000000002,
+          "Wispling": 0.025000000000000015,
+          "Tidewall": 0.06900000000000005
+        },
+        "decidedBySide": {
+          "A-tamerDown": 0.381,
+          "A-monstersDown": 0.182,
+          "A-turnLimit": 0.071,
+          "B-tamerDown": 0.33,
+          "B-monstersDown": 0.028,
+          "B-turnLimit": 0.008
+        },
+        "tamerADown": 0.33,
+        "tamerBDown": 0.381,
+        "damageByPerGame": {
+          "Wispling": 53.327,
+          "Quillfox": 41.15,
+          "Fangrel": 34.985,
+          "Tidewall": 24.55,
+          "Tamer": 0.62
+        },
+        "attacksPerGame": 19.59,
+        "hitRateByAttacker": {
+          "Fangrel": 0.6753215817055741,
+          "Wispling": 0.6929143874825086,
+          "Tidewall": 0.7486378496185979,
+          "Quillfox": 0.8962242821614289,
+          "Tamer": 0.6
+        },
+        "hitsTakenPerGame": {
+          "Tamer": 7.582,
+          "Tidewall": 3.379,
+          "Fangrel": 1.765,
+          "Quillfox": 1.433,
+          "Wispling": 0.361
+        },
+        "tamerHitsPerGame": 7.582,
+        "pushesPerGame": 1.156,
+        "skillsPerGame": {
+          "First Aid": 4.691,
+          "Long Shot": 3.956,
+          "Element Bolt": 2.82,
+          "Shield Bash": 2.683,
+          "Defend": 2.669,
+          "Burst": 2.554,
+          "Heavy Blow": 2.277,
+          "Counter": 1.858,
+          "Command (advantage)": 1.749,
+          "Rend": 1.244,
+          "Attune": 0.724,
+          "Basic Attack": 0.702,
+          "Distract": 0.564,
+          "Hit and Run": 0.509,
+          "Command (move)": 0.408,
+          "Pin": 0.346,
+          "Taunt": 0.323,
+          "Cover": 0.178,
+          "Pack Howl": 0.055,
+          "(Counter triggered)": 0.035
+        },
+        "se": {
+          "winA": 0.01523299051401267,
+          "limit": 0.008529888627643388,
+          "tamerFirstDown": 0.015379986996093333,
+          "turnsA": 0.06813781447743784,
+          "turnsB": 0.07444851631551534
+        }
+      }
+    },
+    {
+      "label": "S2 shallows sim:greedy",
+      "metrics": {
+        "games": 1000,
+        "winA": 0.627,
+        "winB": 0.373,
+        "draw": 0,
+        "winFirst": 0.535,
+        "firstA": 0.52,
+        "turnsA": 5.645,
+        "turnsB": 5.536,
+        "roundsMean": 5.84,
+        "roundsMedian": 5,
+        "limit": 0.078,
+        "byTamer": 0.75,
+        "byMonsters": 0.172,
+        "tamerFirstDown": 0.403,
+        "firstDown": {
+          "Quillfox": 0.2870000000000002,
+          "Tamer": 0.4030000000000003,
+          "Fangrel": 0.2690000000000002,
+          "Tidewall": 0.03100000000000002,
+          "Wispling": 0.010000000000000002
+        },
+        "decidedBySide": {
+          "A-tamerDown": 0.406,
+          "A-monstersDown": 0.149,
+          "A-turnLimit": 0.072,
+          "B-tamerDown": 0.344,
+          "B-monstersDown": 0.023,
+          "B-turnLimit": 0.006
+        },
+        "tamerADown": 0.344,
+        "tamerBDown": 0.406,
+        "damageByPerGame": {
+          "Wispling": 54.217,
+          "Quillfox": 40.927,
+          "Fangrel": 35.332,
+          "Tidewall": 25.187,
+          "Tamer": 0.352
+        },
+        "attacksPerGame": 19.471,
+        "hitRateByAttacker": {
+          "Fangrel": 0.6905916585838991,
+          "Wispling": 0.6907319510367225,
+          "Tidewall": 0.7626102292768959,
+          "Quillfox": 0.9133766836971667,
+          "Tamer": 0.59
+        },
+        "hitsTakenPerGame": {
+          "Tamer": 8.036,
+          "Tidewall": 3.125,
+          "Fangrel": 1.673,
+          "Quillfox": 1.468,
+          "Wispling": 0.289
+        },
+        "tamerHitsPerGame": 8.036,
+        "pushesPerGame": 1.005,
+        "skillsPerGame": {
+          "First Aid": 4.883,
+          "Long Shot": 4.036,
+          "Defend": 2.808,
+          "Element Bolt": 2.802,
+          "Shield Bash": 2.789,
+          "Burst": 2.624,
+          "Heavy Blow": 2.236,
+          "Command (advantage)": 2.018,
+          "Counter": 1.978,
+          "Rend": 1.372,
+          "Distract": 0.538,
+          "Attune": 0.493,
+          "Hit and Run": 0.417,
+          "Basic Attack": 0.406,
+          "Command (move)": 0.402,
+          "Taunt": 0.27,
+          "Pin": 0.212,
+          "Cover": 0.152,
+          "Pack Howl": 0.041,
+          "(Counter triggered)": 0.024
+        },
+        "se": {
+          "winA": 0.015292841462592882,
+          "limit": 0.008480330182251162,
+          "tamerFirstDown": 0.01551099609954177,
+          "turnsA": 0.0684665075979684,
+          "turnsB": 0.07421733094238996
+        }
+      }
+    }
+  ]
+}
