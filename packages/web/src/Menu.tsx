@@ -4,6 +4,8 @@ import { ENGINE_VERSION } from '@mt/engine'
 import { dataHash, SIDES, type Board, type GameData } from '@mt/shared'
 import { canStart, isModeAvailable, menuBoards, menuScenarios, MODES, type BattleChoice } from './battleChoice.ts'
 import type { OpenedReplay } from './replay.ts'
+import type { PlayStats } from './playStats.ts'
+import { PlaytestPanel } from './Playtest.tsx'
 import { ReplayDetails } from './ReplayScreen.tsx'
 import { th } from './strings.ts'
 
@@ -19,13 +21,33 @@ interface MenuProps {
   /** A Replay file was picked. */
   onOpenReplay: (file: File) => void
   onDismissNotice: () => void
+  /** The playtester's local stats (src/playStats.ts) and whether they are saved on this device. */
+  stats: PlayStats
+  statsPersistent: boolean
+  /** The feedback form, or null to hide the link. */
+  feedbackUrl: string | null
+  onOpenGuide: () => void
+  onExportStats: () => void
 }
 
 /**
  * The menu before a Battle. Every option is a native radio button inside a
  * large label, so a tap or a click anywhere on the card picks it.
  */
-export function Menu({ data, choice, notice, onChange, onStart, onOpenReplay, onDismissNotice }: MenuProps) {
+export function Menu({
+  data,
+  choice,
+  notice,
+  onChange,
+  onStart,
+  onOpenReplay,
+  onDismissNotice,
+  stats,
+  statsPersistent,
+  feedbackUrl,
+  onOpenGuide,
+  onExportStats,
+}: MenuProps) {
   const set = (change: Partial<BattleChoice>) => onChange({ ...choice, ...change })
   const board = data.boards[choice.boardId]
 
@@ -124,6 +146,14 @@ export function Menu({ data, choice, notice, onChange, onStart, onOpenReplay, on
       <button type="button" className="primary start" disabled={!canStart(data, choice)} onClick={onStart}>
         {th.menu.start}
       </button>
+
+      <PlaytestPanel
+        stats={stats}
+        persistent={statsPersistent}
+        feedbackUrl={feedbackUrl}
+        onOpenGuide={onOpenGuide}
+        onExportStats={onExportStats}
+      />
 
       <ReplayOpener data={data} notice={notice} onOpenReplay={onOpenReplay} onDismissNotice={onDismissNotice} />
     </main>

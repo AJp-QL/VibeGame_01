@@ -63,10 +63,15 @@ export function replayFileName(replay: Replay): string {
 
 /** Save the Replay as a JSON file through the browser's download. */
 export function downloadReplay(replay: Replay): void {
-  const url = URL.createObjectURL(new Blob([serializeReplay(replay)], { type: 'application/json' }))
+  downloadJson(replayFileName(replay), serializeReplay(replay))
+}
+
+/** Save `text` as a JSON file through the browser's download (nothing is uploaded). */
+export function downloadJson(fileName: string, text: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
   const link = document.createElement('a')
   link.href = url
-  link.download = replayFileName(replay)
+  link.download = fileName
   document.body.append(link)
   link.click()
   link.remove()

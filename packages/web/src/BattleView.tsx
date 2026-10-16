@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react'
-import { createBattleGame, fitBattleGame, type BattleSessionPort, type BoardLabels } from '@mt/battle'
+import { mountBattleGame, type BattleSessionPort, type BoardLabels } from '@mt/battle'
 import { th } from './strings.ts'
 
 const LABELS: BoardLabels = {
@@ -16,17 +16,8 @@ export function BattleView({ session }: { session: BattleSessionPort }) {
   useLayoutEffect(() => {
     const parent = parentRef.current
     if (parent === null) return
-    const game = createBattleGame(parent, session, LABELS)
-    const observer = new ResizeObserver(() => {
-      if (game.isBooted) fitBattleGame(game)
-    })
-    observer.observe(parent)
-    // StrictMode mounts twice in development: destroy(true) removes the
-    // canvas; never pass noReturn, or a new Game could not be created.
-    return () => {
-      observer.disconnect()
-      game.destroy(true)
-    }
+    // StrictMode mounts twice in development: the teardown removes the first canvas at once.
+    return mountBattleGame(parent, session, LABELS)
   }, [session])
 
   return <div ref={parentRef} className="board" />
