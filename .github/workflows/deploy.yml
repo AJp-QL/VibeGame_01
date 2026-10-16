@@ -1,0 +1,72 @@
+# Deploy the web build to Cloudflare Workers static assets when a v* tag is
+# pushed (ticket 21, decision log 2026-10-16). Setup for the human (API token,
+# account id, repository secrets): docs/deploy/cloudflare.md "Deploy อัตโนมัติเมื่อ push tag".
+#
+# Secrets (set by the human, never in the repo):
+#   CLOUDFLARE_API_TOKEN  - token from the "Edit Cloudflare Workers" template
+#   CLOUDFLARE_ACCOUNT_ID - account the Worker "monster-tactics" lives in
+#
+# Pinned versions (each at least two weeks old on 2026-10-16; SHAs read with
+# `git ls-remote --tags` from the official repos, wrangler from the npm registry):
+#   actions/checkout v7.0.1 (2026-07-20)  https://github.com/actions/checkout/releases/tag/v7.0.1
+#   pnpm/setup       v3.0.0 (2026-09-20)  https://github.com/pnpm/setup/releases/tag/v3.0.0
+#   wrangler         4.146.0 (2026-10-01) https://www.npmjs.com/package/wrangler
+#
+# Wrangler runs through `npx` instead of cloudflare/wrangler-action: that action
+# installs wrangler with the detected package manager inside packages/web, which
+# here would add it to the pnpm workspace (lockfile change, minimumReleaseAge on
+# its dependencies). Cloudflare's CI/CD guide only needs `wrangler deploy` with
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the environment:
+# https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/
+name: Deploy
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy to Cloudflare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout the tagged commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm and Node 24
+        uses: pnpm/setup@fbda4c85fc2e1e08721cd8763afea8f48d60f024 # v3.0.0
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck and test
+        run: |
+          pnpm typecheck
+          pnpm test
+
+      # vite.config.ts uses APP_VERSION for __APP_VERSION__, so the version shown
+      # in the game is exactly the tag (github.ref_name = tag name on a tag push).
+      - name: Build
+        env:
+          APP_VERSION: ${{ github.ref_name }}
+        run: pnpm build
+
+      - name: Deploy packages/web with wrangler
+        working-directory: packages/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.146.0 deploy

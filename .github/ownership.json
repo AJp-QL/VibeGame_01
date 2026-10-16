@@ -1,0 +1,54 @@
+{
+  "$comment": [
+    "Single source of path ownership (ADR 0004, decision log 2026-10-16). CI's path check (tools/path-check) and AGENTS.md both use this file.",
+    "Globs: '**' = any depth, '*' = within one path segment, otherwise an exact repo-relative path.",
+    "Branch rules: claude/* may change claude + claudeOnly + shared; codex/* may change codex + shared; main and tags are not checked; any other branch fails.",
+    "Every tracked file must match exactly one list. A new top-level path fails CI until it is classified here (a Claude-only change).",
+    "A package's own package.json is covered by its owner's 'packages/<name>/**' glob."
+  ],
+  "shared": [
+    ".scratch/**",
+    "pnpm-lock.yaml"
+  ],
+  "claudeOnly": [
+    ".github/**",
+    ".gitattributes",
+    ".gitignore",
+    "package.json",
+    "pnpm-workspace.yaml",
+    "tsconfig.base.json",
+    "tsconfig.json",
+    "vitest.config.ts",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "CONTEXT.md",
+    "README.md",
+    "docs/README.md",
+    "docs/adr/**",
+    "docs/agents/**",
+    "docs/decisions/**",
+    "docs/deploy/**",
+    "docs/design/**",
+    "docs/playtest/**",
+    "docs/prd/**",
+    "docs/research/**",
+    "packages/README.md",
+    "prototype/**"
+  ],
+  "claude": [
+    "packages/ai/**",
+    "packages/engine/**",
+    "packages/server/**",
+    "packages/session/**",
+    "packages/shared/**",
+    "tools/**",
+    "data/**",
+    "docs/rules/**",
+    "docs/balance/**"
+  ],
+  "codex": [
+    "packages/battle/**",
+    "packages/web/**",
+    "art/**"
+  ]
+}
