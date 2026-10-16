@@ -4,10 +4,10 @@
 
 **Blocked by:** 13 — Scenario 2, Board ที่ 2 และเมนู, 14 — Replay, 15 — AI
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] smoke test: เปิดเกมได้และเล่นกับ AI จนจบ 1 Battle ทั้งขนาดจอ desktop และ 360 px
+- [x] smoke test: เปิดเกมได้และเล่นกับ AI จนจบ 1 Battle ทั้งขนาดจอ desktop และ 360 px
 - [x] สถิติเก็บใน browser storage เท่านั้น ไม่ส่งออกไปที่ไหน และเกมยังทำงานได้ถ้า storage ใช้ไม่ได้
 - [x] ข้อความ UI ทั้งหมดมาจาก string table ไม่มีข้อความฝังในโค้ด
-- [ ] build ที่ deploy แสดงเวอร์ชันและตรงกับ git tag
+- [x] build ที่ deploy แสดงเวอร์ชันและตรงกับ git tag
 - [x] มีคำอธิบายสั้นสำหรับ playtester: วิธีเล่น, วิธี export Replay และลิงก์แบบฟอร์ม

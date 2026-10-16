@@ -4,9 +4,9 @@ Working state for the lead session. Survives compaction; read this first when re
 
 ## Status (2026-10-15)
 
-- Done on main: tickets 01-16. Tests: 680 passing. ENGINE_VERSION 0.7.0.
+- Done on main: tickets 01-17 (phase 1 slice complete). Tests: 714 passing. ENGINE_VERSION 0.7.0.
 - Done: 16 simulator (parity passed; baseline in docs/balance/phase-1-baseline.md).
-- In progress: 17 playtest build (do NOT distribute until tuning brings team A near 50%; decision log 2026-10-16). Next: tuning tickets 18+.
+- Deployed v0.1.1 (tickets 01-17). Verified live 2026-10-16: full Battle vs AI to result screen (desktop), menu stats, back-to-menu, 375px mobile board 336px single canvas no h-scroll, no console errors. NOT distributed -- next: tuning tickets 18+ (team A near 50%).
 
 ## Process rules
 
@@ -35,3 +35,7 @@ Working state for the lead session. Survives compaction; read this first when re
 - Known balance issues from sim v4: S1 stalls to turn limit 16%, S2 team A ~68-80%, unused skills (Hex, Blink, Mark, Camouflage, Pin), Tidewall/Tamer too tanky.
 - Node 26 LTS from 2026-10-28: upgrade ticket.
 - Deployed v0.1.0 (pre-ticket-17, pre-tuning) 2026-10-16: https://monster-tactics.claudejpql01.workers.dev -- public URL, do not share until tuning. Redeploy: tag, `corepack pnpm build`, `npx wrangler@4 deploy` in packages/web.
+
+## Still unverified by eye
+
+- Individual skill visuals (Burst area/order numbers, Blink fade, push slide, counterattack label, Bleed float, Attune frames, Command/Cover/status icons) -- check during tuning playthroughs.
