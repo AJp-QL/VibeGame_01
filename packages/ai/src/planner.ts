@@ -51,6 +51,11 @@ export interface Plan {
   /** Hit and Run's step chosen with the plan (`null`: stay). */
   readonly retreat: Tile | null
   readonly command: PlannedCommand | null
+  /**
+   * A free skill (Camouflage, D-28) used last in the activation, after the
+   * Move and the Action ("act, then hide"). Absent when none.
+   */
+  readonly free?: Action
   /** sim.py `gain`: plan value over standing still. */
   readonly gain: number
 }
@@ -304,6 +309,41 @@ function pinnedMove(ctx: Ctx, enemy: UnitState): number {
   return move
 }
 
+// ------------------------------------------------------------ free skill
+
+interface FreeUse {
+  readonly value: number
+  readonly action: Action | null
+}
+
+const NO_FREE_USE: FreeUse = { value: 0, action: null }
+
+/**
+ * A free hiding skill (Camouflage, D-28) used last in the activation by
+ * `unit` standing as in `st` (where its Move ends): "act, then hide". Worth
+ * the threat it takes away until our next Turn, as the Action version of
+ * Camouflage below; nothing when the Unit is already Hidden there, cannot use
+ * it there (off forest) or has no such skill. Data with no free skill (the
+ * sim-equivalent conditions) never gets here, so sim parity is unchanged.
+ */
+function freeHide(ctx: Ctx, st: BattleState, unit: UnitState): FreeUse {
+  for (const skillId of unit.skills) {
+    const skill = ctx.base.skills[skillId]
+    if (skill?.effects?.free !== true || skill.target !== 'self') continue
+    const status = statusApplied(skill)
+    if (status === undefined || !statusHas(ctx, status, 'untargetableFrom')) continue
+    if (hiddenOn(ctx, st, unit, unit.tile)) return NO_FREE_USE
+    const action: Action = { type: 'useSkill', unit: unit.id, skill: skillId }
+    if (!previewAction(st, action).ok) return NO_FREE_USE
+    let value = ctx.pen(st, unit, ctx.threat(st, unit)) - ctx.pen(st, unit, ctx.threat(st, unit, 0, true))
+    // As for the Action version: the forest's penalty in the position value is for attacks
+    // made from the tile, and the Unit moves before its Action next Turn.
+    if (ctx.profile.heuristics.lookahead > 0) value += 0.8 * Math.max(0, -ctx.terrainMod(st, unit, unit.tile))
+    return value > 0 ? { value, action } : NO_FREE_USE
+  }
+  return NO_FREE_USE
+}
+
 // --------------------------------------------------------------- actions
 
 /** sim.py `actions`: every Action of `unit` from where it stands in `st` (a legal state), with its value. */
@@ -315,7 +355,8 @@ function actionsOf(ctx: Ctx, st: BattleState, unit: UnitState, moveFirst: boolea
   const here = unit.tile
   for (const skillId of [BASIC_ATTACK, DEFEND, ...unit.skills]) {
     const skill = ctx.base.skills[skillId]
-    if (skill === undefined || skill.tier === 'passive' || skill.effects?.replacesMove === true) continue
+    // A free skill (Camouflage, D-28) is not an Action: see freeHide.
+    if (skill === undefined || skill.tier === 'passive' || skill.effects?.replacesMove === true || skill.effects?.free === true) continue
     if (ctx.cooldown(unit, skillId) > 0) continue
     const base = { type: 'useSkill', unit: unit.id, skill: skillId } as const
 
@@ -668,6 +709,7 @@ export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[], de
   const c0 = unit.kind === 'tamer' ? commandValue(ctx, st, unit) : NO_COMMAND
   const scored: Scored[] = []
   const validDests: Dest[] = []
+  const hideAt = new Map<string, FreeUse>()
 
   for (const dest of dests) {
     let moved = st
@@ -687,9 +729,13 @@ export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[], de
       value += Math.max(c0.value, cd.value)
     }
     pv.set(key(dest.tile), value)
-    scored.push({ score: value, order: 'mf', dest, candidate: null })
-    for (const c of actionsOf(ctx, moved, self, true, () => value)) scored.push({ score: c.value + value, order: 'mf', dest, candidate: c })
+    // Free hiding (D-28) after the Move and the Action, whatever they are: 0 without such a skill.
+    const hide = freeHide(ctx, moved, self)
+    hideAt.set(key(dest.tile), hide)
+    scored.push({ score: value + hide.value, order: 'mf', dest, candidate: null })
+    for (const c of actionsOf(ctx, moved, self, true, () => value)) scored.push({ score: c.value + value + hide.value, order: 'mf', dest, candidate: c })
   }
+  const hideValue = (d: Dest) => hideAt.get(key(d.tile))?.value ?? 0
 
   const taunter = taunterOf(ctx, st, unit)
   const closest = (list: readonly Dest[]) => {
@@ -699,9 +745,10 @@ export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[], de
   }
   const afDests = closest(validDests)
   let bestDest: Dest | undefined
-  for (const d of afDests) if (bestDest === undefined || (pv.get(key(d.tile)) ?? -Infinity) > (pv.get(key(bestDest.tile)) ?? -Infinity)) bestDest = d
+  const destValue = (d: Dest) => (pv.get(key(d.tile)) ?? -Infinity) + hideValue(d)
+  for (const d of afDests) if (bestDest === undefined || destValue(d) > destValue(bestDest)) bestDest = d
   if (bestDest !== undefined) {
-    const pvBest = pv.get(key(bestDest.tile)) ?? 0
+    const pvBest = (pv.get(key(bestDest.tile)) ?? 0) + hideValue(bestDest)
     const pvOrigin = pv.get(key(origin)) ?? 0
     for (const c of actionsOf(ctx, st, unit, false, () => pvOrigin)) {
       scored.push({ score: c.value + pvBest, order: 'af', dest: bestDest, candidate: c })
@@ -733,6 +780,7 @@ export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[], de
     return { unit: unit.id, order: 'mf', dest: origin, move: null, action: null, retreat: null, command: null, gain: 0 }
   }
   const dest = best.dest
+  const free = hideAt.get(key(dest.tile))?.action ?? null
   return {
     unit: unit.id,
     order: best.order,
@@ -741,6 +789,7 @@ export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[], de
     action: best.candidate?.action ?? null,
     retreat: best.candidate?.retreat ?? null,
     command: unit.kind === 'tamer' ? (cmdAt.get(key(dest.tile)) ?? null) : null,
+    ...(free !== null ? { free } : {}),
     gain: best.score - pvOrigin,
   }
 }

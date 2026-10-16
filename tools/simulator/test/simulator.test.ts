@@ -181,7 +181,10 @@ describe('sim-equivalent conditions (test/tool only)', () => {
     expect(overrides.map((o) => o.what)).toEqual([
       ...['scenario_1', 'scenario_2'].flatMap((s) => [`${s} A Tamer`, `${s} B Tamer`, `${s} B tidewall`, `${s} B quillfox`]),
       'tidewall moveBonus (base move 2 → 3)',
+      'camouflage free (uses no Action, D-28)',
     ])
+    // sim.py uses Camouflage as the Action (ticket 27): not free under sim-equivalent conditions.
+    expect(sim.skills.camouflage?.effects).toEqual({ requiresTerrain: 'forest' })
     const b = sim.scenarios.scenario_2?.teams.B.monsters
     expect(b?.[0]?.stats.pow).toBe(16)
     expect(b?.[1]?.stats.spi).toBe(12)

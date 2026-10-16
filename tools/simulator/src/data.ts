@@ -56,7 +56,8 @@ const statText = (s: Stats) => `POW ${s.pow} AGI ${s.agi} VIT ${s.vit} INT ${s.i
  * Sim-equivalent conditions (test/tool only, decision log 2026-10-16, D-25):
  * every Unit of every Scenario gets sim.py v4's stats for its species and
  * Star (Tamer: Level), and Tidewall moves 3 like sim.py's kit exception
- * (species `moveBonus` 1; the rules move it 2, §3.2). Returns a patched copy
+ * (species `moveBonus` 1; the rules move it 2, §3.2), and free skills
+ * (Camouflage, D-28) are used as the Action again, as in sim.py. Returns a patched copy
  * and the list of values that actually changed; `data` is not touched.
  */
 export function simEquivalentData(data: GameData): { data: GameData; overrides: DataOverride[] } {
@@ -88,8 +89,17 @@ export function simEquivalentData(data: GameData): { data: GameData; overrides: 
   const tidewall = data.species.tidewall
   if (tidewall === undefined) throw new Error('no tidewall species')
   overrides.push({ what: 'tidewall moveBonus (base move 2 → 3)', from: String(tidewall.moveBonus ?? 0), to: '1' })
+  // sim.py uses Camouflage as the Action; the game made it free (ticket 27, D-28).
+  const skills = Object.fromEntries(
+    Object.entries(data.skills).map(([id, skill]) => {
+      if (skill.effects?.free !== true) return [id, skill]
+      overrides.push({ what: `${id} free (uses no Action, D-28)`, from: 'true', to: 'false (used as the Action, as sim.py)' })
+      const { free: _free, ...effects } = skill.effects
+      return [id, { ...skill, effects }]
+    }),
+  )
   return {
-    data: { ...data, scenarios, species: { ...data.species, tidewall: { ...tidewall, moveBonus: 1 } } },
+    data: { ...data, scenarios, skills, species: { ...data.species, tidewall: { ...tidewall, moveBonus: 1 } } },
     overrides,
   }
 }

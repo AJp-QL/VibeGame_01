@@ -411,7 +411,7 @@ Tamer ที่ได้รับการป้องกันยังถู�
 ใน activation ของ Unit ที่ติด Taunted (ผู้ taunt = Unit ที่ใช้ Taunt ครั้งล่าสุด):
 1. ถ้ามีทางโจมตีผู้ taunt ได้ใน activation นี้ (โจมตีจากช่องเดิม หรือ Move/Blink แล้วโจมตี ด้วย skill โจมตีใดก็ได้ที่พร้อมใช้ โดยผ่านเงื่อนไข §8.1) Action ของ Unit นี้ต้องเป็นการโจมตีผู้ taunt (Burst นับเมื่อผู้ taunt อยู่ในเป้าที่เลือก)
 2. ถ้าไม่มีทาง Unit นี้ต้อง Move ไปยังช่องที่ระยะถึงผู้ taunt น้อยที่สุดในบรรดาช่องที่ไปได้ (รวมการอยู่กับที่ถ้าเป็นระยะที่น้อยที่สุด) และใช้ได้เฉพาะ Action ที่ไม่ใช่การโจมตี
-3. ถ้าผู้ taunt ล้มแล้ว Taunted ไม่มีผล
+3. ถ้าผู้ taunt ล้มแล้ว Taunted ไม่มีผล (ข้อบังคับมีผลกับ Move และ Action เท่านั้น Camouflage ซึ่งไม่ใช้ทั้งสองอย่างจึงใช้ได้ตามปกติ ดู D-28)
 4. ข้อบังคับมีผลกับ Unit ที่ติด Taunted ตัวนั้นเท่านั้น: ถ้า Unit นั้นใช้ Action Action ต้องเป็นไปตามข้อ 1 หรือ 2 และข้ามการโจมตีผู้ taunt ไปทำ Action อื่นไม่ได้ ส่วนฝั่งนั้นยังจบ Turn ได้ตามปกติ และ Unit อื่นไม่ถูกบังคับ (D-05 ตัดสิน 2026-10-15)
 
 ---
@@ -440,7 +440,7 @@ Tamer ที่ได้รับการป้องกันยังถู�
 | Long Shot | Quillfox (Ranger) | Minor | 4 | กายภาพ | 1d8 |
 | Pin | Quillfox (Ranger) | Major | 4 | กายภาพ | 1d6 + Pin (save VIT) |
 | Mark | Quillfox (Ranger) | Minor | 5 | กายภาพ (ไม่มี damage) | Marked 1 เมื่อโดน |
-| Camouflage | Quillfox | Minor | ตัวเอง | ไม่ทอย | Hidden ขณะยืนในช่องป่า |
+| Camouflage | Quillfox | Minor | ตัวเอง | ไม่ทอย | Hidden ขณะยืนในช่องป่า ไม่ใช้ Action และ Move (1 ครั้งต่อ activation) |
 
 รายละเอียดและ ruling ราย skill:
 - **Basic Attack**: Monster 1d8, Tamer 1d6 [v2] damage mod ตาม §10.1
@@ -465,7 +465,7 @@ Tamer ที่ได้รับการป้องกันยังถู�
 - **Long Shot**: 1d8 + SEN mod ที่ระยะ 2 ขึ้นไป (POW mod ถ้าใช้ที่ระยะ 1) ระยะ 4 [v2, v4, DL]
 - **Pin**: 1d6 + damage mod ตามระยะ แล้ว Pin ตาม §10.5 ข้อ 4
 - **Mark** [v1, sim; ดู D-22]: เป็น attack roll กายภาพเทียบ Guard ไม่ทำ damage โดนแล้วเป้าติด Marked 1 เพราะเป็น attack roll จึงทำให้ Hidden ของผู้ใช้หลุด, ใช้ Off-balance และผล Command, ทำให้เป้าที่ Countering ในระยะ 1 counter ได้ และได้ disadvantage จากการป้องกัน Tamer
-- **Camouflage** [v1, PRD]: ใช้เป็น Action ได้เฉพาะเมื่อผู้ใช้ยืนบนช่องป่า ได้ Hidden (§8.2) ทำ Move ก่อนแล้ว Camouflage หรือ Camouflage ก่อนแล้ว Move ไปช่องป่าอื่นได้ (ดู D-18)
+- **Camouflage** [v1, PRD; เปลี่ยน 2026-10-16 ticket 27, ดู D-18 และ D-28]: skill ฟรี ไม่ใช้ Action และไม่ใช้ Move Unit ใช้ได้ไม่เกิน 1 ครั้งต่อ activation ณ จุดใดก็ได้ใน activation (ก่อนหรือหลัง Move, ก่อนหรือหลัง Action, หลังขั้นถอยของ Hit and Run) ขณะยืนบนช่องป่า ได้ Hidden (§8.2) กติกาอื่นของ Camouflage และ Hidden คงเดิม: ใช้ได้เฉพาะบนช่องป่า, Hidden หลุดเมื่อ Unit ทอย attack roll ใดๆ หรืออยู่บนช่องที่ไม่ใช่ป่า และตรวจตอนจบทุก Turn เพราะ attack roll ทำให้ Hidden หลุด ลำดับที่คุ้มคือทำ Action (Long Shot, Pin หรือ Mark) ก่อนแล้วจึง Camouflage
 
 ### 15.2 Basic skill ของ Tamer [v1, v2, PRD]
 | Skill | Tier | ระยะ | ทอย | ผล |
@@ -549,9 +549,9 @@ Tamer ที่ได้รับการป้องกันยังถู�
 **ระหว่าง Turn: activation**
 - ผู้เล่นเลือก Unit ที่ยังไม่ได้เล่นทีละตัว ตัวที่เลือกเล่นจนจบก่อนเริ่มตัวถัดไป และเล่นซ้ำใน Turn เดียวกันไม่ได้ [v1]
 - ใน activation Unit ทำ Move (หรือ Blink) ได้ไม่เกิน 1 ครั้ง และ Action ได้ไม่เกิน 1 ครั้ง ลำดับใดก็ได้ ข้ามอย่างใดอย่างหนึ่งหรือทั้งคู่ได้
-- Action = Basic Attack, Defend หรือ skill ที่ไม่ใช่ Passive และไม่ใช่ Blink
-- สิ่งที่ไม่ใช้ Move หรือ Action: Command (Tamer), ขั้นถอยของ Hit and Run, Passive, Inspiration, counterattack
-- activation เริ่มเมื่อ Unit ทำ Move, Blink, Action หรือ Command ครั้งแรก ข้อจำกัด 2 จาก 3 Unit นับ Unit ที่เริ่ม activation
+- Action = Basic Attack, Defend หรือ skill ที่ไม่ใช่ Passive, ไม่ใช่ Blink และไม่ใช่ Camouflage
+- สิ่งที่ไม่ใช้ Move หรือ Action: Command (Tamer), ขั้นถอยของ Hit and Run, Passive, Inspiration, counterattack, Camouflage (1 ครั้งต่อ activation, §15.1, D-28)
+- activation เริ่มเมื่อ Unit ทำ Move, Blink, Action, Camouflage หรือ Command ครั้งแรก ข้อจำกัด 2 จาก 3 Unit นับ Unit ที่เริ่ม activation
 - ผู้เล่นจบ Turn ได้ทุกเมื่อ แม้มี Unit ที่ยังไม่ได้เล่น (ยกเว้นข้อ 4 ของ §14.3)
 
 **จบ Turn ของฝั่ง S**
@@ -731,6 +731,7 @@ sim.py ใช้ `random.Random` ดึงลูกเต๋าให้ AI ต�
 - **D-05**: ไม่ใช้ค่าชั่วคราว บังคับเฉพาะ Unit ที่ติด Taunted ฝั่งนั้นจบ Turn ได้ตามปกติ (§14.3 ข้อ 4)
 - **D-06**: Guard bonus ของ species ต้องเป็นค่าที่เห็นได้ใน data ของ species ห้ามฝังในโค้ด
 - **D-25**: การเทียบผล ±5 pp กับ sim v4 ใช้ stat ที่ sim v4 ใช้จริง (Tidewall 4 Star POW 16, Quillfox 4 Star SPI 12) ส่วน Scenario ในเกมใช้ค่าตาม kit (§20)
+- **D-28**: ตัดสิน 2026-10-16 (ticket 27, ผู้ใช้เลือกทางเลือก A ของ ticket 19): Camouflage ไม่ใช้ Action และ Move (§15.1) ผลต่อ simulator: docs/balance/ticket-27-camouflage.md
 
 | รหัส | ประเด็น | แหล่งที่กำกวมหรือขัด | ที่ตัดสิน | ผลกระทบ |
 |---|---|---|---|---|
@@ -761,6 +762,7 @@ sim.py ใช้ `random.Random` ดึงลูกเต๋าให้ AI ต�
 | D-25 | การเทียบผลกับ sim v4 (U4) | sim v4 ใช้ Tidewall 4 Star POW 16 และ Quillfox 4 Star SPI 12 แต่ kit (และ data) ใช้ POW 20 และ SPI 16 (S2 ทีม A ชนะ ~68% แทน 80%); sim ดึงลูกเต๋าตอน AI deploy และเรียงเป้า Burst ต่างกัน | rules ไม่เปลี่ยน แต่ ticket simulator ต้องเลือกว่าจะเทียบ ±5 pp กับชุดตัวเลขไหน | gate "ผลต่างจาก sim v4 ไม่เกิน ±5 pp" |
 | D-26 | heal ขั้นต่ำ | ไม่มีแหล่งไหนระบุ | heal ขั้นต่ำ 0 [sim] | ไม่มีผลใน phase 1 (SPI mod ของ Tamer เป็นบวก) |
 | D-27 | ทอย 1 และ 20 ใน save | กฎ "20 = critical, 1 พลาดเสมอ" ใน v1 และ PRD เขียนไว้สำหรับ attack roll ไม่ได้พูดถึง save | save ใช้ผลรวมเทียบ DC อย่างเดียว [sim, docs/playtest/atk.py] | % ไม่ผ่าน save ที่ preview แสดง |
+| D-28 | Camouflage ใช้ Action ไหม | v1, PRD ให้ Camouflage เป็น skill Minor ที่ใช้เป็น Action (sim v4 ก็เช่นกัน); ticket 19 พบว่า Camouflage แทบไม่ถูกใช้ (≤ 0.015 ครั้งต่อ Battle) เพราะต้องเสีย Long Shot ของ Quillfox | skill ฟรี: ไม่ใช้ Action และ Move, ไม่เกิน 1 ครั้งต่อ activation ณ จุดใดก็ได้ใน activation, ยังเป็น Minor (ไม่มี cooldown จึงใช้ได้ทุก activation), ใช้แล้วนับเป็นการเริ่ม activation (นับในข้อจำกัด 2 จาก 3 Unit) และใช้ไม่ได้อีกเมื่อ activation จบ, Taunted (§14.3) บังคับแค่ Move และ Action จึงไม่ห้าม Camouflage [ใหม่ ticket 27; การเทียบผลกับ sim v4 (sim-equivalent) ยังใช้ Camouflage เป็น Action แบบ sim] | ความถี่ของ Camouflage, "ยิงแล้วซ่อน" ของ Quillfox |
 
 ---
 

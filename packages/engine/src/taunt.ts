@@ -106,6 +106,8 @@ export function tauntCheck(state: BattleState): (action: Action) => Rejection | 
   return (action) => {
     if (state.phase !== 'play') return null
     if (action.type !== 'move' && action.type !== 'basicAttack' && action.type !== 'useSkill' && action.type !== 'defend') return null
+    // Taunted binds the Move and the Action only; a free skill (Camouflage) is neither (D-28).
+    if (action.type === 'useSkill' && state.skills[action.skill]?.effects?.free === true) return null
     const entry = dutyOf(action.unit)
     if (entry === null) return null
     const { duty } = entry
