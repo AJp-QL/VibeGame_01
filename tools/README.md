@@ -14,4 +14,4 @@ script ช่วยงานพัฒนาที่ไม่ใช่ส่ว�
 - ทุกเครื่องมือต้องมี usage อยู่ต้นไฟล์
 
 ## สถานะ
-- ยังว่าง
+- simulator/ (ticket 16): Battle แบบไม่มี UI ด้วย engine + AI, รายงานอัตราชนะและ metric ชุดเดียวกับ sim v4, parity กับ sim v4 และ baseline บาลานซ์ (ดู simulator/README.md) เป็น workspace package `@mt/simulator` ใช้ engine + ai
