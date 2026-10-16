@@ -4,8 +4,8 @@ Working state for the lead session. Survives compaction; read this first when re
 
 ## Status (2026-10-15)
 
-- Done and on GitHub main (54d18ca): tickets 01-15. Tests: 671 passing. ENGINE_VERSION 0.7.0.
-- In progress: 16 simulator (parity under sim conditions + real-rules baseline, decision log 2026-10-16).
+- Done on main: tickets 01-16. Tests: 680 passing. ENGINE_VERSION 0.7.0.
+- Done: 16 simulator (parity passed; baseline in docs/balance/phase-1-baseline.md).
 - Next: 17 playtest build. Real-rules baseline from ticket 15: S1 team A ~79%, S2 ~90% (Tidewall move 2 likely cause).
 
 ## Process rules
