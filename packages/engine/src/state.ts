@@ -130,6 +130,8 @@ export interface MonsterUnit extends UnitBase {
   readonly build: Build
   readonly movement: Movement
   readonly guardBonus: number
+  /** Copied from the species only when it sets one (simulator data overrides, ticket 16). */
+  readonly moveBonus?: number
 }
 
 /** A Tamer or Monster on the Board. */

@@ -494,6 +494,7 @@ export function createBattle(setup: BattleSetup): BattleState {
         build: speciesData.build,
         movement: speciesData.movement,
         guardBonus: speciesData.guardBonus,
+        ...(speciesData.moveBonus !== undefined && speciesData.moveBonus !== 0 ? { moveBonus: speciesData.moveBonus } : {}),
         hp: 0,
         hasMoved: false,
         hasActed: false,

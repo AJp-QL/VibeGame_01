@@ -30,12 +30,14 @@ export type UnitData = UnitState extends infer U
 
 /**
  * Base movement range (rules §3.2): 3 + trunc(AGI mod / 4), light +1,
- * heavy −1, Tamer 0, then at least 2. Situational bonuses (Aquatic, Command)
+ * heavy −1, Tamer 0, plus a species `moveBonus` if the data sets one
+ * (only simulator overrides do, ticket 16), then at least 2. Situational bonuses (Aquatic, Command)
  * are added on top by the Move itself.
  */
 export function baseMoveRange(unit: UnitData): number {
   const buildAdjustment = unit.kind === 'tamer' ? 0 : unit.build === 'light' ? 1 : -1
-  return Math.max(MIN_BASE_MOVE, 3 + truncDiv(statMod(unit.stats.agi), 4) + buildAdjustment)
+  const bonus = unit.kind === 'monster' ? (unit.moveBonus ?? 0) : 0
+  return Math.max(MIN_BASE_MOVE, 3 + truncDiv(statMod(unit.stats.agi), 4) + buildAdjustment + bonus)
 }
 
 /**

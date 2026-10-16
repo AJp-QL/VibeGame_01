@@ -1,0 +1,21 @@
+{
+  "name": "@mt/simulator",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "sim": "node src/bin.ts"
+  },
+  "dependencies": {
+    "@mt/ai": "workspace:*",
+    "@mt/engine": "workspace:*",
+    "@mt/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -5,6 +5,6 @@ import { defineConfig } from 'vitest/config'
 // gets its first test.
 export default defineConfig({
   test: {
-    projects: ['packages/shared', 'packages/engine', 'packages/ai', 'packages/web'],
+    projects: ['packages/shared', 'packages/engine', 'packages/ai', 'packages/web', 'tools/simulator'],
   },
 })

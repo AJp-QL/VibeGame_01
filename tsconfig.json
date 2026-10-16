@@ -10,6 +10,8 @@
     { "path": "packages/battle" },
     { "path": "packages/web" },
     { "path": "packages/web/test" },
-    { "path": "packages/web/tsconfig.node.json" }
+    { "path": "packages/web/tsconfig.node.json" },
+    { "path": "tools/simulator" },
+    { "path": "tools/simulator/test" }
   ]
 }

@@ -111,6 +111,12 @@ export interface Species {
   readonly movement: Movement
   /** Species Guard bonus (rules §3.2, D-06): Tidewall +2, others 0. */
   readonly guardBonus: number
+  /**
+   * Added to the base movement range (rules §3.2). No file in data/ sets it:
+   * it exists for the simulator's sim-equivalent conditions (ticket 16,
+   * decision log 2026-10-16: sim.py moves Tidewall 3). Absent = 0.
+   */
+  readonly moveBonus?: number | undefined
 }
 
 export const SpeciesSchema: z.ZodType<Species> = z.strictObject({
@@ -120,6 +126,7 @@ export const SpeciesSchema: z.ZodType<Species> = z.strictObject({
   build: z.enum(BUILDS),
   movement: z.enum(MOVEMENTS),
   guardBonus: z.int().min(0).max(10),
+  moveBonus: z.int().min(0).max(3).optional(),
 })
 
 // ------------------------------------------------------------------- units

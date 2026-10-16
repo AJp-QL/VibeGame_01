@@ -12,7 +12,8 @@
     "preview": "vite preview packages/web",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "sim": "node tools/simulator/src/bin.ts"
   },
   "devDependencies": {
     "typescript": "catalog:",
