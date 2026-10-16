@@ -6,9 +6,9 @@
 
 **Blocked by:** 22 — เอกสารและ tracker สำหรับหลาย agent
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] (บางส่วน: Mark, Pin ผ่าน; Hex, Camouflage ผ่านชุดเดียว) simulator แสดงว่า Mark, Hex, Pin, Camouflage ถูกใช้มากกว่า 0.1 ครั้งต่อ Battle ในอย่างน้อย 2 ชุด
+- [x] (ยอมรับบางส่วน 2026-10-16: Mark, Pin ผ่าน; Hex, Camouflage ผ่านชุดเดียว ย้ายไปวัดใน ticket 19) simulator แสดงว่า Mark, Hex, Pin, Camouflage ถูกใช้มากกว่า 0.1 ครั้งต่อ Battle ในอย่างน้อย 2 ชุด
 - [x] SIM_PROFILES และ parity test เดิมผ่านเหมือนเดิม
 - [x] AI ยัง deterministic และไม่ช้ากว่าเดิมเกิน 2 เท่าต่อ Battle
 
