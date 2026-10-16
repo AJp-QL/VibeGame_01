@@ -20,4 +20,8 @@
 
 ผล 2,000 เกม/ชุด (game:greedy ทั้งสองฝั่ง, seed 0): A ชนะ 50.7/43.1/59.7/51.9%, turn limit 11.3/4.3/2.4/1.1%, Hex 0.25/0.61/0.20/0.19 ต่อ Battle (S1C/S1S/S2C/S2S) ผ่าน
 Camouflage 0.015/0/0/0 ไม่ผ่าน: data อย่างเดียวไปไม่ถึง (แม้ตัดเงื่อนไข terrain ทิ้งก็ได้ >0.1 ชุดเดียว) หยุดตามข้อ 5 และเสนอทางแก้กติกา 3 ทางพร้อมผล simulator ใน docs/balance/ticket-19-team-balance.md
-ต้องการการตัดสินใจ: เปิด ticket กติกาสำหรับ Camouflage (แนะนำ: Camouflage ไม่กิน Action) หรือยอมรับให้ Camouflage เป็น skill เฉพาะสถานการณ์และตัดเกณฑ์ข้อ 3 ส่วน Camouflage แล้วปิด ticket นี้
+ต้องการการตัดสินใจ (ตัดสินแล้ว ดู note ถัดไป): เปิด ticket กติกาสำหรับ Camouflage (แนะนำ: Camouflage ไม่กิน Action) หรือยอมรับให้ Camouflage เป็น skill เฉพาะสถานการณ์และตัดเกณฑ์ข้อ 3 ส่วน Camouflage แล้วปิด ticket นี้
+
+## Note (2026-10-16, ticket 27)
+
+ผู้ใช้เลือกทางเลือก A: Camouflage ไม่กิน Action ข้อ 3 ส่วน Camouflage จึง **blocked by 27** — กติกา: Camouflage ไม่กิน Action (.scratch/phase-1-battle-slice/issues/27-camouflage-free-action.md) วัดผลใหม่หลัง 27
