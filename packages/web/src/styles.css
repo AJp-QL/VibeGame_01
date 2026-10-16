@@ -158,6 +158,38 @@ body {
   transform: translateY(1px);
 }
 
+/* Playtester box, feedback link and guide (ticket 17) */
+.playtest .buttons {
+  margin-bottom: 8px;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.guide p {
+  margin: 0 0 8px;
+  line-height: 1.6;
+}
+
 .roster {
   list-style: none;
   margin: 0 0 12px;

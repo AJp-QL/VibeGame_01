@@ -26,7 +26,10 @@ import { BattleView } from './BattleView.tsx'
 import { loadBundledGameData } from './gameData.ts'
 import { Menu, type ReplayNotice } from './Menu.tsx'
 import { aiOpponent, battleSetup, defaultChoice, type BattleChoice } from './battleChoice.ts'
-import { battleReplay, downloadReplay, openReplay, type OpenedReplay } from './replay.ts'
+import { feedbackFormUrl } from './config.ts'
+import { statsFileName, type PlayStatsStore } from './playStats.ts'
+import { FeedbackLink, Guide } from './Playtest.tsx'
+import { battleReplay, downloadJson, downloadReplay, openReplay, type OpenedReplay } from './replay.ts'
 import { ReplayScreen } from './ReplayScreen.tsx'
 import { createBattleSession, idleUnits, type BattleSession, type SessionSnapshot } from './session.ts'
 import { th } from './strings.ts'
@@ -46,7 +49,10 @@ type Screen =
       readonly choice: BattleChoice
       readonly session: BattleSession
       readonly diceSeed: string
+      /** This Battle in the local play stats. */
+      readonly statsIndex: number
     }
+  | { readonly kind: 'guide'; readonly data: GameData; readonly choice: BattleChoice }
   | {
       readonly kind: 'replay'
       readonly data: GameData
@@ -76,26 +82,34 @@ function openMenu(): Screen {
   }
 }
 
-function startBattle(data: GameData, choice: BattleChoice): Screen {
+export function startBattle(data: GameData, choice: BattleChoice, stats: PlayStatsStore): Screen {
   try {
     const diceSeed = randomDiceSeed()
     const ai = aiOpponent(choice)
     const session = createBattleSession(createBattle(battleSetup(data, choice, diceSeed)), ai === undefined ? {} : { ai })
-    return { kind: 'battle', data, choice, session, diceSeed }
+    return { kind: 'battle', data, choice, session, diceSeed, statsIndex: stats.recordBattleStarted(choice) }
   } catch (error) {
     return errorScreen(error)
   }
 }
 
-/** The Replay of the Battle so far, saved as a file; the export time comes from the UI, not the engine. */
-function exportReplay(screen: Extract<Screen, { kind: 'battle' }>): void {
+/**
+ * The Replay of the Battle so far, with the local play stats in `meta.stats`;
+ * the export time comes from the UI, not the engine.
+ */
+export function replayToExport(screen: Extract<Screen, { kind: 'battle' }>, stats: PlayStatsStore, at: Date) {
   const { actions } = screen.session.getSnapshot()
-  downloadReplay(
-    battleReplay(screen.data, screen.choice, screen.diceSeed, actions, {
-      appVersion: __APP_VERSION__,
-      createdAt: new Date().toISOString(),
-    }),
-  )
+  return battleReplay(screen.data, screen.choice, screen.diceSeed, actions, {
+    appVersion: __APP_VERSION__,
+    createdAt: at.toISOString(),
+    stats: stats.read(),
+  })
+}
+
+/** Save the local play stats on their own, as a JSON file. */
+function exportStats(stats: PlayStatsStore): void {
+  const at = new Date()
+  downloadJson(statsFileName(at), `${JSON.stringify({ ...stats.read(), appVersion: __APP_VERSION__, exportedAt: at.toISOString() }, null, 2)}\n`)
 }
 
 /** Open a Replay file: play it back, or go back to the menu saying why it cannot be. */
@@ -105,8 +119,16 @@ async function replayScreen(file: File, data: GameData, choice: BattleChoice): P
   return { kind: 'menu', data, choice, notice: opened }
 }
 
-export function App() {
+interface AppProps {
+  /** The local play stats (main.tsx counts the app open). */
+  stats: PlayStatsStore
+  /** The feedback form; defaults to src/config.ts. */
+  feedbackUrl?: string | null
+}
+
+export function App({ stats, feedbackUrl = feedbackFormUrl() }: AppProps) {
   const [screen, setScreen] = useState(openMenu)
+  const toMenu = (from: { data: GameData; choice: BattleChoice }) => setScreen({ kind: 'menu', data: from.data, choice: from.choice })
   return (
     <div className="app">
       <header className="app-header">
@@ -118,12 +140,19 @@ export function App() {
           choice={screen.choice}
           notice={screen.notice ?? null}
           onChange={(choice) => setScreen({ ...screen, choice })}
-          onStart={() => setScreen(startBattle(screen.data, screen.choice))}
+          onStart={() => setScreen(startBattle(screen.data, screen.choice, stats))}
           onOpenReplay={(file) => {
             replayScreen(file, screen.data, screen.choice).then(setScreen, (error: unknown) => setScreen(errorScreen(error)))
           }}
-          onDismissNotice={() => setScreen({ kind: 'menu', data: screen.data, choice: screen.choice })}
+          onDismissNotice={() => toMenu(screen)}
+          stats={stats.read()}
+          statsPersistent={stats.persistent()}
+          feedbackUrl={feedbackUrl}
+          onOpenGuide={() => setScreen({ kind: 'guide', data: screen.data, choice: screen.choice })}
+          onExportStats={() => exportStats(stats)}
         />
+      ) : screen.kind === 'guide' ? (
+        <Guide feedbackUrl={feedbackUrl} onBack={() => toMenu(screen)} />
       ) : screen.kind === 'battle' ? (
         <BattleScreen
           // A new session per Battle: React and Phaser both start over.
@@ -131,9 +160,11 @@ export function App() {
           data={screen.data}
           session={screen.session}
           diceSeed={screen.diceSeed}
-          onPlayAgain={() => setScreen(startBattle(screen.data, screen.choice))}
-          onMenu={() => setScreen({ kind: 'menu', data: screen.data, choice: screen.choice })}
-          onExportReplay={() => exportReplay(screen)}
+          feedbackUrl={feedbackUrl}
+          onPlayAgain={() => setScreen(startBattle(screen.data, screen.choice, stats))}
+          onMenu={() => toMenu(screen)}
+          onExportReplay={() => downloadReplay(replayToExport(screen, stats, new Date()))}
+          onFinished={(outcome, rounds) => stats.recordBattleFinished(screen.statsIndex, outcome, rounds)}
         />
       ) : screen.kind === 'replay' ? (
         <ReplayScreen
@@ -197,6 +228,9 @@ interface BattleScreenProps {
   onMenu: () => void
   /** Download the Replay of this Battle so far. */
   onExportReplay: () => void
+  /** The Battle ended (may be called again for the same Battle; the stats count it once). */
+  onFinished: (outcome: BattleOutcome, rounds: number) => void
+  feedbackUrl: string | null
 }
 
 /**
@@ -207,9 +241,15 @@ const AI_STEP_MS = 700
 /** A quicker pause before the AI answers an Inspiration decision. */
 const AI_DECISION_MS = 400
 
-function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu, onExportReplay }: BattleScreenProps) {
+function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu, onExportReplay, onFinished, feedbackUrl }: BattleScreenProps) {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot)
   const { state } = snapshot
+
+  const { outcome, round } = state
+  useEffect(() => {
+    if (outcome !== null) onFinished(outcome, round)
+    // Once per Battle end (onFinished is a new function every render; the stats ignore a repeat).
+  }, [outcome])
 
   // The AI plays one action at a time; each one changes the snapshot, which schedules the next.
   const { aiToAct, revision } = snapshot
@@ -243,8 +283,9 @@ function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu, onExportRe
               {th.backToMenu}
             </button>
           </div>
-          {/* Playtester stats (ticket 17) will be exported together with the Replay. */}
+          {/* The Replay file carries the local play stats too (meta.stats). */}
           <p className="muted">{th.replay.exportHint}</p>
+          <FeedbackLink url={feedbackUrl} />
         </section>
       )}
 

@@ -284,6 +284,30 @@ function blockedTargets(state: BattleState, unit: UnitId | null, skill: string |
   })
 }
 
+/**
+ * Enemies that an area skill (Burst) around `centre` cannot take as its next
+ * target only because they are Hidden (or behind a Unit): the same reasons a
+ * single-target skill shows, so they are not silently left out.
+ */
+function blockedAreaTargets(
+  state: BattleState,
+  unit: UnitId | null,
+  skill: string | null,
+  centre: Tile | null,
+  chosen: readonly UnitId[],
+): BlockedTarget[] {
+  if (unit === null || skill === null || centre === null || state.phase !== 'play') return []
+  const side = state.units.find((u) => u.id === unit)?.side
+  return state.units.flatMap((target) => {
+    if (target.side === side || chosen.includes(target.id)) return []
+    const result = previewAction(state, { type: 'useSkill', unit, skill, tile: centre, targets: [...chosen, target.id] })
+    if (result.ok) return []
+    const reason = result.rejection.code
+    if (reason !== 'no-line-of-sight' && reason !== 'target-hidden') return []
+    return [{ unit: target.id, tile: target.tile, reason, blockedBy: result.rejection.blockedBy ?? [] }]
+  })
+}
+
 /** Units of the side to act that have at least one legal action. */
 function unitsThatCanAct(actions: readonly Action[]): UnitId[] {
   return [...new Set(actions.flatMap((action) => ('unit' in action ? [action.unit] : [])))]
@@ -421,7 +445,9 @@ export function createBattleSession(initial: BattleState, options: SessionOption
           ? []
           : kind === 'unit'
           ? blockedTargets(state, selectedUnit, aimingSkill)
-          : []
+          : kind === 'area'
+            ? blockedAreaTargets(state, selectedUnit, aimingSkill, pendingTile, chosenTargets)
+            : []
     const aimedSkill = aimingSkill === null ? undefined : state.skills[aimingSkill]
     const ready = readyAction(base, actions)
     let preview: ActionPreview | null = null
@@ -606,6 +632,12 @@ export function createBattleSession(initial: BattleState, options: SessionOption
           return
         }
       } else if (mode === 'skill' && aimKind(state, snapshot.pendingSkill) === 'area') {
+        const blocked = snapshot.blocked.find((b) => b.unit === boardInput.unit)
+        if (blocked !== undefined) {
+          // In the area but not selectable: say why, as for single-target skills.
+          update({ rejection: blocked.reason })
+          return
+        }
         if (aimArea(boardInput.unit)) return
       } else if (mode === 'skill' && aimKind(state, snapshot.pendingSkill) === 'tile') {
         // Attune may change the tile a Unit stands on: a tap on that Unit picks its tile.
