@@ -177,8 +177,11 @@ describe('sim-equivalent conditions (test/tool only)', () => {
     expect(data.species.tidewall).not.toHaveProperty('moveBonus')
   })
 
-  it('uses sim v4 stats (D-25): only Scenario 2 Tidewall POW and Quillfox SPI differ from data/', () => {
-    expect(overrides.map((o) => o.what)).toEqual(['scenario_2 B tidewall', 'scenario_2 B quillfox', 'tidewall moveBonus (base move 2 → 3)'])
+  it('uses sim v4 stats (D-25): the Tamers and team B Monsters differ from data/ (ticket 19 tuning)', () => {
+    expect(overrides.map((o) => o.what)).toEqual([
+      ...['scenario_1', 'scenario_2'].flatMap((s) => [`${s} A Tamer`, `${s} B Tamer`, `${s} B tidewall`, `${s} B quillfox`]),
+      'tidewall moveBonus (base move 2 → 3)',
+    ])
     const b = sim.scenarios.scenario_2?.teams.B.monsters
     expect(b?.[0]?.stats.pow).toBe(16)
     expect(b?.[1]?.stats.spi).toBe(12)
