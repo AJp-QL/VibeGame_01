@@ -14,7 +14,7 @@ import {
   type BattleState,
   type UnitId,
 } from '../src/index.ts'
-import { gameData, NEUTRAL_ELEMENTS, scenario1Battle, type BattleOptions } from './fixtures.ts'
+import { gameData, kitGameData, NEUTRAL_ELEMENTS, scenario1Battle, type BattleOptions } from './fixtures.ts'
 
 // Tidewall's loadout (rules §15.1): Taunt, Shield Bash, Counter, Pincer Guard.
 // Every Monster forest (neutral) and off forest, water and desert tiles, so
@@ -534,9 +534,9 @@ describe('Replay with Tidewall\'s skills', () => {
       skill('B.m1', 'shield_bash', 'A.m1'),
       { type: 'declineInspiration', side: 'B' },
     ]
-    const replay = recordReplay(header, gameData, actions)
-    const first = replayBattle(replay, gameData)
-    const second = replayBattle(JSON.parse(JSON.stringify(replay)), gameData)
+    const replay = recordReplay(header, kitGameData, actions)
+    const first = replayBattle(replay, kitGameData)
+    const second = replayBattle(JSON.parse(JSON.stringify(replay)), kitGameData)
     if (!first.ok || !second.ok) throw new Error(JSON.stringify(first.ok ? second : first))
     const all = first.steps.flatMap((s) => types(s.events))
     expect(all.filter((t) => ['counterattack', 'saveRolled', 'unitPushed'].includes(t))).toEqual(['counterattack', 'saveRolled', 'unitPushed'])
@@ -584,7 +584,7 @@ describe('Tidewall with Wispling (ticket 09)', () => {
     state = act(state, skill('A.m2', 'hex', 'B.m1')).state
     expect(unit(state, 'B.m1')?.statuses.map((s) => s.id)).toContain('weakened')
     const { events } = act(state, attack('A.m1', 'B.m1'))
-    expect(events[4]).toMatchObject({ type: 'damageDealt', source: 'B.m1', rolls: [3, 5], modifier: -1, amount: 7 })
+    expect(events[4]).toMatchObject({ type: 'damageDealt', source: 'B.m1', rolls: [3, 5], modifier: -2, amount: 6 })
   })
 
   it('a Taunted Wispling\'s Burst meets the taunt only with the taunter among its targets', () => {

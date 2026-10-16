@@ -118,7 +118,7 @@ describe('BattleSession: Tamer skills', () => {
     s.chooseSkill('first_aid')
     expect(s.getSnapshot().targets.map(tileName)).toEqual(['d2', 'c3', 'e2'])
     s.input({ type: 'tapUnit', unit: 'A.m1' })
-    expect(s.getSnapshot().preview).toMatchObject({ type: 'heal', target: 'A.m1', min: 2, max: 9 })
+    expect(s.getSnapshot().preview).toMatchObject({ type: 'heal', target: 'A.m1', min: 0, max: 7 })
     s.cancel()
     s.cancel()
     s.chooseSkill('cover')

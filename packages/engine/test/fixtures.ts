@@ -31,7 +31,42 @@ function readDataDir(): Record<string, unknown> {
 /** The real data/ folder, validated. */
 export const gameData = loadGameData(readDataDir())
 
-export const scenario1: Scenario = gameData.scenarios.scenario_1!
+/**
+ * Prototype kit stats of Scenario 1 (rules §20.2 before the ticket 19 tuning),
+ * by side: Tamer, Monster 1, Monster 2. Rule tests keep these fixed numbers so
+ * balance changes in data/ do not move them; derived.test.ts checks the real
+ * data against §20.2.
+ */
+const KIT_STATS_SCENARIO_1: Readonly<Record<Side, readonly Stats[]>> = {
+  A: [
+    { pow: 10, agi: 12, vit: 12, int: 10, sen: 12, spi: 12 },
+    { pow: 14, agi: 12, vit: 10, int: 8, sen: 12, spi: 8 },
+    { pow: 8, agi: 12, vit: 8, int: 14, sen: 12, spi: 12 },
+  ],
+  B: [
+    { pow: 10, agi: 12, vit: 12, int: 10, sen: 12, spi: 12 },
+    { pow: 12, agi: 8, vit: 14, int: 8, sen: 10, spi: 12 },
+    { pow: 12, agi: 12, vit: 10, int: 8, sen: 14, spi: 8 },
+  ],
+}
+
+/** The real data/scenarios/scenario_1.json. */
+export const dataScenario1: Scenario = gameData.scenarios.scenario_1!
+
+/** Scenario 1 from data/ with the Prototype kit stats (see KIT_STATS_SCENARIO_1); the default of the rule tests. */
+export const scenario1: Scenario = {
+  ...dataScenario1,
+  teams: Object.fromEntries(
+    SIDES.map((side) => {
+      const team = dataScenario1.teams[side]
+      const stats = KIT_STATS_SCENARIO_1[side]
+      return [side, { ...team, tamer: { ...team.tamer, stats: stats[0]! }, monsters: team.monsters.map((m, i) => ({ ...m, stats: stats[i + 1]! })) }]
+    }),
+  ) as unknown as Scenario['teams'],
+}
+
+/** data/ with Scenario 1 at the Prototype kit stats, for tests that go through Replays (which load Scenarios by id). */
+export const kitGameData = { ...gameData, scenarios: { ...gameData.scenarios, scenario_1: scenario1 } }
 
 type Tiles = readonly [string, string, string]
 

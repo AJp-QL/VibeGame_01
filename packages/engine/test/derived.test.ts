@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { derivedValues, previewAction, type BattleState, type UnitId } from '../src/index.ts'
-import { gameData, scenario1Battle } from './fixtures.ts'
+import { dataScenario1, gameData, scenario1Battle } from './fixtures.ts'
 
 // Expected values: rules §20.2, the Prototype kit stat block table, with
 // Tidewall's movement range from the formula alone (2) and its species Guard
@@ -26,22 +26,22 @@ interface Expected {
 }
 
 const SCENARIO_1: readonly Expected[] = [
-  { unit: 'A.tamer', name: 'Tamer Level 1', hp: 25, move: 3, guard: 11, ward: 11, proficiency: 2, attackBonus: 3, primary: { dice: '1d6', mod: 'melee', value: 0 } },
+  { unit: 'A.tamer', name: 'Tamer Level 1', hp: 25, move: 3, guard: 11, ward: 9, proficiency: 2, attackBonus: 3, primary: { dice: '1d6', mod: 'melee', value: 0 } },
   { unit: 'A.m1', name: 'Fangrel 1 Star', hp: 19, move: 4, guard: 11, ward: 9, proficiency: 1, attackBonus: 2, primary: { dice: '1d8', mod: 'melee', value: 2 } },
   { unit: 'A.m2', name: 'Wispling 1 Star', hp: 17, move: 4, guard: 11, ward: 11, proficiency: 1, attackBonus: 2, primary: { dice: 'Bolt 1d8', mod: 'elemental', value: 2 } },
-  { unit: 'B.tamer', name: 'Tamer Level 1', hp: 25, move: 3, guard: 11, ward: 11, proficiency: 2, attackBonus: 3, primary: { dice: '1d6', mod: 'melee', value: 0 } },
-  { unit: 'B.m1', name: 'Tidewall 1 Star', hp: 31, move: 2, guard: 11, ward: 11, proficiency: 1, attackBonus: 1, primary: { dice: 'Shield Bash 2d6', mod: 'melee', value: 1 } },
-  { unit: 'B.m2', name: 'Quillfox 1 Star', hp: 19, move: 4, guard: 11, ward: 9, proficiency: 1, attackBonus: 3, primary: { dice: 'Long Shot 1d8', mod: 'ranged', value: 2 } },
+  { unit: 'B.tamer', name: 'Tamer Level 1', hp: 25, move: 3, guard: 11, ward: 9, proficiency: 2, attackBonus: 3, primary: { dice: '1d6', mod: 'melee', value: 0 } },
+  { unit: 'B.m1', name: 'Tidewall 1 Star', hp: 31, move: 2, guard: 11, ward: 11, proficiency: 1, attackBonus: 1, primary: { dice: 'Shield Bash 2d6', mod: 'melee', value: 3 } },
+  { unit: 'B.m2', name: 'Quillfox 1 Star', hp: 22, move: 4, guard: 11, ward: 9, proficiency: 1, attackBonus: 4, primary: { dice: 'Long Shot 1d8', mod: 'ranged', value: 3 } },
 ]
 
 const SCENARIO_2: readonly Expected[] = [
-  { unit: 'A.tamer', name: 'Tamer Level 6', hp: 45, move: 3, guard: 12, ward: 13, proficiency: 3, attackBonus: 5, primary: { dice: '1d6', mod: 'melee', value: 0 } },
+  { unit: 'A.tamer', name: 'Tamer Level 6', hp: 45, move: 3, guard: 12, ward: 11, proficiency: 3, attackBonus: 5, primary: { dice: '1d6', mod: 'melee', value: 0 } },
   { unit: 'A.m1', name: 'Fangrel 4 Star', hp: 31, move: 5, guard: 14, ward: 11, proficiency: 2, attackBonus: 5, primary: { dice: '1d8', mod: 'melee', value: 6 } },
   { unit: 'A.m2', name: 'Wispling 4 Star', hp: 29, move: 4, guard: 13, ward: 14, proficiency: 2, attackBonus: 6, primary: { dice: 'Bolt 1d8', mod: 'elemental', value: 6 } },
-  { unit: 'B.m1', name: 'Tidewall 4 Star', hp: 50, move: 2, guard: 12, ward: 14, proficiency: 2, attackBonus: 4, primary: { dice: 'Shield Bash 2d6', mod: 'melee', value: 5 } },
-  { unit: 'B.tamer', name: 'Tamer Level 6', hp: 45, move: 3, guard: 12, ward: 13, proficiency: 3, attackBonus: 5, primary: { dice: '1d6', mod: 'melee', value: 0 } },
-  { unit: 'B.m1', name: 'Tidewall 4 Star', hp: 50, move: 2, guard: 12, ward: 14, proficiency: 2, attackBonus: 4, primary: { dice: 'Shield Bash 2d6', mod: 'melee', value: 5 } },
-  { unit: 'B.m2', name: 'Quillfox 4 Star', hp: 29, move: 5, guard: 14, ward: 13, proficiency: 2, attackBonus: 8, primary: { dice: 'Long Shot 1d8', mod: 'ranged', value: 6 } },
+  { unit: 'B.m1', name: 'Tidewall 4 Star', hp: 50, move: 2, guard: 12, ward: 14, proficiency: 2, attackBonus: 4, primary: { dice: 'Shield Bash 2d6', mod: 'melee', value: 8 } },
+  { unit: 'B.tamer', name: 'Tamer Level 6', hp: 45, move: 3, guard: 12, ward: 11, proficiency: 3, attackBonus: 5, primary: { dice: '1d6', mod: 'melee', value: 0 } },
+  { unit: 'B.m1', name: 'Tidewall 4 Star', hp: 50, move: 2, guard: 12, ward: 14, proficiency: 2, attackBonus: 4, primary: { dice: 'Shield Bash 2d6', mod: 'melee', value: 8 } },
+  { unit: 'B.m2', name: 'Quillfox 4 Star', hp: 36, move: 5, guard: 14, ward: 13, proficiency: 2, attackBonus: 9, primary: { dice: 'Long Shot 1d8', mod: 'ranged', value: 7 } },
 ]
 
 function checkDerivedValues(state: BattleState, expected: Expected): void {
@@ -66,8 +66,9 @@ function checkDerivedValues(state: BattleState, expected: Expected): void {
   expect(state.units.find((u) => u.id === expected.unit)?.hp).toBe(expected.hp)
 }
 
-describe('derived values of every Unit in Scenario 1 match the Prototype kit (rules §20.2)', () => {
-  const state = scenario1Battle()
+describe('derived values of every Unit in Scenario 1 match rules §20.2', () => {
+  // The real data/scenarios/scenario_1.json (ticket 19 tuning), not the rule tests' kit stats.
+  const state = scenario1Battle({ scenario: dataScenario1 })
   for (const expected of SCENARIO_1) {
     it(`${expected.name}: HP ${expected.hp}, Guard/Ward ${expected.guard}/${expected.ward}, attack +${expected.attackBonus}, ${expected.primary.dice}+${expected.primary.value}`, () => {
       checkDerivedValues(state, expected)
@@ -75,8 +76,8 @@ describe('derived values of every Unit in Scenario 1 match the Prototype kit (ru
   }
 })
 
-describe('derived values of every Unit in Scenario 2 match the Prototype kit (rules §20.2)', () => {
-  // The real data/scenarios/scenario_2.json, with the Prototype kit values (D-25).
+describe('derived values of every Unit in Scenario 2 match rules §20.2', () => {
+  // The real data/scenarios/scenario_2.json (kit values, D-25, then the ticket 19 tuning).
   const state = scenario1Battle({ scenario: gameData.scenarios.scenario_2! })
   for (const expected of SCENARIO_2) {
     it(`${expected.name}: HP ${expected.hp}, Guard/Ward ${expected.guard}/${expected.ward}, attack +${expected.attackBonus}, ${expected.primary.dice}+${expected.primary.value}`, () => {

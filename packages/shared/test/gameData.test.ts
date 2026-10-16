@@ -115,9 +115,9 @@ describe('data/ passes its schemas', () => {
       ['tidewall', 'desert', 4],
       ['quillfox', 'water', 4],
     ])
-    // Same loadouts as Scenario 1; the Prototype kit values (D-25), not sim v4's.
+    // Same loadouts as Scenario 1; the Prototype kit values (D-25) with the ticket 19 tuning, not sim v4's.
     expect(scenario?.teams.B.monsters.map((m) => m.skills)).toEqual(scenario1Team('B').monsters.map((m) => m.skills))
-    expect(scenario?.teams.B.monsters[0].stats.pow).toBe(20)
+    expect(scenario?.teams.B.monsters[0].stats.pow).toBe(26)
     expect(scenario?.teams.B.monsters[1].stats.spi).toBe(16)
   })
 

@@ -212,7 +212,7 @@ describe('Hex: Major, Weakened 2, save SPI (rules §11, §14.2, §15.1)', () => 
   })
 })
 
-describe('Weakened: every damage the Unit deals −2, at least 1 (rules §10.3, §14.2)', () => {
+describe('Weakened: every damage the Unit deals −3, at least 1 (rules §10.3, §14.2)', () => {
   // Fangrel (A.m1) on c3 next to Tidewall (B.m1) on d4. Tidewall: attack +1, POW mod +1. Fangrel: Guard 11.
   const NEXT_TO: BattleOptions = { tiles: { A: ['a1', 'c3', 'd2'], B: TILES.B } }
   const tidewallHits = (rolls: number[]) => {
@@ -220,30 +220,30 @@ describe('Weakened: every damage the Unit deals −2, at least 1 (rules §10.3, 
     return endTurn(hexed).state
   }
 
-  it('Tidewall Weakened: 1d8 + POW mod 1 − 2', () => {
+  it('Tidewall Weakened: 1d8 + POW mod 1 − 3', () => {
     const state = tidewallHits([15, 6])
     const { events } = accepted(applyAction(state, { type: 'basicAttack', unit: 'B.m1', target: 'A.m1' }))
     expect(events.at(-1)).toMatchObject({
       type: 'damageDealt',
       source: 'B.m1',
       rolls: [6],
-      modifier: -1,
-      statusModifiers: [{ status: 'weakened', bonus: -2 }],
-      amount: 5,
+      modifier: -2,
+      statusModifiers: [{ status: 'weakened', bonus: -3 }],
+      amount: 4,
     })
   })
 
-  it('damage is still at least 1: 1 + 1 − 2 = 0 → 1', () => {
+  it('damage is still at least 1: 1 + 1 − 3 = −1 → 1', () => {
     const state = tidewallHits([15, 1])
     const { events } = accepted(applyAction(state, { type: 'basicAttack', unit: 'B.m1', target: 'A.m1' }))
-    expect(events.at(-1)).toMatchObject({ type: 'damageDealt', modifier: -1, amount: 1 })
+    expect(events.at(-1)).toMatchObject({ type: 'damageDealt', modifier: -2, amount: 1 })
   })
 
-  it('preview shows it: 1d8 − 1, from 1 to 7; without Weakened 1d8 + 1', () => {
+  it('preview shows it: 1d8 − 2, from 1 to 6; without Weakened 1d8 + 1', () => {
     const action = { type: 'basicAttack', unit: 'B.m1', target: 'A.m1' } as const
     expect(previewAction(tidewallHits([]), action)).toMatchObject({
       ok: true,
-      preview: { damage: { modifier: -1, statusModifiers: [{ status: 'weakened', bonus: -2 }], min: 1, max: 7 } },
+      preview: { damage: { modifier: -2, statusModifiers: [{ status: 'weakened', bonus: -3 }], min: 1, max: 6 } },
     })
     const plain = previewAction(battle({ ...NEXT_TO, firstSide: 'B' }), action)
     expect(plain).toMatchObject({ ok: true, preview: { damage: { modifier: 1, min: 2, max: 9 } } })
