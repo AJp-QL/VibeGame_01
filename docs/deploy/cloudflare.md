@@ -1,0 +1,91 @@
+# Deploy build สำหรับ playtest ไป Cloudflare (ขั้นตอนของคน)
+
+ทุกขั้นในหน้านี้เป็นขั้นที่คนต้องทำเอง (ต้องใช้ account Cloudflare) agent ไม่ login ไม่สร้าง account ไม่ใส่ secret และไม่ deploy
+
+> ตามบันทึกการตัดสินใจ 2026-10-16 (`docs/decisions/decision-log.md`): build ได้แล้ว แต่ **ยังไม่แจกลิงก์ให้ playtester ภายนอก** จนกว่าจะปรับสมดุลเสร็จ deploy ไปลองเองหรือให้คนในทีมดูได้
+
+เลือก Cloudflare Workers static assets เพราะ repo เป็น private (GitHub Pages ฟรีใช้กับ repo private ไม่ได้) ตัว build เป็นเว็บ static ล้วน ไม่มี Worker code: `packages/web/wrangler.jsonc` บอกให้ Cloudflare เสิร์ฟโฟลเดอร์ `packages/web/dist`
+
+ตรวจกับเอกสาร Cloudflare ปัจจุบันเมื่อ 2026-10-16:
+- https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/ (`assets.directory` + `assets.not_found_handling: "single-page-application"` ตรงกับ `wrangler.jsonc`)
+- https://developers.cloudflare.com/workers/static-assets/get-started/ (`npx wrangler deploy` ขึ้น `*.workers.dev` หรือ Custom Domain)
+- https://developers.cloudflare.com/workers/wrangler/commands/general/ (`wrangler login`, `wrangler whoami`)
+
+## 0. ก่อนเริ่ม (ครั้งเดียว)
+
+1. มี account Cloudflare (สมัครที่ https://dash.cloudflare.com/sign-up ถ้ายังไม่มี) ครั้งแรกที่ใช้ Workers dashboard จะให้ตั้งชื่อ subdomain `<ชื่อ>.workers.dev`
+2. Node 24+ และ repo ติดตั้งแล้ว: ที่ root ของ repo รัน `corepack pnpm install`
+3. (ถ้าต้องการ) ตั้งลิงก์แบบฟอร์มความเห็น ดูหัวข้อ "แบบฟอร์มความเห็น" ด้านล่าง
+
+## 1. Login (ครั้งแรกในเครื่องนั้น)
+
+```sh
+cd packages/web
+npx wrangler login        # เปิดเบราว์เซอร์ให้ยืนยันสิทธิ์ (OAuth)
+npx wrangler whoami       # ตรวจว่า login เป็น account ที่ถูกต้อง
+```
+
+`npx` จะดาวน์โหลด wrangler มาเองครั้งแรก (wrangler ไม่ได้อยู่ใน dependency ของ repo) บนเครื่องที่ไม่มีเบราว์เซอร์ใช้ `npx wrangler login --device`
+
+## 2. ติด tag ให้ build
+
+ทุก build ที่ deploy ต้องติด tag (spec) และเวอร์ชันที่แสดงในเกมมาจาก tag นี้
+
+```sh
+git status                      # ต้องสะอาด ไม่อย่างนั้นเวอร์ชันจะลงท้าย -dirty
+git tag -a v0.1.0-playtest.1 -m "Playtest build 1"
+git describe --tags --always --dirty   # ต้องได้ v0.1.0-playtest.1 ตรงๆ
+```
+
+(ถ้าจะเก็บ tag ไว้ที่ remote ด้วย: `git push origin v0.1.0-playtest.1`)
+
+## 3. Build
+
+```sh
+cd <root ของ repo>
+corepack pnpm build
+```
+
+ได้โฟลเดอร์ static ที่ `packages/web/dist` (`index.html` + `assets/`) `vite.config.ts` ใส่เวอร์ชันจาก `git describe --tags --always --dirty` หรือจาก env `APP_VERSION` ถ้าตั้งไว้ (ใช้เมื่อ build จากที่ที่ไม่มี tag เช่น CI ที่ clone ตื้น: `APP_VERSION=v0.1.0-playtest.1 corepack pnpm build`)
+
+ดู build ในเครื่องก่อนได้: `corepack pnpm preview` แล้วเปิดลิงก์ที่ขึ้น
+
+## 4. Deploy ครั้งแรก (และทุกครั้ง)
+
+```sh
+cd packages/web
+npx wrangler deploy
+```
+
+wrangler อ่าน `wrangler.jsonc` (ชื่อ Worker `monster-tactics`) แล้วอัปโหลด `./dist` ทั้งโฟลเดอร์ จบแล้วจะพิมพ์ URL เช่น `https://monster-tactics.<subdomain>.workers.dev`
+
+ไม่ต้องใส่ secret หรือ environment variable ใดๆ ที่ Cloudflare (เกมไม่มี server และไม่ส่งข้อมูลออก)
+
+## 5. ตรวจหลัง deploy
+
+1. เปิด URL ที่ได้ ท้ายหน้าทุกหน้ามี "เวอร์ชัน v0.1.0-playtest.1" ต้องตรงกับ tag ในขั้นที่ 2
+2. เมนูมีกล่อง "สำหรับ playtester": ปุ่ม "วิธีเล่น", "ส่งออกสถิติการเล่น" และ (ถ้าตั้งไว้) "ส่งความเห็น"
+3. เล่นกับ AI จนจบ 1 Battle บนคอมและบนมือถือ (จอ 360 px) แล้วกด "Export Replay" ที่หน้าสรุปผล ไฟล์ .json ที่ได้มี `meta.stats` และ `meta.appVersion` เท่ากับ tag
+4. เปิดไฟล์ Replay นั้นจากเมนู "เปิดไฟล์ Replay" ต้องเล่นซ้ำได้
+
+## แบบฟอร์มความเห็น
+
+ลิงก์ซ่อนอยู่จนกว่าจะตั้ง URL ตั้งได้ 2 ทาง (ทางที่ 2 ชนะถ้าตั้งทั้งคู่):
+1. แก้ `FEEDBACK_FORM_URL` ใน `packages/web/src/config.ts` แล้ว commit ก่อนติด tag
+2. ตั้ง env ตอน build: `VITE_FEEDBACK_FORM_URL=https://forms.gle/... corepack pnpm build`
+
+ลิงก์ต้องขึ้นต้นด้วย `https://` หรือ `http://` ปุ่มอยู่ที่เมนู หน้า "วิธีเล่น" และหน้าสรุปผล
+
+## ทางเลือก: deploy อัตโนมัติจาก Git (Workers Builds)
+
+เชื่อม repo กับ Cloudflare ใน dashboard (Workers & Pages → Create → Import a repository) แล้วตั้ง:
+- Root directory: root ของ repo
+- Build command: `corepack enable && pnpm install --frozen-lockfile && pnpm build`
+- Deploy command: `cd packages/web && npx wrangler deploy`
+- Environment variable `APP_VERSION` = tag ที่จะ deploy (CI มัก clone ตื้น `git describe` อาจไม่เห็น tag)
+
+ดูเอกสาร https://developers.cloudflare.com/workers/ci-cd/builds/ ก่อนตั้ง ทางนี้ยังไม่ได้ทดลอง
+
+## ถ้าไม่อยากให้ใครก็เปิดได้
+
+URL `*.workers.dev` เปิดได้ทุกคนที่มีลิงก์ ถ้าต้องการจำกัดคนเข้า ใช้ Cloudflare Access (Zero Trust) กับ Worker นั้น ยังไม่ได้ตั้งหรือทดลองใน repo นี้

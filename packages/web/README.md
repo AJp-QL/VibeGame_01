@@ -30,6 +30,8 @@ pnpm ไม่ได้ติดตั้งแบบ global บนเครื�
 `vite.config.ts` ใส่ `__APP_VERSION__` ตอน build: ใช้ env `APP_VERSION` ถ้ามี ไม่อย่างนั้นใช้ `git describe --tags --always --dirty` ซึ่งได้ชื่อ tag ตรงๆ เมื่อ build จาก commit ที่ติด tag (เช่น `v0.1.0`) UI แสดงที่ท้ายหน้า
 
 ## Deploy (Cloudflare, ขั้นตอนของคน)
+คู่มือทีละขั้นฉบับเต็ม (login, deploy ครั้งแรก, ติด tag, ตรวจเวอร์ชัน, ลิงก์แบบฟอร์ม): `docs/deploy/cloudflare.md` สรุปสั้น:
+
 build ได้โฟลเดอร์ static ที่ `packages/web/dist` (`base` = `/` ตั้ง env `BASE_PATH` ถ้าจะวางใต้ path ย่อย) ยังไม่ได้ deploy จริงและไม่มี account หรือ secret ใน repo
 1. ติด tag ที่ commit ที่จะ deploy: `git tag v0.1.0` (ทุก build ที่ deploy ต้องติด tag ตาม spec)
 2. `corepack pnpm install` แล้ว `corepack pnpm build` (หรือ `APP_VERSION=v0.1.0 corepack pnpm build` ถ้า build จากที่ที่ไม่มี tag เช่น CI ที่ clone ตื้น)
@@ -38,6 +40,7 @@ build ได้โฟลเดอร์ static ที่ `packages/web/dist` (`b
 5. เปิดเว็บแล้วตรวจว่าเวอร์ชันท้ายหน้าตรงกับ tag
 
 ## สถานะ
+- ticket 17 (build สำหรับ playtest): สถิติการเล่นในเครื่อง (`src/playStats.ts`: เปิดเกม, Battle ที่เริ่ม/จบพร้อมโหมด Scenario Board ผล, วันที่เล่น) เก็บใน localStorage เท่านั้น ถ้า storage ใช้ไม่ได้นับในหน่วยความจำ ใส่ใน `meta.stats` ของทุก Replay ที่ export และ export เดี่ยวได้จากเมนู ("ส่งออกสถิติการเล่น") ลิงก์แบบฟอร์มจาก `src/config.ts` (`FEEDBACK_FORM_URL` หรือ env `VITE_FEEDBACK_FORM_URL`, ว่าง = ซ่อน) หน้า "วิธีเล่น" (`src/Playtest.tsx`, สำเนา `docs/playtest/playtester-guide.md`) Board (`@mt/battle` `boardFit.ts`): zoom เป็นจำนวนเต็มของ device pixel ต่อ pixel ของ Board (คมที่ devicePixelRatio ไม่เต็ม เช่น 1.5625) ขยับ canvas ให้ตรง device pixel อ่านตำแหน่ง canvas ใหม่ก่อนทุกการแตะ (แก้แตะโดนช่องผิดเมื่อ layout เลื่อน) และถอด canvas ทันทีตอน unmount (แก้ canvas ซ้อนตอน dev double mount) Burst บอกเหตุผลเมื่อศัตรูในพื้นที่เป็น Hidden test `test/uiStrings.test.ts` สแกนข้อความ UI ที่ฝังในโค้ด
 - ticket 03 (walking skeleton): หน้า Battle เดียว แสดง Scenario 1 บน Crossroads เลือก Unit แล้วเดิน และจบ Turn ได้ มี log จากรายการเหตุการณ์ และแสดงเวอร์ชัน
 - ticket 04: deployment แบบ Hotseat (ทีม A วาง → ยืนยัน → หน้าส่งเครื่องปิด Board → ทีม B วาง → ยืนยัน → เปิดเผยพร้อมกัน), หน้าผลทอย initiative และฝั่งที่เริ่มก่อน, ป้ายบอก "2 จาก 3 Unit" ใน Turn แรก, Unit ที่เล่นต่อไม่ได้แสดงจางลง และคำเตือนก่อนจบ Turn ถ้ายังมี Unit ที่ไม่ได้ทำอะไร (`idleUnits` ใน `src/session.ts`)
 - ticket 05: เลือก Unit → กด "โจมตี" → แตะเป้าที่ไฮไลต์ → เห็น preview (% โอกาสโดน, ช่วง damage, % critical) → ยืนยันหรือยกเลิก, HP ทุก Unit (รายการ Unit และแถบบน Board), log ครบทุกเหตุการณ์, หน้าสรุปผล (ผู้ชนะ, สาเหตุ, Round) และเริ่ม Battle ใหม่

@@ -25,6 +25,7 @@ Working state for the lead session. Survives compaction; read this first when re
 - Dev-mode double mount left two canvases in hidden pane (ticket 13).
 - Result-screen buttons and result-screen Replay export not clicked in a browser.
 - Burst aiming hides Hidden enemies without a reason (ticket 10).
+- Ticket 17 outcome (2026-10-16): fixed in code + unit tests: stale canvas offset (bounds re-read before every press), non-integer DPR (whole device pixels per Board pixel + snap), double canvas (canvas removed at once on unmount; verified 1 canvas under StrictMode in the hidden pane), Burst Hidden reason. Browser pane was hidden again (no requestAnimationFrame, Phaser never ran): Phaser visuals, real taps, and a full in-browser Battle / result-screen clicks are STILL UNVERIFIED by eye. Verified in the pane by DOM: menu playtester box, guide page, stats in localStorage, AI Battle start, 360 px no horizontal scroll, Board size/snap at DPR 2. Human: play one Battle in a visible browser before playtest.
 
 ## Tuning / later tickets (after 16 passes)
 
