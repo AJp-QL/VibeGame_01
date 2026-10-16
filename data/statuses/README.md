@@ -4,7 +4,7 @@
 
 ## เก็บอะไร
 - `polarity`: `positive` / `negative`
-- `duration`: `{ kind: 'turns', turns }` นับลดตอนจบ Turn ของฝั่งที่ติด (ติดใน Turn ของฝั่งตัวเองข้ามการนับครั้งแรก D-02), `untilOwnTurnStart` (หลุดตอนเริ่ม Turn ถัดไปของฝั่งตัวเอง ก่อน Bleed tick), `untilAttackRoll` (Off-balance), `untilBroken` (Hidden)
+- `duration`: `{ kind: 'turns', turns }` นับลดตอนจบ Turn ของฝั่งที่ติด (ติดใน Turn ของฝั่งตัวเองข้ามการนับครั้งแรก D-02), `{ kind: 'applierTurns', turns }` เหมือน `turns` แต่นับตอนจบ Turn ของฝั่งที่ทำให้ติด (Marked, D-03, ticket 18), `untilOwnTurnStart` (หลุดตอนเริ่ม Turn ถัดไปของฝั่งตัวเอง ก่อน Bleed tick), `untilAttackRoll` (Off-balance), `untilBroken` (Hidden)
 - `stacking`: `reset` (ติดซ้ำ = เริ่มนับใหม่ ไม่ซ้อน) หรือ `keepHigher` (Guarded เก็บโบนัสที่สูงกว่า)
 - `tracksSource`: จำ Unit ที่ทำให้ติด (Taunted)
 - `effects`: `startOfTurnDamage` (Bleed), `attackRoll` (Rallied), `defenceFromSource` (Guarded: โบนัสมาจาก skill ที่ให้), `immobile` (Pin), `damageDealt` (Weakened), `attackersRollMode` (Marked), `nextAttackRollMode` (Off-balance), `untargetableFrom` (Hidden), `forcedToAttackSource` (Taunted), `counterattack` (Countering)
