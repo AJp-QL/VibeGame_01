@@ -60,7 +60,7 @@ Board screenshot tests (`packages/web/visual`, not part of `pnpm test`; Linux on
 ```sh
 corepack pnpm --filter @mt/web exec playwright install --with-deps chromium
 corepack pnpm --filter @mt/web test:visual
-corepack pnpm --filter @mt/simulator check-replays   # are the Replay fixtures still playable by this build?
+corepack pnpm --dir tools/simulator check-replays   # exit 3 = stale; are the Replay fixtures still playable by this build?
 ```
 
 Run all of these before opening a PR and list them in the PR description.
