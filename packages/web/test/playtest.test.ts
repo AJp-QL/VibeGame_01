@@ -7,7 +7,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { createPlayStats, legalActions, openReplay, type BattleChoice, type BattleSession } from '@mt/session'
 import { loadGameData, serializeReplay } from '@mt/shared'
 import { boardZoom } from '@mt/battle/boardFit'
-import { App, replayToExport, startBattle } from '../src/App.tsx'
+import { App } from '../src/App.tsx'
+import { replayToExport, startBattle } from '../src/appScreens.ts'
 import { FEEDBACK_FORM_URL, feedbackFormUrl } from '../src/config.ts'
 import { FeedbackLink, Guide } from '../src/Playtest.tsx'
 import { th } from '../src/strings.ts'
@@ -55,8 +56,8 @@ describe('feedback form link', () => {
     expect(link).toContain('rel="noopener noreferrer"')
     expect(html(createElement(App, { stats: createPlayStats(null, () => new Date()), feedbackUrl: FORM }))).toContain(th.playtest.feedback)
     expect(html(createElement(Guide, { feedbackUrl: FORM, onBack: () => {} }))).toContain(th.playtest.feedback)
-    // The result screen renders the same component (App.tsx, BattleScreen's result panel).
-    expect(readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8')).toMatch(/<FeedbackLink url=\{feedbackUrl\} \/>/)
+    // The result screen renders the same component (BattleScreen.tsx, its result panel).
+    expect(readFileSync(new URL('../src/BattleScreen.tsx', import.meta.url), 'utf8')).toMatch(/<FeedbackLink url=\{feedbackUrl\} \/>/)
   })
 })
 
