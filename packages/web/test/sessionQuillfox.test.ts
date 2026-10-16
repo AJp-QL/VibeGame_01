@@ -92,6 +92,27 @@ describe('BattleSession: Quillfox (ticket 10)', () => {
     expect(th.blockedHidden('Quillfox')).toContain('ระยะ 1')
   })
 
+  it('Burst: a Hidden enemy in the area is shown as not selectable, with the reason (ticket 17)', () => {
+    const s = session({ rolls: [] })
+    s.input({ type: 'tapUnit', unit: 'B.m2' })
+    s.chooseSkill('camouflage')
+    s.confirmAttack()
+    s.endTurn()
+    s.input({ type: 'tapUnit', unit: 'A.m2' })
+    s.chooseSkill('burst')
+    const e7 = tileFromName('e7')!
+    const centre = s.getSnapshot().tileChoices.find((t) => Math.max(Math.abs(t.x - e7.x), Math.abs(t.y - e7.y)) <= 1)
+    if (centre === undefined) throw new Error('expected a Burst centre next to e7')
+    s.input({ type: 'tapTile', tile: centre })
+    const snapshot = s.getSnapshot()
+    expect(snapshot.blocked).toContainEqual({ unit: 'B.m2', tile: e7, reason: 'target-hidden', blockedBy: [] })
+    expect(snapshot.blockedTargets).toContainEqual(e7)
+    expect(snapshot.targets).not.toContainEqual(e7)
+    // Tapping it says why and keeps the centre.
+    s.input({ type: 'tapUnit', unit: 'B.m2' })
+    expect(s.getSnapshot()).toMatchObject({ rejection: 'target-hidden', selectedUnit: 'A.m2', pendingTile: centre, chosenTargets: [] })
+  })
+
   it('after a Mark hits, an ally attacking the Marked Unit previews advantage from Marked', () => {
     const s = session({ rolls: [12] })
     s.input({ type: 'tapUnit', unit: 'B.m2' })
