@@ -16,7 +16,7 @@ React app สำหรับ ranch, campaign map และเมนู
 - ใช้ React ตาม PRD; ต้องตรวจเวอร์ชันจาก docs จริงก่อนใช้
 - dependency: `@mt/session`, `@mt/battle`, `@mt/shared` ไม่ import `@mt/engine` / `@mt/ai` ตรง: ชื่อจาก engine ที่ใช้ (`createBattle`, `legalActions`, `ENGINE_VERSION`, type ต่างๆ) มาจาก re-export ของ session
 - BattleSession (`@mt/session`) เป็น store เดียวที่ทั้ง React (`useSyncExternalStore`) และ Phaser อ่าน ห่อ engine ไว้และไม่มีกติกาของตัวเอง
-- web เหลือเฉพาะสิ่งที่เป็นข้อความหรือแตะเบราว์เซอร์: `src/strings.ts`, `src/skillText.ts`, `src/replay.ts` (`describeAction`, ดาวน์โหลดไฟล์), `src/storage.ts` (localStorage ของ playStats), delay ของ AI ใน `App.tsx`
+- web เหลือเฉพาะสิ่งที่เป็นข้อความหรือแตะเบราว์เซอร์: `src/strings.ts`, `src/skillText.ts`, `src/replay.ts` (`describeAction`, ดาวน์โหลดไฟล์), `src/storage.ts` (localStorage ของ playStats), delay ของ AI ใน `useBattleSession.ts`
 - ข้อความ UI ทุกข้อความมาจาก `src/strings.ts` (ภาษาไทย คำศัพท์เกมเป็นภาษาอังกฤษตาม CONTEXT.md)
 - data/ ถูกตรวจ schema สองจุด: ตอน build/dev (plugin ใน `vite.config.ts`) และตอนโหลดในเบราว์เซอร์ (`src/gameData.ts`)
 
@@ -28,6 +28,13 @@ pnpm ไม่ได้ติดตั้งแบบ global บนเครื�
 - `pnpm typecheck`: `tsc -b`
 - `pnpm build`: type-check แล้ว build ไปที่ `packages/web/dist` (เว็บ static ทั้งโฟลเดอร์)
 - `pnpm preview`: เปิด build ใน `dist` ดูในเครื่อง
+
+## โครงสร้างหน้าจอ (ticket 24)
+- `App.tsx`: ประกอบหน้าจอเมนู / Battle / Replay / วิธีเล่น; `appScreens.ts`: สร้างหน้าจอ, เริ่ม Battle และเตรียมไฟล์ export
+- `BattleScreen.tsx`: ประกอบหน้า Battle; `useBattleSession.ts`: subscribe snapshot, บันทึกผลจบ Battle และตั้งเวลาให้ AI เล่นทีละ action
+- `DeploymentPanel.tsx`, `TurnPanel.tsx`, `BattleMenu.tsx`, `InspirationPrompt.tsx`: การวาง Unit, ปุ่มใน Turn, เมนู Battle และการตัดสินใจ Inspiration
+- `UnitDetails.tsx`, `SkillButtons.tsx`, `ActionPreview.tsx`: ข้อมูล Unit, skill และ preview; `battleText.ts`: ชื่อและการจัดรูปแบบที่ใช้ร่วมกัน
+- `BattleStatus.tsx`, `EventLog.tsx`: สถานะ, ผล Battle และ log ที่ทั้ง Battle และ Replay ใช้; `TerrainLegend.tsx`: คำอธิบาย terrain และ swatch
 
 ## เวอร์ชันใน UI
 `vite.config.ts` ใส่ `__APP_VERSION__` ตอน build: ใช้ env `APP_VERSION` ถ้ามี ไม่อย่างนั้นใช้ `git describe --tags --always --dirty` ซึ่งได้ชื่อ tag ตรงๆ เมื่อ build จาก commit ที่ติด tag (เช่น `v0.1.0`) UI แสดงที่ท้ายหน้า
@@ -52,4 +59,4 @@ build ได้โฟลเดอร์ static ที่ `packages/web/dist` (`b
 - ticket 06: legend ของ terrain ใต้ Board (สีและเครื่องหมายเดียวกับ Board, แตะ "Terrain และธาตุ" เพื่อดูกฎ element wheel, terrain, การป้องกัน Tamer และแนวเล็ง), preview แสดงแหล่ง advantage/disadvantage ทุกแหล่งและผลรวมหลังหักล้าง, ปุ่ม "ป้องกัน" (Defend), ป้าย Guarded ใน card ของ Unit และรายการ HP, เป้าที่ถูกบังแนวเล็งแสดงในรายการพร้อม Unit ที่ขวาง และแตะแล้วบอกเหตุผลแทนการเลือก, log บอก Advantage/Disadvantage ของแต่ละการทอย
 - ticket 14 (Replay, `src/replay.ts`, `src/ReplayScreen.tsx`): session เก็บ action ที่ engine รับทุกตัว (`snapshot.actions`) export ไฟล์ Replay ได้จากหน้าสรุปผลและจาก "เมนู Battle" ระหว่างเล่น (ซึ่งมี "ออกจาก Battle" แบบยืนยันอีกครั้ง) เมนูหลักมี "เปิดไฟล์ Replay": ไฟล์ผิด schema แจ้งรายการปัญหา, เวอร์ชัน engine หรือ hash ของ data ไม่ตรงแจ้ง "เวอร์ชันไม่ตรง" พร้อมค่าทั้งสองฝั่ง, action ถูกปฏิเสธแจ้งลำดับ action ถ้าเปิดได้จะเข้าหน้าดู Replay แบบอ่านอย่างเดียว: ไปต้นเกม, ย้อน/ถัดไปทีละ action, ไปท้ายเกม พร้อม Board, log และ HP ณ ขั้นนั้น สถิติของ playtester (ticket 17) ใส่ใน `meta.stats` ตอน export (`exportReplay` ใน `src/App.tsx`)
 - ticket 12: หลัง d20 ที่ใช้ Inspiration ได้ แผงควบคุมแสดงผลทอยพร้อมปุ่ม "ใช้ Inspiration ทอยใหม่" / "ไม่ใช้" (`useInspiration` / `declineInspiration` ใน `src/session.ts`) ถ้าฝั่งที่ต้องตัดสินไม่ใช่ฝั่งที่ถือเครื่อง (save ระหว่าง Turn ของอีกฝั่ง) จะมีหน้าส่งเครื่อง (`screen: 'decisionHandoff'`) ก่อน และอีกครั้งตอนส่งคืน Inspiration ของ initiative ตอบในหน้าผล initiative แถบบนแสดง Round x/10, damage รวมของแต่ละทีม และ Inspiration ที่เหลือ หน้าสรุปผลบอกผู้ชนะหรือเสมอ สาเหตุ (รวมครบ 10 Round ตัดสินด้วย damage รวม) จำนวน Round และ damage รวม หน้า Replay อธิบาย action ใหม่ (`describeAction` ย้ายมาอยู่ `src/replay.ts`)
-- ticket 15 (เล่นกับ AI): เมนูเปิดโหมด "เล่นกับ AI" พร้อมเลือกทีม (`aiOpponent` ใน `src/battleChoice.ts`, AI เล่นอีกทีมด้วย `DEFAULT_GAME_PROFILE`) `createBattleSession(state, { ai })`: AI คิด deployment ก่อนผู้เล่นวางและซ่อนไว้ (ทีม A: ใส่ทันที, ทีม B: ใส่ทันทีหลังผู้เล่นยืนยัน แล้วเปิดเผยพร้อมกัน) Board แสดงสิ่งที่ทีมของผู้เล่นเห็นตลอด ไม่มีหน้าส่งเครื่อง ผู้เล่นทำได้เฉพาะเมื่อเป็นการตัดสินใจของตัวเอง (`decidingSide`) `snapshot.aiToAct` บอกว่า AI ต้องเล่น และ `session.aiStep()` เล่น 1 action ของ AI ผ่าน engine (บันทึกใน `snapshot.actions` เหมือน action ของผู้เล่น Replay จึงเล่นซ้ำได้) `App.tsx` เรียก `aiStep` ทีละครั้งหลัง delay 700 ms (400 ms ตอนตอบ Inspiration) ระหว่างนั้นแผงควบคุมบอกว่า AI กำลังเล่น/ตัดสินใจ และ log กับ Board แสดงผลทีละขั้น
+- ticket 15 (เล่นกับ AI): เมนูเปิดโหมด "เล่นกับ AI" พร้อมเลือกทีม (`aiOpponent` ใน `src/battleChoice.ts`, AI เล่นอีกทีมด้วย `DEFAULT_GAME_PROFILE`) `createBattleSession(state, { ai })`: AI คิด deployment ก่อนผู้เล่นวางและซ่อนไว้ (ทีม A: ใส่ทันที, ทีม B: ใส่ทันทีหลังผู้เล่นยืนยัน แล้วเปิดเผยพร้อมกัน) Board แสดงสิ่งที่ทีมของผู้เล่นเห็นตลอด ไม่มีหน้าส่งเครื่อง ผู้เล่นทำได้เฉพาะเมื่อเป็นการตัดสินใจของตัวเอง (`decidingSide`) `snapshot.aiToAct` บอกว่า AI ต้องเล่น และ `session.aiStep()` เล่น 1 action ของ AI ผ่าน engine (บันทึกใน `snapshot.actions` เหมือน action ของผู้เล่น Replay จึงเล่นซ้ำได้) `useBattleSession.ts` เรียก `aiStep` ทีละครั้งหลัง delay 700 ms (400 ms ตอนตอบ Inspiration) ระหว่างนั้นแผงควบคุมบอกว่า AI กำลังเล่น/ตัดสินใจ และ log กับ Board แสดงผลทีละขั้น
