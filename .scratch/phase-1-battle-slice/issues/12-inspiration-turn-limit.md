@@ -1,5 +1,7 @@
 # 12 — Inspiration และ turn limit
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** แต่ละฝั่งใช้ Inspiration ทอย d20 ของฝั่งตัวเองใหม่ได้ 1 ครั้งต่อ Battle และเมื่อครบ 10 Round ฝั่งที่ทำ damage รวมมากกว่าชนะ (heal ไม่หักลบ เท่ากันเสมอ) HUD แสดง Round ปัจจุบันและ damage รวมของแต่ละฝั่งตลอด Battle
 
 **Blocked by:** 05 — Basic Attack ครบวง

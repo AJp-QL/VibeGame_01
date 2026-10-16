@@ -1,5 +1,7 @@
 # 04 — Deployment, initiative และโครงสร้าง Turn
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** Battle เริ่มด้วย deployment แบบ Hotseat: แต่ละฝั่งวาง Tamer และ Monster 2 ตัวในโซน 2 แถวหลังโดยอีกฝั่งไม่เห็น แล้วเปิดเผยพร้อมกัน ทอย initiative แล้วสลับ Turn กันตามกติกา
 
 **Blocked by:** 03 — Walking skeleton

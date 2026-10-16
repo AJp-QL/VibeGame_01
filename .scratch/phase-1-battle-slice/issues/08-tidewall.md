@@ -1,5 +1,7 @@
 # 08 — Tidewall
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** Tidewall ใช้ loadout ได้ครบ: Taunt (Taunted), Shield Bash (2d6 + ผลัก 1 ช่อง), Counter (Countering), Pincer Guard (Passive: Counter โจมตีกลับ 2d8)
 
 **Blocked by:** 07 — ระบบ skill และ status ด้วย Fangrel

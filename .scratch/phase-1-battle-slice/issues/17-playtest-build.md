@@ -1,5 +1,7 @@
 # 17 — Build สำหรับ playtest
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** build ที่พร้อมแจกให้ playtester 5 คน: เล่นได้ทั้ง desktop และมือถือ 360 px, นับสถิติการเล่นในเครื่อง (จำนวนครั้งที่เปิดเกม, Battle ที่เริ่มและจบ, วันที่เล่น) แล้ว export มากับไฟล์ Replay, มีลิงก์แบบฟอร์มสั้นจากหน้าสรุปและเมนู และ deploy เป็น build ที่ติด tag
 
 **Blocked by:** 13 — Scenario 2, Board ที่ 2 และเมนู, 14 — Replay, 15 — AI

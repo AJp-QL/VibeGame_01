@@ -1,5 +1,7 @@
 # 03 — Walking skeleton
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** เส้นทางแรกที่ผ่านทุกชั้น: workspace TypeScript ตาม ticket 01, data ของ Crossroads และ Scenario 1 ในรูปแบบ Monster จริงที่ผ่าน schema, engine สร้าง Battle จาก Scenario + Board + Dice Seed แล้วให้ Unit เดินและจบ Turn ได้, React + Phaser แสดง Board และ Unit ภาพชั่วคราว (silhouette ต่อ species + สีตามธาตุ + ตัวบ่งชี้ฝั่ง) แตะ Unit แล้วเห็นช่องที่เดินได้ แตะช่องเพื่อเดิน และ deploy เป็นเว็บ static ที่แสดงเวอร์ชัน
 
 **Blocked by:** 01 — ยืนยัน stack ด้วย research, 02 — rules ฉบับรวม

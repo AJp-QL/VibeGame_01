@@ -1,5 +1,7 @@
 # 06 — Terrain, ธาตุ, line of sight และการป้องกัน Tamer
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** ตำแหน่งบน Board มีผลจริง: terrain และ element wheel ให้ advantage/disadvantage, Flying และ Aquatic ทำงานตามกติกา, line of sight บังการโจมตีระยะไกล, Tamer ได้รับการป้องกันเมื่อมี Monster ฝ่ายเดียวกันยืนติด และ Unit ใช้ Action ป้องกันได้ preview แสดงแหล่งที่มาของ advantage/disadvantage ทุกแหล่งและผลการหักล้าง
 
 **Blocked by:** 05 — Basic Attack ครบวง

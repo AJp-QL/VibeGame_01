@@ -1,5 +1,7 @@
 # 05 — Basic Attack ครบวง
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** Unit โจมตีปกติได้ครบวง: เลือกเป้าในระยะ → เห็น preview % โอกาสโดน + ช่วง damage + โอกาส critical → ยืนยัน → ทอย → log + animation → HP ลด → Unit ล้ม → Battle จบเมื่อ Tamer ฝั่งใดล้มหรือ Monster ฝั่งหนึ่งหมด → หน้าสรุปผลและเริ่มใหม่ ค่าที่ได้จากสูตรของทุก Unit คำนวณจาก data แบบ Monster จริง
 
 **Blocked by:** 03 — Walking skeleton

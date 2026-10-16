@@ -10,6 +10,14 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
 
+## Owner (multi-agent, ADR 0004)
+
+- Every ticket has an `**Owner:** claude` or `**Owner:** codex` line directly under the title, before `**What to build:**`. The owner is whoever owns the paths the work touches per `.github/ownership.json` (summary in `AGENTS.md`).
+- An agent only picks up tickets with its own Owner. Frontier for an agent = its own tickets that are `ready-for-agent` and unblocked, lowest number first.
+- Work that crosses both sides is split into two tickets: the engine/session ticket (`Owner: claude`) and the UI ticket (`Owner: codex`) with `**Blocked by:**` the engine ticket. A Codex agent that needs a contract change (engine interface, `packages/shared` types, `@mt/session` API) files a new `Owner: claude` ticket and blocks its own ticket on it (see `docs/agents/codex.md`).
+- Historical tickets written before the split that touched both sides say `**Owner:** claude (historical, mixed)`.
+- Tickets live in the repo (`.scratch/` is committed), because Codex cloud only sees the GitHub repo — never local files outside it. Commit and push a ticket to `main` before asking Codex to work on it. `.scratch/**` is editable from both `claude/*` and `codex/*` branches; each side only edits its own tickets' Status/checkboxes plus new tickets it files.
+
 ## When a skill says "publish to the issue tracker"
 
 Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed).

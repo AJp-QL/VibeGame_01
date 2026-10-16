@@ -8,8 +8,8 @@ Working state for the lead session. Survives compaction; read this first when re
 - Done: 16 simulator (parity passed; baseline in docs/balance/phase-1-baseline.md).
 - Deployed v0.1.1 (tickets 01-17). Verified live 2026-10-16: full Battle vs AI to result screen (desktop), menu stats, back-to-menu, 375px mobile board 336px single canvas no h-scroll, no console errors. NOT distributed -- next: tuning tickets 18+ (team A near 50%).
 - Deployed v0.1.2 (2026-10-16): selection fix + ticket 18 (engine 0.8.0). Ticket 18 had no sim effect: AI values Mark only within the same Turn.
-- Done: 20 session package, 21 CI (PR #1). Agents now use claude/* branches + PRs; lead merges own PRs after CI green (gh at "C:Program FilesGitHub CLIgh.exe").
-- Next (multi-agent, ADR 0004): 22 agent docs -> 23 AI values Mark -> 19 balance. Codex starts after 22.
+- Done: 20 session package, 21 CI (PR #1). Agents now use claude/* branches + PRs; lead merges own PRs after CI green (gh at `C:\Program Files\GitHub CLI\gh.exe`).
+- Done: 22 agent docs (AGENTS.md ownership/workflow, docs/agents/codex.md, Owner lines). Next (Claude): 23 AI values Mark -> 19 balance. Codex can start 24 (split App.tsx) now -> 25 visual regression -> 26 CI job for 25 (Claude). Human: set up Codex cloud per docs/agents/codex.md part 1.
 
 ## Process rules
 

@@ -1,5 +1,7 @@
 # 02 — rules ฉบับรวม
 
+**Owner:** claude
+
 **What to build:** เอกสารกติกา Battle ฉบับเดียวใน repo (ADR 0001) ที่ engine ใช้เป็นต้นฉบับ รวม rules v1+v2+v3+v4, PRD (F1, F3, F5, ส่วน vertical slice ของ F7, Prototype kit) และ decision log เข้าด้วยกัน ไม่ต้องอ่านซ้อนอีก ใช้คำศัพท์ตาม CONTEXT.md
 
 **Blocked by:** None — can start immediately

@@ -1,5 +1,7 @@
 # 16 — Simulator และการเทียบผลกับ sim v4
 
+**Owner:** claude
+
 **What to build:** simulator แบบไม่มี UI ที่รัน Scenario หลายพันเกมด้วย engine และ AI ตัวเดียวกับเกม รายงานอัตราชนะ, จำนวน Turn, Tamer ล้มเป็นตัวแรก, สัดส่วนเกมที่จบด้วย turn limit, Unit ที่ล้มเป็นตัวแรก, damage ต่อเกมแยกตาม Unit และ skill ที่ถูกใช้ แล้วยืนยันว่าผลตรงกับ sim v4
 
 **Blocked by:** 12 — Inspiration และ turn limit, 15 — AI

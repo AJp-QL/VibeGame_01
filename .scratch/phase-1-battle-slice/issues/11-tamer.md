@@ -1,5 +1,7 @@
 # 11 — Tamer: Command และ basic skill
 
+**Owner:** claude (historical, mixed)
+
 **What to build:** Tamer ใช้ Command และ basic skill ได้ครบ Command ใช้ 1 ครั้งต่อ Turn กับ Monster ในระยะ 3 (advantage, ขยับ +1 หรือผ่าน loyalty check) ไม่ใช้ Action ของ Tamer และห้ามใช้ใน Turn แรกของฝั่ง ส่วน basic skill ได้แก่ Cover, Attune, First Aid, Distract (Off-balance)
 
 **Blocked by:** 07 — ระบบ skill และ status ด้วย Fangrel
