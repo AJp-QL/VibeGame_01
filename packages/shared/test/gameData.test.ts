@@ -295,7 +295,9 @@ describe('statuses in data/ (rules §14.2)', () => {
       const duration = statuses[id]?.duration
       return duration?.kind === 'turns' ? duration.turns : duration?.kind
     }
-    expect(['bleed', 'pin', 'taunted', 'weakened', 'marked', 'rallied'].map(turns)).toEqual([3, 1, 1, 2, 1, 2])
+    expect(['bleed', 'pin', 'taunted', 'weakened', 'rallied'].map(turns)).toEqual([3, 1, 1, 2, 2])
+    // Marked counts on the side that gave it (D-03, decision log 2026-10-16).
+    expect(statuses.marked?.duration).toEqual({ kind: 'applierTurns', turns: 1 })
     expect(['guarded', 'countering', 'off_balance', 'hidden'].map(turns)).toEqual([
       'untilOwnTurnStart',
       'untilOwnTurnStart',

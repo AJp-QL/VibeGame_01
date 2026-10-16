@@ -42,6 +42,8 @@ export function statusDurationText(type: StatusType, status: UnitStatus): string
   switch (type.duration.kind) {
     case 'turns':
       return th.statusDuration.turns(status.turnsLeft ?? type.duration.turns, status.skipCountdown === true)
+    case 'applierTurns':
+      return th.statusDuration.applierTurns(status.turnsLeft ?? type.duration.turns, status.skipCountdown === true)
     case 'untilOwnTurnStart':
       return th.statusDuration.untilOwnTurnStart
     case 'untilAttackRoll':

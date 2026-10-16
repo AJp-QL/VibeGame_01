@@ -210,7 +210,7 @@ describe('Mark: Minor, physical attack roll without damage, Marked 1 on a hit, r
     const { state, events } = act(battle({ dice: { rolls: [12] } }), skill('B.m2', 'mark', 'A.m1'))
     expect(types(events)).toEqual(['skillUsed', 'attackRolled', 'statusApplied'])
     expect(events[1]).toMatchObject({ skill: 'mark', natural: 12, total: 15, defence: 11, hit: true })
-    expect(events[2]).toEqual({ type: 'statusApplied', unit: 'A.m1', status: { id: 'marked', turnsLeft: 1 } })
+    expect(events[2]).toEqual({ type: 'statusApplied', unit: 'A.m1', status: { id: 'marked', turnsLeft: 1, countedOn: 'B', skipCountdown: true } })
     expect(unit(state, 'A.m1')?.hp).toBe(19)
     // Only the attack roll was drawn.
     expect(state.dice.kind === 'scripted' ? state.dice.position : NaN).toBe(1)
@@ -254,13 +254,52 @@ describe('Mark: Minor, physical attack roll without damage, Marked 1 on a hit, r
     expect(attackPreview(battle(), basic).rollMode).toBe('normal')
   })
 
-  it('Marked 1 lasts the rest of that Turn and the next Turn of its side, then ends (D-03)', () => {
+  it('Marked 1 lasts through the other side\'s Turn and the next Turn of the side that gave it, then ends at its end (D-03)', () => {
+    const MARKED = { id: 'marked', turnsLeft: 1, countedOn: 'B' }
+    const basic: Action = { type: 'basicAttack', unit: 'B.m1', target: 'A.m1' }
     let state = act(battle({ dice: { rolls: [12] } }), skill('B.m2', 'mark', 'A.m1')).state
+    // The end of team B's Turn (the giver's) does not count; team A's Turn never counts it.
     state = endTurn(state)
-    expect(unit(state, 'A.m1')?.statuses).toEqual([{ id: 'marked', turnsLeft: 1 }])
+    expect(unit(state, 'A.m1')?.statuses).toEqual([MARKED])
+    state = endTurn(state)
+    expect(state.sideToAct).toBe('B')
+    expect(unit(state, 'A.m1')?.statuses).toEqual([MARKED])
+    expect(attackPreview(state, basic).rollMode).toBe('advantage')
+    // It ends at the end of team B's next Turn.
     const ended = accepted(applyAction(state, { type: 'endTurn' }))
     expect(ended.events).toContainEqual({ type: 'statusEnded', unit: 'A.m1', status: 'marked' })
-    expect(attackPreview(ended.state, { type: 'basicAttack', unit: 'B.m1', target: 'A.m1' }).rollMode).toBe('normal')
+    expect(unit(ended.state, 'A.m1')?.statuses).toEqual([])
+    expect(attackPreview(endTurn(ended.state), basic).rollMode).toBe('normal')
+  })
+
+  it('an ally acting on the giver\'s next Turn attacks the Marked Unit with advantage; the preview names Marked as the source', () => {
+    // Quillfox Marks Fangrel A, both sides pass, then Tidewall attacks it on team B's next Turn.
+    let state = act(battle({ dice: { rolls: [12, 3, 17, 4] } }), skill('B.m2', 'mark', 'A.m1')).state
+    state = endTurn(endTurn(state))
+    const basic: Action = { type: 'basicAttack', unit: 'B.m1', target: 'A.m1' }
+    const preview = attackPreview(state, basic)
+    expect(preview.rollMode).toBe('advantage')
+    expect(preview.rollModeSources).toEqual([{ kind: 'status', effect: 'advantage', status: 'marked', holder: 'target' }])
+    const { events } = act(state, basic)
+    expect(events[0]).toMatchObject({ type: 'attackRolled', attacker: 'B.m1', rollMode: 'advantage', rolls: [3, 17], natural: 17 })
+  })
+
+  it('Marking again resets it, never stacks: a new Mark on the next Turn lasts until the end of the Turn after', () => {
+    // The second Mark rolls with advantage: its target is still Marked.
+    let state = act(battle({ dice: { rolls: [12, 12, 12] } }), skill('B.m2', 'mark', 'A.m1')).state
+    state = endTurn(endTurn(state))
+    const again = act(state, skill('B.m2', 'mark', 'A.m1'))
+    expect(again.events).toContainEqual({
+      type: 'statusApplied',
+      unit: 'A.m1',
+      status: { id: 'marked', turnsLeft: 1, countedOn: 'B', skipCountdown: true },
+      refreshed: true,
+    })
+    expect(unit(again.state, 'A.m1')?.statuses).toHaveLength(1)
+    state = endTurn(again.state)
+    expect(unit(state, 'A.m1')?.statuses).toEqual([{ id: 'marked', turnsLeft: 1, countedOn: 'B' }])
+    state = endTurn(endTurn(state))
+    expect(unit(state, 'A.m1')?.statuses).toEqual([])
   })
 
   it('a counterattack against the Marked Unit has advantage too', () => {
@@ -310,7 +349,7 @@ describe('Mark: Minor, physical attack roll without damage, Marked 1 on a hit, r
     const { state: after, events } = act(offered.state, { type: 'declineInspiration', side: 'B' })
     expect(events).toEqual([
       { type: 'inspirationDeclined', side: 'B' },
-      { type: 'statusApplied', unit: 'A.m1', status: { id: 'marked', turnsLeft: 1 } },
+      { type: 'statusApplied', unit: 'A.m1', status: { id: 'marked', turnsLeft: 1, countedOn: 'B', skipCountdown: true } },
       { type: 'statusEnded', unit: 'B.m2', status: 'hidden', cause: 'attackRoll' },
     ])
     expect(unit(after, 'B.m2')?.statuses).toEqual([])

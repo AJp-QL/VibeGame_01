@@ -421,6 +421,8 @@ export const th = {
   statusDuration: {
     turns: (turns: number, skip: boolean) =>
       skip ? `ส่วนที่เหลือของ Turn นี้ และอีก ${turns} Turn ของทีมตัวเอง` : `อีก ${turns} Turn ของทีมตัวเอง (หมดตอนจบ Turn)`,
+    applierTurns: (turns: number, skip: boolean) =>
+      skip ? `ส่วนที่เหลือของ Turn นี้ และอีก ${turns} Turn ของทีมที่ทำให้ติด` : `อีก ${turns} Turn ของทีมที่ทำให้ติด (หมดตอนจบ Turn)`,
     untilOwnTurnStart: 'จนถึงเริ่ม Turn ถัดไปของทีมตัวเอง',
     untilAttackRoll: 'จนถึง attack roll ครั้งถัดไป',
     untilBroken: 'จนกว่าจะหลุดตามเงื่อนไข',

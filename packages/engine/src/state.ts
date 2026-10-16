@@ -57,6 +57,11 @@ export interface UnitStatus {
    * count down (D-02), so "N Turns" = the rest of this Turn + N more.
    */
   readonly skipCountdown?: true
+  /**
+   * `applierTurns` statuses (Marked): the side whose Turn ends count it down,
+   * the side of the Unit that gave it (D-03). Left out: the holder's side.
+   */
+  readonly countedOn?: Side
   /** The Unit that applied it, for statuses that track it (Taunted: the taunter). */
   readonly source?: UnitId
   /**

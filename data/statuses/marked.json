@@ -3,7 +3,7 @@
   "name": "Marked",
   "polarity": "negative",
   "duration": {
-    "kind": "turns",
+    "kind": "applierTurns",
     "turns": 1
   },
   "stacking": "reset",

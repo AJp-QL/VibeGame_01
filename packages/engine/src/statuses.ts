@@ -2,8 +2,9 @@
  * Statuses (rules §11, §14, §17.4): giving one (with a save when the skill
  * asks for one), no stacking, reapplying resets, durations counting down at
  * the end of the holder's side's Turn (D-02: not the Turn it was given in, if
- * that was its own), statuses that end at the start of the holder's next
- * Turn, and start-of-Turn damage (Bleed).
+ * that was its own) or of the giver's side's Turn (`applierTurns`: Marked,
+ * D-03), statuses that end at the start of the holder's next Turn, and
+ * start-of-Turn damage (Bleed).
  *
  * What each status does comes from data/statuses (`StatusType.effects`). The
  * effects read here: `startOfTurnDamage` (Bleed), `attackRoll` (Rallied),
@@ -54,6 +55,8 @@ function typesOf(state: BattleState, unit: UnitState): { status: UnitStatus; typ
  * stacks. Reapplying resets it to its full duration (and newest source);
  * `keepHigher` statuses (Guarded) keep whichever bonus is higher. A status
  * given during its holder's own side's Turn skips the first countdown (D-02).
+ * `applierTurns` (Marked) counts on the giver's side instead (`countedOn`),
+ * and skips the first countdown when given during that side's Turn.
  * `whileOn`: the terrain the giving skill needs (Camouflage: forest); the
  * status ends once the holder stands elsewhere (`endOffTerrain`).
  */
@@ -68,11 +71,15 @@ export function applyStatus(
   if (unit === undefined) throw new Error(`No Unit "${unitId}" on the Board`)
   const type = statusType(state, application.status)
   const { duration } = type
+  // The side whose Turn ends count it down: the holder's (`turns`) or the giver's (`applierTurns`).
+  const countedOn =
+    duration.kind === 'turns' ? unit.side : duration.kind === 'applierTurns' ? (findUnit(state, sourceId)?.side ?? state.sideToAct) : null
   let status: UnitStatus = {
     id: type.id,
     ...(type.effects.defenceFromSource && application.bonus !== undefined ? { bonus: application.bonus } : {}),
-    ...(duration.kind === 'turns' ? { turnsLeft: duration.turns } : {}),
-    ...(duration.kind === 'turns' && state.sideToAct === unit.side ? { skipCountdown: true as const } : {}),
+    ...(countedOn !== null && 'turns' in duration ? { turnsLeft: duration.turns } : {}),
+    ...(duration.kind === 'applierTurns' && countedOn !== null ? { countedOn } : {}),
+    ...(countedOn !== null && state.sideToAct === countedOn ? { skipCountdown: true as const } : {}),
     ...(type.tracksSource ? { source: sourceId } : {}),
     ...(whileOn !== undefined ? { whileOn } : {}),
   }
@@ -292,15 +299,15 @@ function withoutStatuses(
 
 // ------------------------------------------------------------- Turn timing
 
+/** `update` runs on every status of every Unit on the Board, in Unit order. */
 function updateStatuses(
   state: BattleState,
-  side: Side,
   update: (unit: UnitState, status: UnitStatus, type: StatusType) => UnitStatus | null,
 ): { state: BattleState; events: BattleEvent[] } {
   const events: BattleEvent[] = []
   let changed = false
   const units = state.units.map((unit) => {
-    if (unit.side !== side || unit.statuses.length === 0) return unit
+    if (unit.statuses.length === 0) return unit
     const statuses: UnitStatus[] = []
     for (const status of unit.statuses) {
       const next = update(unit, status, statusType(state, status.id))
@@ -318,19 +325,21 @@ function updateStatuses(
  * the next Turn of the Unit's side" (Guarded, Countering) end, in Unit order.
  */
 export function endOwnTurnStartStatuses(state: BattleState, side: Side): { state: BattleState; events: BattleEvent[] } {
-  return updateStatuses(state, side, (_unit, status, type) =>
-    type.duration.kind === 'untilOwnTurnStart' ? null : status,
+  return updateStatuses(state, (unit, status, type) =>
+    unit.side === side && type.duration.kind === 'untilOwnTurnStart' ? null : status,
   )
 }
 
 /**
  * End of a Turn of `side`, step 1 (rules §14.1, §17.4): every counted
- * duration on its Units goes down by 1 and ends at 0, except a status given
- * during this very Turn, which skips this one countdown (D-02).
+ * duration on its Units, and every `applierTurns` duration its Units gave
+ * (Marked on enemies, `countedOn`), goes down by 1 and ends at 0, in Unit
+ * order, except a status given during this very Turn, which skips this one
+ * countdown (D-02, D-03).
  */
 export function countDownStatuses(state: BattleState, side: Side): { state: BattleState; events: BattleEvent[] } {
-  return updateStatuses(state, side, (_unit, status) => {
-    if (status.turnsLeft === undefined) return status
+  return updateStatuses(state, (unit, status) => {
+    if (status.turnsLeft === undefined || (status.countedOn ?? unit.side) !== side) return status
     if (status.skipCountdown) {
       const { skipCountdown: _skipped, ...rest } = status
       return rest

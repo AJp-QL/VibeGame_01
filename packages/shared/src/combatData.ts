@@ -174,6 +174,10 @@ export const SkillSchema: z.ZodType<Skill> = SkillObject.superRefine(checkSkill)
  * How long a status lasts (rules §14.1):
  * - `turns`: counts down by 1 each time the holder's side ends a Turn and ends at 0;
  *   given during the holder's own side's Turn, the end of that Turn does not count (D-02).
+ * - `applierTurns`: like `turns`, but counted on the side of the Unit that gave it: down by 1
+ *   each time that side ends a Turn; given during that side's own Turn (the usual case), the
+ *   end of that Turn does not count. Marked 1 = the rest of the giver's Turn, the other side's
+ *   Turn and the giver's side's next Turn (rules §14.1, D-03).
  * - `untilOwnTurnStart`: ends at the start of the holder's side's next Turn, before Bleed ticks.
  * - `untilAttackRoll`: ends after the holder's next attack roll (Off-balance; its roll mode: ticket 11).
  * - `untilBroken`: ends by its own conditions only (Hidden, rules §8.2): after the holder's
@@ -181,6 +185,7 @@ export const SkillSchema: z.ZodType<Skill> = SkillObject.superRefine(checkSkill)
  */
 export type StatusDuration =
   | { readonly kind: 'turns'; readonly turns: number }
+  | { readonly kind: 'applierTurns'; readonly turns: number }
   | { readonly kind: 'untilOwnTurnStart' }
   | { readonly kind: 'untilAttackRoll' }
   | { readonly kind: 'untilBroken' }
@@ -232,6 +237,7 @@ export interface StatusType {
 
 const StatusDurationSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('turns'), turns: z.int().min(1).max(10) }),
+  z.strictObject({ kind: z.literal('applierTurns'), turns: z.int().min(1).max(10) }),
   z.strictObject({ kind: z.literal('untilOwnTurnStart') }),
   z.strictObject({ kind: z.literal('untilAttackRoll') }),
   z.strictObject({ kind: z.literal('untilBroken') }),

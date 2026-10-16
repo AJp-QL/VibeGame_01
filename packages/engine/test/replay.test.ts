@@ -245,6 +245,8 @@ describe('Replay compatibility', () => {
       compatible: false,
       mismatches: [{ field: 'engineVersion', replay: '0.0.1', current: ENGINE_VERSION }],
     })
+    // Replays from before the Marked change (ticket 18, decision log 2026-10-16) no longer replay.
+    expect(replayCompatibility({ ...replay, engineVersion: '0.7.0' }, gameData).compatible).toBe(false)
     const both: Replay = { ...old, dataHash: '0'.repeat(64) }
     const result = replayBattle(both, gameData)
     expect(!result.ok && result.error.kind === 'incompatible' && result.error.mismatches.map((m) => m.field)).toEqual([
