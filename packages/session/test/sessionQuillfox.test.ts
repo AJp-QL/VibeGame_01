@@ -71,6 +71,45 @@ describe('BattleSession: Quillfox (ticket 10)', () => {
     expect(s.getSnapshot().units.find((u) => u.id === 'B.m2')?.statuses).toEqual([{ id: 'hidden', whileOn: 'forest' }])
   })
 
+  it('Camouflage is free (ticket 27, D-28): Quillfox stays selected and can still Move and use Long Shot', () => {
+    const s = session({ rolls: [15, 4] })
+    s.input({ type: 'tapUnit', unit: 'B.m2' })
+    s.chooseSkill('camouflage')
+    s.confirmAttack()
+    const after = s.getSnapshot()
+    expect(after.selectedUnit).toBe('B.m2')
+    expect(after.skills.map((b) => [b.skill, b.usable])).toEqual([
+      ['long_shot', true],
+      ['pin', true],
+      ['mark', true],
+      ['camouflage', false],
+    ])
+    expect(after.skills.find((b) => b.skill === 'camouflage')).toMatchObject({ free: true, usedThisActivation: true, cooldown: 0 })
+    expect(after.reachable.length).toBeGreaterThan(0)
+    s.chooseSkill('long_shot')
+    s.input({ type: 'tapUnit', unit: 'A.m1' })
+    s.confirmAttack()
+    // The attack roll ended Hidden; Camouflage was already used this activation.
+    expect(s.getSnapshot().units.find((u) => u.id === 'B.m2')?.statuses).toEqual([])
+  })
+
+  it('act, then hide: after Long Shot Quillfox stays selected with Camouflage usable', () => {
+    const s = session({ rolls: [15, 4] })
+    s.input({ type: 'tapUnit', unit: 'B.m2' })
+    s.chooseSkill('long_shot')
+    s.input({ type: 'tapUnit', unit: 'A.m1' })
+    s.confirmAttack()
+    const after = s.getSnapshot()
+    expect(after.selectedUnit).toBe('B.m2')
+    expect(after.skills.find((b) => b.skill === 'camouflage')).toMatchObject({ usable: true, free: true, usedThisActivation: false })
+    expect(after.skills.find((b) => b.skill === 'long_shot')?.usable).toBe(false)
+    s.chooseSkill('camouflage')
+    s.confirmAttack()
+    expect(s.getSnapshot().units.find((u) => u.id === 'B.m2')?.statuses).toEqual([{ id: 'hidden', whileOn: 'forest' }])
+    // Move left: still selected; Hidden ends if it walks off forest.
+    expect(s.getSnapshot().selectedUnit).toBe('B.m2')
+  })
+
   it('a Hidden enemy 2 or more tiles away is shown as not selectable, with the reason', () => {
     const s = session({ rolls: [] })
     s.input({ type: 'tapUnit', unit: 'B.m2' })

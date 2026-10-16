@@ -119,11 +119,19 @@ export function rebuild(d: SimDecision): BattleState {
     return t
   }
   const tiles = (side: Side) => [tileOf(`${side}.tamer`), tileOf(`${side}.m1`), tileOf(`${side}.m2`)] as const
+  // sim.py uses Camouflage as the Action: the game's free skills (D-28, ticket 27) are not free here.
+  const simSkills = Object.fromEntries(
+    Object.entries(gameData.skills).map(([id, skill]) => {
+      if (skill.effects?.free !== true) return [id, skill]
+      const { free: _free, ...effects } = skill.effects
+      return [id, { ...skill, effects }]
+    }),
+  )
   const created = createBattle({
     scenario,
     board,
     species,
-    skills: gameData.skills,
+    skills: simSkills,
     statuses: gameData.statuses,
     elementWheel: gameData.elementWheel,
     dice: { seed: '0000000000000001' },

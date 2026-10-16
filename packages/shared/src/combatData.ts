@@ -79,6 +79,11 @@ export interface SkillEffects {
    * statuses it gives last only while the Unit stays on it (Hidden, rules §8.2).
    */
   readonly requiresTerrain?: Terrain
+  /**
+   * Camouflage: a free skill (rules §15.1, D-28). It uses neither the Move nor
+   * the Action, at most once per activation, at any point of it.
+   */
+  readonly free?: boolean
   /** Cover: damage the target takes goes to the user until the user's next Turn (rules §15.4). Engine: ticket 11. */
   readonly cover?: boolean
   /** Attune: the tile becomes the chosen element for this many Turns (rules §15.4). Engine: ticket 11. */
@@ -124,6 +129,7 @@ const SkillEffectsSchema = z.strictObject({
   counterattackDamage: DiceSchema.exactOptional(),
   replacesMove: z.literal(true).exactOptional(),
   requiresTerrain: ElementOrNormal.exactOptional(),
+  free: z.literal(true).exactOptional(),
   cover: z.literal(true).exactOptional(),
   terrainTurns: z.int().min(1).max(10).exactOptional(),
   heal: z.strictObject({ dice: DiceSchema, stat: StatSchema }).exactOptional(),
@@ -137,6 +143,9 @@ function checkSkill(skill: z.output<typeof SkillObject>, ctx: z.RefinementCtx): 
   if (!selfOnly && skill.target !== 'area' && skill.range < 1) issue('range', 'range must be at least 1')
   if ((skill.tier === 'passive') !== (skill.target === 'none')) {
     issue('target', 'a Passive skill has target "none", and only a Passive skill does')
+  }
+  if (skill.effects?.free === true && (skill.tier === 'passive' || skill.effects.replacesMove === true)) {
+    issue('effects', 'a free skill is used (not Passive) and does not replace the Move')
   }
   if (skill.attack !== undefined && skill.target !== 'enemy' && skill.target !== 'area') {
     issue('attack', 'only "enemy" and "area" skills make attack rolls')

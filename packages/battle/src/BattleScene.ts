@@ -485,7 +485,7 @@ export class BattleScene extends Phaser.Scene {
     if (view === undefined) return
     const label = this.add
       .text(view.container.x, view.container.y - 14, text, {
-        fontFamily: 'monospace',
+        fontFamily: this.labels.fontFamily ?? 'monospace',
         fontSize: '10px',
         fontStyle: 'bold',
         color: colour,
