@@ -13,4 +13,4 @@
  * an older Replay, check out the git tag of the build that made it (its
  * `meta.appVersion`). Changing data/ changes the data hash instead.
  */
-export const ENGINE_VERSION = '0.9.0'
+export const ENGINE_VERSION = '0.10.0'

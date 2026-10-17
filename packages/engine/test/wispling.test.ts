@@ -369,14 +369,13 @@ describe('Burst: Major, elemental 1d6 on up to 2 chosen enemies around a centre 
     expect(code(burst(near, 'd3', ['B.m2']))).toBe('accepted')
   })
 
-  it('Inspiration is offered on each target\'s attack roll separately (rules §18)', () => {
+  it('Inspiration is offered on a target\'s missed attack roll, not on a hit (rules §18)', () => {
     let state = battle({ inspiration: { A: true, B: false }, dice: { rolls: [12, 3, 4, 15, 2] } })
+    // The first target is hit (no offer); the second is missed, and only then is team A asked.
     let step = accepted(burst(state, 'd4', ['B.m2', 'B.m1']))
-    expect(types(step.events)).toEqual(['skillUsed', 'attackRolled', 'inspirationOffered'])
-    expect(step.events[1]).toMatchObject({ target: 'B.m2', rolls: [12] })
-    step = accepted(applyAction(step.state, { type: 'declineInspiration', side: 'A' }))
-    expect(types(step.events)).toEqual(['inspirationDeclined', 'damageDealt', 'attackRolled', 'inspirationOffered'])
-    expect(step.events[2]).toMatchObject({ target: 'B.m1', rolls: [4], hit: false })
+    expect(types(step.events)).toEqual(['skillUsed', 'attackRolled', 'damageDealt', 'attackRolled', 'inspirationOffered'])
+    expect(step.events[1]).toMatchObject({ target: 'B.m2', rolls: [12], hit: true })
+    expect(step.events[3]).toMatchObject({ target: 'B.m1', rolls: [4], hit: false })
     step = accepted(applyAction(step.state, { type: 'useInspiration', side: 'A' }))
     expect(types(step.events)).toEqual(['inspirationUsed', 'attackRolled', 'damageDealt'])
     expect(step.events[1]).toMatchObject({ target: 'B.m1', rolls: [15], hit: true, rerolled: true })

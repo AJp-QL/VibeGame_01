@@ -112,6 +112,14 @@ export interface SessionSnapshot extends BattleSnapshot {
   readonly pendingOption: CommandOption | null
   /** The selected Unit is a Tamer that may issue a Command now (rules §16). */
   readonly canCommand: boolean
+  /**
+   * The Unit playing now when it can still use its Action: starting another Unit
+   * ends its activation and loses that Action (`actionAtStake`), so the UI asks
+   * first. `null` when nothing would be lost, e.g. the Unit has no legal Action left.
+   */
+  readonly actionAtStake: UnitId | null
+  /** Units of the side to act that moved this Turn but have not used their Action and still can: End Turn warns about these. */
+  readonly movedWithoutAction: readonly UnitId[]
   /** A Unit tapped to read its card (any side), when it is not the selected one. */
   readonly inspectedUnit: UnitId | null
   /** The selected Unit has at least one enemy it can Basic Attack now. */
@@ -193,6 +201,8 @@ type Computed =
   | 'area'
   | 'elementChoices'
   | 'canCommand'
+  | 'actionAtStake'
+  | 'movedWithoutAction'
   | 'aiToAct'
 
 /** The tiles the legal actions let `unit` go to: Move destinations, placements, or Hit and Run's step. */
@@ -321,6 +331,35 @@ function unitsThatCanAct(actions: readonly Action[]): UnitId[] {
 export function idleUnits(state: BattleState): UnitId[] {
   if (state.phase !== 'play') return []
   return unitsThatCanAct(legalActions(state)).filter((id) => !state.activations.started.includes(id))
+}
+
+/** `unit` has a legal Action (Basic Attack, Defend or a skill that is not free): a Move or a free skill (Camouflage, D-28) is not one. */
+function hasActionLeft(state: BattleState, actions: readonly Action[], unit: UnitId): boolean {
+  return actions.some((a) => {
+    if (!('unit' in a) || a.unit !== unit) return false
+    if (a.type === 'basicAttack' || a.type === 'defend') return true
+    return a.type === 'useSkill' && state.skills[a.skill]?.effects?.free !== true
+  })
+}
+
+/**
+ * The Unit playing now when starting another Unit would cost it an Action it
+ * can still use (spec user stories 28–31), else `null`.
+ */
+export function actionAtStake(state: BattleState, actions: readonly Action[] = legalActions(state)): UnitId | null {
+  const current = state.activations.current
+  if (state.phase !== 'play' || state.outcome !== null || state.pending !== null || current === null) return null
+  const unit = state.units.find((u) => u.id === current)
+  if (unit === undefined || unit.side !== state.sideToAct || unit.hasActed) return null
+  return hasActionLeft(state, actions, current) ? current : null
+}
+
+/** Units of the side to act that moved this Turn but have not used their Action and still can (spec user story 30). */
+export function movedWithoutAction(state: BattleState, actions: readonly Action[] = legalActions(state)): UnitId[] {
+  if (state.phase !== 'play' || state.outcome !== null) return []
+  return state.units
+    .filter((u) => u.side === state.sideToAct && u.hasMoved && !u.hasActed && hasActionLeft(state, actions, u.id))
+    .map((u) => u.id)
 }
 
 /** During deployment: the first Unit of the side placing that has no tile yet. */
@@ -505,6 +544,8 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       area: kind === 'area' && pendingTile !== null && aimedSkill !== undefined ? areaTiles(aimedSkill, pendingTile) : [],
       elementChoices,
       canCommand: commandTargets(actions, selectedUnit).length > 0,
+      actionAtStake: actionAtStake(state, actions),
+      movedWithoutAction: movedWithoutAction(state, actions),
       aiToAct:
         opponent !== null &&
         state.outcome === null &&

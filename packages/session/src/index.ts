@@ -5,8 +5,10 @@
 
 export type { BattleSessionPort, BattleSnapshot, BoardInput } from './port.ts'
 export {
+  actionAtStake,
   createBattleSession,
   idleUnits,
+  movedWithoutAction,
   type AiOpponent,
   type BattleSession,
   type BlockedTarget,

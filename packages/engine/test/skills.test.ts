@@ -13,7 +13,7 @@ import {
   type BattleState,
   type UnitId,
 } from '../src/index.ts'
-import { gameData, NEUTRAL_ELEMENTS, scenario1Battle, scenario1Deployment, type BattleOptions } from './fixtures.ts'
+import { declineEveryOffer, gameData, NEUTRAL_ELEMENTS, scenario1Battle, scenario1Deployment, type BattleOptions } from './fixtures.ts'
 
 // Fangrel (A.m1, d4 — a dark tile, no effect on forest) next to Tidewall (B.m1, d5),
 // every Monster forest (neutral). Fangrel 1 Star: attack +2, POW mod +2, Save DC
@@ -605,22 +605,20 @@ describe('Replay records and replays skills', () => {
       diceSeed: '0123456789abcdef',
       preset: { tiles: { A: tiles('A'), B: tiles('B') }, firstSide: 'A' },
     } as const
-    const actions: Action[] = [
+    // A Replay's Battle has Inspiration: a missed attack roll would pause for team A's answer.
+    const actions = declineEveryOffer(header, gameData, [
       { type: 'useSkill', unit: 'A.m1', skill: 'hit_and_run', target: 'B.m1' },
-      // A Replay's Battle has Inspiration: the attack roll pauses for team A's answer.
-      { type: 'declineInspiration', side: 'A' },
       { type: 'retreat', unit: 'A.m1', to: tileFromName('d3') },
       { type: 'endTurn' },
       { type: 'endTurn' },
       { type: 'useSkill', unit: 'A.m1', skill: 'pack_howl' },
-    ]
+    ])
     const replay = recordReplay(header, gameData, actions)
     const first = replayBattle(replay, gameData)
     const second = replayBattle(JSON.parse(JSON.stringify(replay)), gameData)
     if (!first.ok || !second.ok) throw new Error('replay failed')
-    expect(first.steps.map((s) => s.events[0]?.type)).toEqual([
+    expect(first.steps.map((s) => s.events[0]?.type).filter((t) => t !== 'inspirationDeclined')).toEqual([
       'skillUsed',
-      'inspirationDeclined',
       'unitRetreated',
       'turnEnded',
       'turnEnded',

@@ -340,8 +340,8 @@ describe('Mark: Minor, physical attack roll without damage, Marked 1 on a hit, r
     expect(attackPreview(state, skill('B.m2', 'mark', 'A.tamer')).rollMode).toBe('disadvantage')
   })
 
-  it('a full attack roll: Inspiration is offered, and it ends the user\'s Hidden (rules §8.2, §18)', () => {
-    let state = battle({ inspiration: { A: false, B: true }, dice: { rolls: [12] } })
+  it('a missed attack roll: Inspiration is offered, and the roll ends the user\'s Hidden (rules §8.2, §18)', () => {
+    let state = battle({ inspiration: { A: false, B: true }, dice: { rolls: [3] } })
     state = endTurn(endTurn(act(state, skill('B.m2', 'camouflage')).state))
     const offered = act(state, skill('B.m2', 'mark', 'A.m1'))
     expect(types(offered.events)).toEqual(['skillUsed', 'attackRolled', 'inspirationOffered'])
@@ -349,7 +349,6 @@ describe('Mark: Minor, physical attack roll without damage, Marked 1 on a hit, r
     const { state: after, events } = act(offered.state, { type: 'declineInspiration', side: 'B' })
     expect(events).toEqual([
       { type: 'inspirationDeclined', side: 'B' },
-      { type: 'statusApplied', unit: 'A.m1', status: { id: 'marked', turnsLeft: 1, countedOn: 'B', skipCountdown: true } },
       { type: 'statusEnded', unit: 'B.m2', status: 'hidden', cause: 'attackRoll' },
     ])
     expect(unit(after, 'B.m2')?.statuses).toEqual([])

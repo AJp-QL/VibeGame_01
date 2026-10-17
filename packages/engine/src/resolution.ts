@@ -40,8 +40,8 @@ export function* emit(...events: BattleEvent[]): Resolution<void> {
 
 /**
  * `side` has just seen `roll`, one of its own d20s. If it still has its
- * Inspiration it may use it now, before any other die (rules §18, D-10),
- * whether the roll succeeded or not: `inspirationOffered`, then the answer
+ * Inspiration it may use it now, before any other die (rules §18, D-10):
+ * `inspirationOffered`, then the answer
  * (`inspirationUsed`, which spends it, or `inspirationDeclined`). The caller
  * rolls again when `used`.
  */
@@ -63,10 +63,16 @@ export function* offerInspiration(
 
 type RollEvent = Extract<RerollableRoll, { type: 'attackRolled' | 'saveRolled' }>
 
+/** The roll went against the side that owns it: a miss, or a save that failed (rules §18, D-29). */
+function wentAgainstOwner(roll: RollEvent): boolean {
+  return roll.type === 'attackRolled' ? !roll.hit : !roll.saved
+}
+
 /**
  * A d20 roll of `side` that Inspiration may reroll (rules §18, §21.4): roll
  * `count` d20s (2 with advantage or disadvantage, first then second), yield
- * the event `show` makes of them, offer Inspiration, and on use roll all
+ * the event `show` makes of them, offer Inspiration only if the roll went
+ * against `side` (a miss, a failed save: rules §18), and on use roll all
  * `count` again under the same roll mode; the new result stands (its event
  * has `rerolled: true`). Returns the event of the roll that counts.
  */
@@ -79,7 +85,9 @@ export function* rollD20<E extends RollEvent>(
   const first = rollDice(before.dice, count, 20)
   const roll = show(first.rolls)
   yield* emit(roll)
-  const offer = yield* offerInspiration({ ...before, dice: first.stream }, side, roll)
+  const afterRoll = { ...before, dice: first.stream }
+  if (!wentAgainstOwner(roll)) return { state: afterRoll, roll }
+  const offer = yield* offerInspiration(afterRoll, side, roll)
   if (!offer.used) return { state: offer.state, roll }
   const again = rollDice(offer.state.dice, count, 20)
   const reroll: E = { ...show(again.rolls), rerolled: true }

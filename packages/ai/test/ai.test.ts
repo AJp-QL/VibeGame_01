@@ -180,7 +180,7 @@ describe('pending decisions', () => {
     expect(chooseAction(other, createAi(other, 'A', GAME_PROFILES.greedy)).action).toEqual({ type: 'declineInspiration', side: 'A' })
   })
 
-  it("answers its own failed save during the other side's Turn with Inspiration, and keeps a passed one", () => {
+  it("answers its own failed save during the other side's Turn with Inspiration; a passed save is never offered (D-29)", () => {
     // A's Tamer Distracts B.m1 two tiles away: B decides on its save while it is A's Turn.
     const tiles = { A: [{ x: 3, y: 3 }, { x: 0, y: 0 }, { x: 6, y: 0 }], B: [{ x: 0, y: 6 }, { x: 3, y: 5 }, { x: 6, y: 6 }] } as Record<Side, [Tile, Tile, Tile]>
     let failed = presetBattle(tiles, 'A', [3, 18])
@@ -192,8 +192,7 @@ describe('pending decisions', () => {
 
     let saved = presetBattle(tiles, 'A', [19])
     saved = apply(saved, { type: 'useSkill', unit: 'A.tamer', skill: 'distract', target: 'B.m1' })
-    expect(saved.pending).toMatchObject({ kind: 'inspiration', side: 'B' })
-    expect(chooseAction(saved, createAi(saved, 'B', SIM_PROFILES.greedy)).action).toEqual({ type: 'declineInspiration', side: 'B' })
+    expect(saved.pending).toBeNull()
   })
 
   it('never rerolls initiative (sim.py has no Inspiration there)', () => {
