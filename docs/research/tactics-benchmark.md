@@ -9,6 +9,7 @@
 - **S** (secondary): wiki ที่รู้จักกัน (Fire Emblem Wiki, GameWith, UFOpaedia, Wikipedia) และสื่อ (RPG Site, Nintendo Life, AV Club, PC Gamer ฯลฯ)
 - **C** (community): กระทู้ Steam หรือโพสต์ผู้เล่น ใช้เมื่อไม่มีแหล่งอื่น และถือว่าอ่อน
 
+แหล่งที่มีเครื่องหมาย **†** ในรายการ Sources อ่านได้แค่ข้อความจากผลค้นหา (เปิดหน้าเว็บไม่ได้หรือไม่ได้เปิด) จึงอ่อนกว่าแหล่งที่ระดับเดียวกัน
 ถ้าเขียนว่า **unconfirmed** คือหาแหล่งที่ยืนยันไม่ได้ในรอบนี้ อย่าใช้เป็นข้อเท็จจริง War of the Visions มีแหล่งน้อยมาก จึงเป็น unconfirmed เกือบทุกหัวข้อ
 
 ## Summary
@@ -57,7 +58,7 @@
 | Tactics Ogre: Reborn | Chariot Tarot ย้อนการเคลื่อนไหวระหว่าง battle | ต้นเกมย้อนได้ 10 Turn แล้วเพิ่มขึ้นภายหลัง (บทวิจารณ์บอก 50) | ผู้วิจารณ์บอกว่าการทอยหลังย้อนเป็นผลใหม่ ไม่ได้ถูกกำหนดไว้ (ความเห็นผู้วิจารณ์ ไม่ใช่สเปก) | P [PlayStation Store](https://www.playstation.com/en-nz/games/tactics-ogre-reborn/), S [RPG Site](https://www.rpgsite.net/news/13383-tactics-ogre-reborn-details-skills-battiefield-elements-unit-recruitment-the-wheel-of-fortune-the-chariot-tarot-rewind-feature-and-the-world-tarot-route-change-mechanic), S [AV Club](https://www.avclub.com/tactics-ogre-reborn-review) |
 | Advance Wars 1+2 Re-Boot Camp | rewind Turn ได้ในทั้งสอง campaign ผู้วิจารณ์บอกว่าย้อนถึงต้น Turn | **unconfirmed** | **unconfirmed** | P [Nintendo AU](https://www.nintendo.com/au/games/nintendo-switch/advance-wars-1-plus-2-re-boot-camp/), S [Shacknews](https://www.shacknews.com/article/134936/advance-wars-1-2-reboot-camp-preview) |
 | Triangle Strategy | ไม่พบ rewind ระหว่าง battle มี battle retry และ quicksave อัตโนมัติทุกจำนวน Turn ที่กำหนด | — | — | P [Nintendo: demo survey results](https://www.nintendo.com/us/whatsnew/triangle-strategy-debut-demo-survey-results-nintendo-switch) |
-| XCOM: Enemy Unknown / Enemy Within (ไม่ใช่ XCOM 2) | ไม่มี Undo ในเกม ผู้เล่นใช้วิธีโหลดเซฟแทน | — | ผลถูกผูกกับ seed โหลดแล้วทำเหมือนเดิมได้ผลเดิม Enemy Within เพิ่มตัวเลือก "Save Scum" ที่สุ่ม seed ใหม่ทุกครั้งที่โหลด ส่วน XCOM 2 เป็น **unconfirmed** | S [Time](https://techland.time.com/?p=148165), S [GameBanshee](https://gamebanshee.com/daf) |
+| XCOM: Enemy Unknown / Enemy Within (ไม่ใช่ XCOM 2) | ไม่มี Undo ในเกม ผู้เล่นใช้วิธีโหลดเซฟแทน | — | ผลถูกผูกกับ seed โหลดแล้วทำเหมือนเดิมได้ผลเดิม Enemy Within เพิ่มตัวเลือก "Save Scum" ที่สุ่ม seed ใหม่ทุกครั้งที่โหลด ส่วน XCOM 2 เป็น **unconfirmed** | S [Time](https://techland.time.com/?p=148165), S [GameBanshee](https://www.gamebanshee.com/news/112504-xcom-enemy-within-adds-qsave-scumq-option.html) |
 | FEH, Langrisser Mobile, Mario + Rabbids, War of the Visions | **unconfirmed** | — | — | — |
 
 **Recommendation for Monster Tactics**
@@ -132,20 +133,29 @@
 
 Board 7x7 มี 49 ช่อง Board 9x9 มี 81 ช่อง ระยะ 4 แบบ Chebyshev จากกลาง 7x7 จึงครอบทั้ง Board (ตรงกับคำบ่นใน playtest) การเปลี่ยนไปวัดแบบ Manhattan ลดพื้นที่ที่ระยะเดียวกันครอบได้ราวครึ่งหนึ่ง และแบบทแยงสลับลดลงราวหนึ่งในสี่
 
-**ช่องว่างระหว่าง start zone** (ระยะตามแนวตรงจากแถวหน้าของฝั่งหนึ่งถึงแถวหน้าของอีกฝั่ง เท่ากันทุก metric เพราะเดินตรง)
-- 7x7: แถว 1 → แถว 5 = **4**
-- 9x9: แถว 1 → แถว 7 = **6**
+**ช่องว่างระหว่าง start zone** (ระยะตามแนวตรง เท่ากันทุก metric เพราะเดินตรงไม่ต้องใช้ทแยง)
 
-ผลคือ Unit ที่ระยะคุกคาม ≥ ช่องว่าง โจมตีแถวหน้าของอีกฝั่งได้ตั้งแต่ Turn แรก ไม่ว่าวัดระยะแบบไหน
-- 7x7, ปัจจุบัน (move 3 + ระยะ 4 = 7): ถึงทุกช่อง ระยะ Chebyshev ไกลสุดบน 7x7 คือ 6
-- 7x7, variant (a) (move 3 + ระยะ 3 = 6): **ยังถึงทุกช่อง** แม้ move 2 + ระยะ 3 = 5 ก็ยังเกินช่องว่าง 4 การลดระยะใน data อย่างเดียว**ไม่สร้างช่วงเข้าหากัน**บน 7x7 ตราบที่ skill ระยะไกลยังเกิน 1
-- 9x9, variant (a) (move 3 + ระยะ 3 = 6): เท่ากับช่องว่างพอดี จึงโจมตีแถวหน้าได้ใน Turn แรก แต่แถวหลัง (แถว 0) ปลอดภัย move 3 + ระยะ 2 = 5 จะไม่มีการโจมตีใน Turn แรก
+| Board | แถวหน้า → แถวหน้าของอีกฝั่ง | แถวหน้า → แถวหลังของอีกฝั่ง |
+|---|---|---|
+| 7x7 (แถว 0–1 กับ 5–6) | **4** | **5** |
+| 9x9 (แถว 0–1 กับ 7–8) | **6** | **7** |
+
+ผลคือ Unit ที่ระยะคุกคาม ≥ 4 บน 7x7 (≥ 6 บน 9x9) โจมตีแถวหน้าของอีกฝั่งได้ตั้งแต่ Turn แรก และถ้า ≥ 5 (≥ 7 บน 9x9) ก็ถึงแถวหลังด้วย ไม่ว่าวัดระยะแบบไหน
+- 7x7, ปัจจุบัน (move 3 + ระยะ 4 = 7): ถึงทุกช่อง เพราะระยะ Chebyshev ไกลสุดบน 7x7 คือ 6
+- 7x7, variant (a) (move 3 + ระยะ 3 = 6): **ยังถึงทุกช่อง** แม้ move 2 + ระยะ 3 = 5 ก็ยังถึงแถวหลัง การ deploy ไว้แถวหลังจึงไม่ช่วย การลดระยะใน data อย่างเดียว**ไม่สร้างช่วงเข้าหากัน**บน 7x7 ตราบที่ move + ระยะยัง ≥ 4
+- 9x9, variant (a) (move 3 + ระยะ 3 = 6): เท่ากับช่องว่างแถวหน้าพอดี จึงโจมตีแถวหน้าได้ใน Turn แรก แต่แถวหลังปลอดภัย ถ้าเป็น move 3 + ระยะ 2 = 5 จะไม่มีการโจมตีใน Turn แรก
+- 9x9, ระยะเดิม (move 3 + ระยะ 4 = 7): ถึงแถวหลังได้ใน Turn แรก
+- **variant (b) disadvantage ไม่เปลี่ยนระยะ** แค่ลดโอกาสโดน การโจมตีใน Turn แรกจึงยังเกิดได้ทั้งสองขนาด แค่โดนยากขึ้น
+- **variant (d) การวัดระยะ (ข้อเสนอด้านล่าง) ไม่เปลี่ยนระยะตามแนวตรง** จึงไม่ขยับ "Turn ก่อนการโจมตีครั้งแรก" สิ่งที่ (d) ทำคือลดพื้นที่ด้านข้างและมุมที่ถูกคุกคาม ทำให้มีช่องปลอดภัย
 - เทียบ FEH: Board ด้านยาว 8 ช่อง Unit ระยะไกลที่เร็วที่สุด (Cavalry 3 + ระยะ 2 ของซีรีส์) มีระยะคุกคาม 5 หรือประมาณ 60% ของด้านยาว ส่วนของเราบน 7x7 คือ 7/7 = 100% เกิน
+
+ดังนั้นตัวชี้วัด "Turn ก่อนการโจมตีครั้งแรก" ตัวเดียวจับได้แค่ผลของ (a) บน 9x9 และ (c) ส่วนผลของ (b) และ (d) ต้องดูจากตัวชี้วัดอื่น
 
 **Recommendation for Monster Tactics**
 - **ticket 08 ควรเพิ่ม variant (d) การวัดระยะ** (Manhattan หรือทแยงสลับ 1-2) เพราะ metric เป็นตัวที่ลดพื้นที่ที่ถูกคุกคามด้านข้างและมุม ทำให้มีที่ปลอดภัย แม้ไม่ได้ลดระยะตามแนวตรง เกมที่ใช้ระยะสั้นแบบ Fire Emblem ไม่นับระยะทแยงเป็น 1 แต่ยังหาข้อความยืนยันไม่ได้ (unconfirmed)
 - **ticket 08 ควรทดลองระยะ 2–3 สำหรับ skill ระยะไกล** ไม่ใช่แค่ 4 → 3 และ Mark 5 → 4 ค่าเริ่มของ variant (a) ยังยาวกว่า benchmark (ธนู Fire Emblem 2, longbow 3) และจากตัวเลขข้างบนก็ยังครอบ 7x7 ทั้ง Board
-- **ticket 08 ควรตั้งความคาดหวังของตัวชี้วัด "Turn ก่อนการโจมตีครั้งแรก" บน 7x7 ให้ถูก** ตามเรขาคณิตข้างบน บน 7x7 มีแค่ variant (c) terrain บัง line of sight ที่ทำให้ค่านี้ขึ้นได้ ส่วน (a) กับ (b) จะเห็นผลบน 9x9 ควรรัน 9x9 (ticket 15) ในชุดเดียวกับ ticket 08 แทนที่จะรอทีหลัง
+- **ticket 08 ควรตั้งความคาดหวังของตัวชี้วัด "Turn ก่อนการโจมตีครั้งแรก" ให้ถูก** ตามเรขาคณิตข้างบน บน 7x7 มีแค่ variant (c) terrain บัง line of sight ที่ทำให้ค่านี้ขึ้นได้ ส่วน (a) จะเห็นผลบน 9x9 เท่านั้น และ (b) กับ (d) ไม่ขยับค่านี้เลย ควรรัน 9x9 (ticket 15) ในชุดเดียวกับ ticket 08 แทนที่จะรอทีหลัง
+- **ticket 08 ควรเพิ่มตัวชี้วัด "สัดส่วนช่องที่ถูกคุกคาม" หรือ "จำนวนช่องปลอดภัย" ตอนต้นแต่ละ Turn** ใช้การคำนวณ Threat zone ต่อช่องจาก ticket 11 ได้เลย ถ้าไม่มีตัวชี้วัดนี้ simulator จะเห็น variant (d) ว่าไม่มีผล ทั้งที่ (d) แก้คำบ่นว่า "ไม่มีที่ปลอดภัย" โดยตรง
 - **ticket 09 ควรเลือกชุดจากผลทั้ง 7x7 และ 9x9** และพิจารณาให้ 9x9 เป็น Board ตั้งต้นของ Scenario ที่มี Unit ระยะไกลหลายตัว 7x7 เหมาะกับทีมสายประชิด
 - **ยืนยัน ticket 15/16** การเพิ่ม 9x9 คู่กับ 7x7 สอดคล้องกับ benchmark ที่ใช้ Board ด้านยาว 8 ช่องขึ้นไป (FEH, Into the Breach) จากแหล่งที่หาได้ ไม่มีเกมไหนใช้ Board ด้านยาวต่ำกว่า 8
 
@@ -188,8 +198,8 @@ Board 7x7 มี 49 ช่อง Board 9x9 มี 81 ช่อง ระยะ 4
 
 ## Recommended changes to phase 1.x (เรียงตามผลกระทบ)
 
-1. **ticket 08: เพิ่ม variant (d) การวัดระยะ (Manhattan หรือทแยงสลับ) และลองระยะ 2–3 ให้ skill ระยะไกล** variant (a) ที่ลด 4 → 3 / 5 → 4 ยังครอบ 7x7 ทั้ง Board (§5) ตรงกับคำบ่นหลักของ playtest
-2. **ticket 08/15: รันชุดทดลองบน 9x9 พร้อม 7x7 และตั้งความคาดหวังบน 7x7 ให้ถูก** บน 7x7 ช่องว่างระหว่าง start zone มีแค่ 4 ระยะคุกคามเกิน 4 จึงโจมตีได้ใน Turn แรกทุก metric มีแค่ terrain บัง line of sight (c) ที่แก้ได้ ticket 09 ควรเลือกชุดจากทั้งสองขนาด
+1. **ticket 08: เพิ่ม variant (d) การวัดระยะ (Manhattan หรือทแยงสลับ), ลองระยะ 2–3 ให้ skill ระยะไกล และเพิ่มตัวชี้วัด "สัดส่วนช่องที่ถูกคุกคาม/จำนวนช่องปลอดภัย" ตอนต้น Turn** variant (a) ที่ลด 4 → 3 / 5 → 4 ยังครอบ 7x7 ทั้ง Board (§5) ตรงกับคำบ่นหลักของ playtest และถ้าไม่มีตัวชี้วัดใหม่ simulator จะมองไม่เห็นผลของ (d)
+2. **ticket 08/15: รันชุดทดลองบน 9x9 พร้อม 7x7 และตั้งความคาดหวังบน 7x7 ให้ถูก** บน 7x7 ระยะคุกคาม ≥ 4 โจมตีแถวหน้าได้ใน Turn แรก และ ≥ 5 ถึงแถวหลัง ไม่ว่าวัดระยะแบบไหน มีแค่ terrain บัง line of sight (c) ที่แก้ได้ ticket 09 ควรเลือกชุดจากทั้งสองขนาด
 3. **spec + ticket 11/12: ทบทวน "full-Board overlay" ที่อยู่ใน Out of Scope** ทุกเกมที่ตรวจใช้ overlay เปิดปิดได้ + แตะศัตรูดูระยะ ให้ ticket 11 คืนค่าต่อช่องของทั้ง Board (additive) เพิ่ม ticket UI สำหรับปุ่ม overlay และเขียนใน ticket 12 ว่าค่าประมาณนี้ "ประเมินสูง"
 4. **ticket ใหม่ (Claude + Codex): แสดงโอกาสโดนต่อเป้าใน Move preview และตอนเลือกเป้า** ใช้ค่าจริงของ d20 + advantage ไม่มี assist ที่ซ่อนไว้
 5. **spec, Undo: เขียนเหตุผลว่าทำไมห้ามข้ามการทอย** (Dice Seed ตายตัว = รู้ผลลูกถัดไป ซึ่ง Divine Pulse และ XCOM: EU ก็เป็นแบบนี้) และ ticket 07 ให้ปุ่มที่ถูกปิดบอกเหตุผล ticket 05 ไม่ต้องเปลี่ยนการออกแบบ
@@ -211,10 +221,10 @@ Board 7x7 มี 49 ช่อง Board 9x9 มี 81 ช่อง ระยะ 4
 **Primary**
 - Fire Emblem Heroes, Learn with Sharena (Nintendo): [Danger Area 1110](https://new-guide.fire-emblem-heroes.com/en-GB/feh-1110.html), [Combat forecast 3460](https://new-guide.fire-emblem-heroes.com/en-GB/feh-3460.html), [Settings 3540](https://new-guide.fire-emblem-heroes.com/en-GB/feh-3540.html), [Movement 1080](https://new-guide.fire-emblem-heroes.com/en-US/feh-1080.html)
 - Nintendo, [TRIANGLE STRATEGY Debut Demo survey results](https://www.nintendo.com/us/whatsnew/triangle-strategy-debut-demo-survey-results-nintendo-switch)
-- Nintendo AU, [Ten tactical tips for Triangle Strategy](https://www.nintendo.com/au/news-and-articles/ten-tactical-tips-for-triangle-strategy-tm/)
-- Nintendo AU, [Advance Wars 1+2: Re-Boot Camp](https://www.nintendo.com/au/games/nintendo-switch/advance-wars-1-plus-2-re-boot-camp/)
-- Nintendo AU, [Fire Emblem: Three Houses](https://nintendo.com/au/games/nintendo-switch/fire-emblem-three-houses)
-- PlayStation Store, [Tactics Ogre: Reborn](https://www.playstation.com/en-nz/games/tactics-ogre-reborn/)
+- Nintendo AU, [Ten tactical tips for Triangle Strategy](https://www.nintendo.com/au/news-and-articles/ten-tactical-tips-for-triangle-strategy-tm/) †
+- Nintendo AU, [Advance Wars 1+2: Re-Boot Camp](https://www.nintendo.com/au/games/nintendo-switch/advance-wars-1-plus-2-re-boot-camp/) †
+- Nintendo AU, [Fire Emblem: Three Houses](https://nintendo.com/au/games/nintendo-switch/fire-emblem-three-houses) †
+- PlayStation Store, [Tactics Ogre: Reborn](https://www.playstation.com/en-nz/games/tactics-ogre-reborn/) †
 - Zlongame, [Langrisser Mobile Encyclopedia: Battle Rules](https://us-news.zlongame.com/game/888.jhtml)
 - PC Gamer, [Into the Breach preview (คำพูดผู้พัฒนา)](https://www.pcgamer.com/into-the-breach-preview/)
 
@@ -224,15 +234,15 @@ Board 7x7 มี 49 ช่อง Board 9x9 มี 81 ช่อง ระยะ 4
 - GameWith, [Sword of Convallaria Battle System and UI Guide](https://gamewith.net/sword-of-convallaria/69373)
 - UFOpaedia, [Difficulty (XCOM2)](https://www.ufopaedia.org/index.php/Difficulty_(XCOM2))
 - Pixel Twelve, [XCOM 2 Beginner Guide](https://pixeltwelve.com/guides/xcom-2-beginner-guide-first-mission-cover-overwatch); Fextralife, [XCOM 2 Combat](https://xcom2.wiki.fextralife.com/Combat)
-- Time, [Why XCOM's Random Results Sometimes Aren't](https://techland.time.com/?p=148165); GameBanshee, [XCOM: Enemy Within adds "Save Scum" option](https://gamebanshee.com/daf)
-- RPG Site, [Tactics Ogre: Reborn details … Chariot Tarot](https://www.rpgsite.net/news/13383-tactics-ogre-reborn-details-skills-battiefield-elements-unit-recruitment-the-wheel-of-fortune-the-chariot-tarot-rewind-feature-and-the-world-tarot-route-change-mechanic); AV Club, [Tactics Ogre: Reborn review](https://www.avclub.com/tactics-ogre-reborn-review); RPGamer, [Tactics Ogre: Reborn details](https://rpgamer.com/2022/08/tactics-ogre-reborn-gets-more-details-images/); GamingBolt, [Tactics Ogre: Reborn AI improvements](https://gamingbolt.com/tactics-ogre-reborn-ai-improvements-reviving-units-training-battles-and-more-revealed)
-- Nintendo Life, [Into the Breach review](https://nintendolife.com/reviews/switch-eshop/into_the_breach); Game Developer, [Road to the IGF: Into the Breach](https://gamedeveloper.com/game-platforms/road-to-the-igf-subset-games-i-into-the-breach-i-); Cliqist, [Interview with Justin Ma](https://cliqist.com/2018/03/06/into-the-breach-building-a-better-mech-with-subset-games-justin-ma/)
-- Shacknews, [Advance Wars 1+2: Re-Boot Camp preview](https://www.shacknews.com/article/134936/advance-wars-1-2-reboot-camp-preview); Advance Wars Wiki, [Damage Formula](https://advancewars.fandom.com/wiki/Damage_Formula); AWBW Wiki, [Luck](https://awbw.fandom.com/wiki/Luck)
-- Gamepressure, [Mario + Rabbids Sparks of Hope review](https://gamepressure.com/editorials/reviews/mario-rabbids-sparks-of-hope-review/z05d7); Gfinity, [Sparks of Hope preview](https://www.gfinityesports.com/article/mario-and-rabbids-sparks-of-hope-preview-pulling-it-out-of-the-hat)
-- SuperCheats, [Three Houses danger radius](https://www.supercheats.com/fire-emblem-three-houses/walkthrough/danger-radius); Prima Games, [Enemy targeting in Fire Emblem Engage](https://primagames.com/tips/how-to-see-enemy-targeting-in-fire-emblem-engage) (หน้าเว็บตอบ 403 ใช้แค่ข้อความจากผลค้นหา)
+- Time, [Why XCOM's Random Results Sometimes Aren't](https://techland.time.com/?p=148165) † (เปิดไม่ได้: TLS error); GameBanshee, [XCOM: Enemy Within adds "Save Scum" option] †(https://www.gamebanshee.com/news/112504-xcom-enemy-within-adds-qsave-scumq-option.html)
+- RPG Site, [Tactics Ogre: Reborn details … Chariot Tarot](https://www.rpgsite.net/news/13383-tactics-ogre-reborn-details-skills-battiefield-elements-unit-recruitment-the-wheel-of-fortune-the-chariot-tarot-rewind-feature-and-the-world-tarot-route-change-mechanic); AV Club, [Tactics Ogre: Reborn review](https://www.avclub.com/tactics-ogre-reborn-review) †; RPGamer, [Tactics Ogre: Reborn details](https://rpgamer.com/2022/08/tactics-ogre-reborn-gets-more-details-images/) †; GamingBolt, [Tactics Ogre: Reborn AI improvements](https://gamingbolt.com/tactics-ogre-reborn-ai-improvements-reviving-units-training-battles-and-more-revealed) †
+- Nintendo Life, [Into the Breach review](https://nintendolife.com/reviews/switch-eshop/into_the_breach) † (เปิดไม่ได้: 403); Game Developer, [Road to the IGF: Into the Breach](https://gamedeveloper.com/game-platforms/road-to-the-igf-subset-games-i-into-the-breach-i-) †; Cliqist, [Interview with Justin Ma](https://cliqist.com/2018/03/06/into-the-breach-building-a-better-mech-with-subset-games-justin-ma/) †
+- Shacknews, [Advance Wars 1+2: Re-Boot Camp preview](https://www.shacknews.com/article/134936/advance-wars-1-2-reboot-camp-preview) †; Advance Wars Wiki, [Damage Formula](https://advancewars.fandom.com/wiki/Damage_Formula) †; AWBW Wiki, [Luck](https://awbw.fandom.com/wiki/Luck) †
+- Gamepressure, [Mario + Rabbids Sparks of Hope review](https://gamepressure.com/editorials/reviews/mario-rabbids-sparks-of-hope-review/z05d7); Gfinity, [Sparks of Hope preview](https://www.gfinityesports.com/article/mario-and-rabbids-sparks-of-hope-preview-pulling-it-out-of-the-hat) †
+- SuperCheats, [Three Houses danger radius](https://www.supercheats.com/fire-emblem-three-houses/walkthrough/danger-radius) †; Prima Games, [Enemy targeting in Fire Emblem Engage](https://primagames.com/tips/how-to-see-enemy-targeting-in-fire-emblem-engage) † (เปิดไม่ได้: 403)
 - Pocket Gamer, [Langrisser Mobile battle tips](https://www.pocketgamer.com/langrisser-mobile/langrisser-mobile-cheats-and-tips-advanced-battle-tips-you-must-know/)
-- TouchTapPlay, [War of the Visions beginner guide](https://www.touchtapplay.com/war-of-the-visions-ffbe-guide-tips-tricks-for-beginners/); altema (JP), [WOTV CT](https://altema.jp/ffbewotv/mahouct)
+- TouchTapPlay, [War of the Visions beginner guide](https://www.touchtapplay.com/war-of-the-visions-ffbe-guide-tips-tricks-for-beginners/) †; altema (JP), [WOTV CT](https://altema.jp/ffbewotv/mahouct) †
 
 **Community**
-- Steam (Into the Breach): [Reset Turn / pilot](https://steamcommunity.com/app/590380/discussions/0/2650805212053351822/?ctp=2), [end-turn warning](https://steamcommunity.com/app/590380/discussions/0/1694914735994664785)
-- Steam (XCOM 2): [hidden aim modifiers](https://steamcommunity.com/app/268500/discussions/0/412447331645399260)
+- Steam (Into the Breach): [Reset Turn / pilot](https://steamcommunity.com/app/590380/discussions/0/2650805212053351822/?ctp=2) †, [end-turn warning](https://steamcommunity.com/app/590380/discussions/0/1694914735994664785) †
+- Steam (XCOM 2): [hidden aim modifiers](https://steamcommunity.com/app/268500/discussions/0/412447331645399260) †
