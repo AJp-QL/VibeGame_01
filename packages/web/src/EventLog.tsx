@@ -147,7 +147,7 @@ export function logLines(event: BattleEvent, name: (id: string) => string, state
       return [
         th.logPushBlocked(
           name(event.unit),
-          isOnBoard(event.tile) ? tileName(event.tile) : '',
+          isOnBoard(event.tile, state.terrain.length) ? tileName(event.tile) : '',
           event.blockedBy === 'offBoard' ? null : name(event.blockedBy),
         ),
       ]

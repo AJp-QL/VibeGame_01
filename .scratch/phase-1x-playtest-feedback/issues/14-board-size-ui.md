@@ -33,3 +33,10 @@
   [run 39045253523](https://github.com/AJp-QL/VibeGame_01/actions/runs/39045253523),
   including actual comparisons of all original 7×7 Board screenshots.
 - [PR #27](https://github.com/AJp-QL/VibeGame_01/pull/27), pending review/merge.
+
+- PR review follow-up: EventLog checks blocked-push tiles against the Battle's
+  terrain length, with a regression for an occupied i5 on a real 9×9 Battle and
+  an off-Board j5 case. Zoom expectations now use independently specified
+  device-pixel scales and verify that the next larger scale cannot fit.
+- PR #26 was still open when these fixes began; the merge-order requirement
+  remains in force before either PR is merged second.

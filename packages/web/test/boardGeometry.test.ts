@@ -23,12 +23,18 @@ for (const size of [3, 7, 9, 15]) {
 }
 
 it('9×9 fits desktop and 360 px phones at the existing display ratios', () => {
-  for (const width of [328, 688]) for (const dpr of [1, 1.25, 1.5, 1.5625, 2, 2.625, 3]) {
+  const ratios = [1, 1.25, 1.5, 1.5625, 2, 2.625, 3]
+  // Independently specified largest whole device-pixel scales for a 288 px Board.
+  for (const [width, expectedScales] of [
+    [328, [1, 1, 1, 1, 2, 2, 3]],
+    [688, [2, 2, 3, 3, 4, 6, 7]],
+  ] as const) for (const [index, dpr] of ratios.entries()) {
     const base = 9 * TILE_SIZE
     const zoom = boardZoom(width, width, dpr, base)
     expect(base * zoom).toBeLessThanOrEqual(width + 1e-6)
     expect(zoom * dpr).toBeCloseTo(Math.round(zoom * dpr))
-    // Simulate Phaser's conversion from displayed coordinates to logical coordinates.
-    expect(tileAtPoint(8.5 * TILE_SIZE * zoom / zoom, 8.5 * TILE_SIZE * zoom / zoom, 9)).toEqual({ x: 8, y: 8 })
+    expect(zoom).toBeCloseTo(expectedScales[index]! / dpr)
+    // One more device pixel per Board pixel must no longer fit.
+    expect(base * (expectedScales[index]! + 1) / dpr).toBeGreaterThan(width)
   }
 })
