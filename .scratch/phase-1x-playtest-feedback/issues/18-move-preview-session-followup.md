@@ -6,11 +6,15 @@
 
 **Blocked by:** 04 — UI: Move preview (PR #26 merged ก่อน เพื่อไม่ให้ชนกับ wrapper ของ web)
 
-**Status:** ready-for-agent
+**Status:** in progress (PR open)
 
-- [ ] ขณะมี Move preview, `selectUnit(selectedUnit)` และ `input({ type: 'tapUnit', unit: selectedUnit })` ล้าง `movePreviewTile` / `movePreview` เท่านั้น: `selectedUnit`, `mode`, `reachable` (หรือ `tileChoices` ของ Blink) คงเดิม; test ทั้ง Move และ Blink และ Hotseat ฝั่ง B
-- [ ] ไม่มี preview: แตะ Unit ที่เลือกอยู่ยังยกเลิกการเลือกเหมือนเดิม (test เดิมผ่าน)
-- [ ] `BattleSnapshot.movePreview?` เพิ่มแบบ optional ใน `port.ts` พร้อม doc comment; session ส่งค่าเดียวกับ `SessionSnapshot.movePreview`; Replay player ส่ง `null`; type `MovePreview` export จาก `@mt/session` อยู่แล้ว
-- [ ] ไม่เปลี่ยนความหมายของ `input` แบบอื่น (แตะช่องที่สว่างยังเดินทันทีผ่าน `input`; web ใช้ `previewMove` ผ่าน wrapper ของตัวเอง) ตาม contract rule ของ AGENTS.md
-- [ ] package README ของ session อัปเดต (บรรทัด Move preview และ port)
-- [ ] typecheck, test, build, path check ผ่าน; ENGINE_VERSION ไม่เปลี่ยน
+- [x] ขณะมี Move preview, `selectUnit(selectedUnit)` และ `input({ type: 'tapUnit', unit: selectedUnit })` ล้าง `movePreviewTile` / `movePreview` เท่านั้น: `selectedUnit`, `mode`, `reachable` (หรือ `tileChoices` ของ Blink) คงเดิม; test ทั้ง Move และ Blink และ Hotseat ฝั่ง B
+- [x] ไม่มี preview: แตะ Unit ที่เลือกอยู่ยังยกเลิกการเลือกเหมือนเดิม (test เดิมผ่าน)
+- [x] `BattleSnapshot.movePreview?` เพิ่มแบบ optional ใน `port.ts` พร้อม doc comment; session ส่งค่าเดียวกับ `SessionSnapshot.movePreview`; Replay player ส่ง `null`; type `MovePreview` export จาก `@mt/session` อยู่แล้ว
+- [x] ไม่เปลี่ยนความหมายของ `input` แบบอื่น (แตะช่องที่สว่างยังเดินทันทีผ่าน `input`; web ใช้ `previewMove` ผ่าน wrapper ของตัวเอง) ตาม contract rule ของ AGENTS.md
+- [x] package README ของ session อัปเดต (บรรทัด Move preview และ port)
+- [x] typecheck, test, build, path check ผ่าน; ENGINE_VERSION ไม่เปลี่ยน
+
+## Comments
+
+- `selectUnit` (and so `input` `tapUnit`) drops only the preview when the tapped Unit is the selected one and `movePreview` is not null: Move keeps `reachable`, Blink keeps `mode: skill` / `pendingSkill` with `pendingTile` cleared. `BattleSnapshot.movePreview?` added in `port.ts`; Replay player gives `null`. Tests in `sessionMovePreview.test.ts` (Move and Blink through `selectUnit` and `input`, Hotseat B, no preview, port type). ENGINE_VERSION unchanged.

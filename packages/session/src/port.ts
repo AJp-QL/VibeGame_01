@@ -6,6 +6,7 @@
  */
 import type { Tile } from '@mt/shared'
 import type { BattleEvent, BattleState, UnitId, UnitState } from '@mt/engine'
+import type { MovePreview } from './session.ts'
 
 export interface BattleSnapshot {
   readonly state: BattleState
@@ -42,6 +43,14 @@ export interface BattleSnapshot {
   readonly area: readonly Tile[]
   /** Targets picked for an area skill, in the order they will be attacked (numbered on the Board). */
   readonly chosenTargets: readonly UnitId[]
+  /**
+   * Move preview (phase 1.x ticket 03): the selected Unit as if it stood on the
+   * tile being looked at (a reachable tile, or the Blink destination being
+   * aimed), with what it could attack from there. `null` or absent when there
+   * is none; optional so other ports (the Replay player, fakes in tests) need
+   * not provide it.
+   */
+  readonly movePreview?: MovePreview | null
 }
 
 /** A tap or click on the Board. No hover: mobile has none. */

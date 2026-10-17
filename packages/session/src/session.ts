@@ -722,6 +722,13 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     const { state, selectedUnit } = snapshot
     // A pending decision (Hit and Run's step, Inspiration) keeps the selection.
     if (state.pending !== null) return
+    // Move preview (spec story 3): tapping the selected Unit again drops only the preview. A Move preview
+    // keeps the Unit and the lit tiles; a Blink preview keeps aiming Blink, with no destination picked.
+    if (state.phase === 'play' && unit !== null && unit === selectedUnit && snapshot.movePreview !== null && humanMayAct(state)) {
+      if (snapshot.movePreviewTile !== null) update({ movePreviewTile: null, rejection: null })
+      else update({ pendingTile: null, chosenTargets: [], pendingElement: null, rejection: null })
+      return
+    }
     const own = unit !== null && unit.startsWith(`${state.sideToAct}.`) && state.outcome === null && humanMayAct(state)
     // In play, choosing the selected Unit again clears the selection.
     const toggleOff = state.phase === 'play' && unit === selectedUnit
