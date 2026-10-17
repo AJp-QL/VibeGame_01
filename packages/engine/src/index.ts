@@ -59,6 +59,7 @@ export { elementBeats, terrainEffectAt, type RollEffect, type RollMode, type Rol
 export type { DerivedValues } from './derived.ts'
 export { isInStartZone, START_ZONE_ROWS, startZoneRows, unitsVisibleTo } from './deployment.ts'
 export { distance, moveRangeNow } from './movement.ts'
+export { drewDice, undoPoint, type UndoLabel, type UndoPoint } from './undo.ts'
 export { boardSizeOf, COMMAND_OPTIONS, ROUND_LIMIT } from './state.ts'
 export type {
   Activations,

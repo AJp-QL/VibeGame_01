@@ -14,6 +14,7 @@ export {
   type BlockedTarget,
   type HotseatScreen,
   type MovePreview,
+  type UndoOffer,
   type MoveReach,
   type SelectionMode,
   type SessionOptions,
