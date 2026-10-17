@@ -6,12 +6,12 @@
 
 **Blocked by:** 13 — ขนาด Board ต่อ Board: expand และย้าย engine, AI, simulator
 
-**Status:** in progress (implementation complete; PR CI pending)
+**Status:** done
 
 - [x] battle และ web ไม่ใช้ค่าคงที่ขนาด Board อีก
 - [x] screenshot ของ Board 7x7 ทุกภาพเหมือนเดิม (หรือ refresh เพราะ dataHash เท่านั้น ภาพไม่เปลี่ยน)
 - [x] test ด้วย Board ทดสอบขนาดอื่นแสดงได้และแตะได้ถูกช่อง (unit test ของการแปลงตำแหน่ง)
-- [ ] CI เขียวทั้งสาม job
+- [x] CI เขียวทั้งสาม job
 
 
 ## Comments
@@ -29,3 +29,7 @@
 - [Screenshots and review notes](../evidence/14-board-size-ui/README.md).
 - Merge-order rule with ticket 04 / PR #26: whichever merges second must first
   merge latest `origin/main` into its branch and rerun all checks.
+- Path ownership check passed (18 files). All three CI jobs passed on
+  [run 39045253523](https://github.com/AJp-QL/VibeGame_01/actions/runs/39045253523),
+  including actual comparisons of all original 7×7 Board screenshots.
+- [PR #27](https://github.com/AJp-QL/VibeGame_01/pull/27), pending review/merge.
