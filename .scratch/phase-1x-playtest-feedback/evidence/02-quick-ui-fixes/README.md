@@ -66,3 +66,15 @@ The required `playwright install --with-deps chromium` was attempted; its root
 step failed (`su: Authentication failure`). Installing the pinned browser with
 `playwright install chromium` succeeded, and the preinstalled system libraries
 ran every visual and UI check successfully.
+
+## Validation
+
+Frozen dependency install, typecheck, full test suite (813 passed, 1 intentional
+skip), production build, path ownership (33 allowed files), and simulator
+`check-replays` all passed. Three consecutive visual comparisons passed (57/57).
+The initial sandbox test could not spawn git in the ownership suite; the full
+run with process/network access passed.
+
+[GitHub CI](https://github.com/AJp-QL/VibeGame_01/actions/runs/39042308791) passed
+all three jobs, including actual Board comparisons with matching fixtures.
+[PR #25](https://github.com/AJp-QL/VibeGame_01/pull/25) targets main.
