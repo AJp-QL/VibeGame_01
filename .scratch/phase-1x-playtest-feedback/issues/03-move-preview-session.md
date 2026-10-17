@@ -6,7 +6,7 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** in progress (PR open)
+**Status:** done
 
 - [x] เลือกช่องเพื่อดูแล้ว state ของ Battle ไม่เปลี่ยน และไม่ใช้ลูกเต๋า
 - [x] รายการศัตรูที่ถึงต่อ skill ตรงกับ legal actions ที่ Unit จะมีจริงหลังเดินไปช่องนั้น (test เทียบกับการเดินจริง หลายตำแหน่งและหลาย skill รวม line of sight บัง)
@@ -18,3 +18,4 @@
 ## Comments
 
 - `previewMove` / `cancelMovePreview` / `confirmMove`, `snapshot.movePreviewTile` and `snapshot.movePreview` (additive). The engine applies the Move or Blink to a copy of the Battle and reads the legal actions (no state change, no dice). Tests: `packages/session/test/sessionMovePreview.test.ts` (18, incl. real-vs-preview for every reachable tile in an open layout and a line-of-sight layout, Burst, Blink, Hotseat team B). The old tap-to-move path is unchanged for ticket 04.
+- Merged in PR #22.
