@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { withMovePreview } from '../src/movePreviewSession.ts'
+import { MovePreviewPanel } from '../src/MovePreviewPanel.tsx'
 import { createActionConfirmation } from '../src/actionConfirmation.ts'
 import { StartUnitDialog } from '../src/StartUnitDialog.tsx'
 import { TurnPanel } from '../src/TurnPanel.tsx'
@@ -316,5 +318,76 @@ describe('push-blocked log on a 9×9 Board', () => {
       .toEqual([th.logPushBlocked('A.m1', 'i5', 'B.m1')])
     expect(logLines({ type: 'pushBlocked', unit: 'A.m1', by: 'B.m2', tile: t('j5'), blockedBy: 'offBoard' }, id => id, state, data))
       .toEqual([th.logPushBlocked('A.m1', '', null)])
+  })
+})
+
+describe('phase 1.x Move preview UI', () => {
+  function previewSession() {
+    return withMovePreview(createBattleSession(playing({ A: ['a1', 'd4', 'c3'], B: ['a7', 'e5', 'b6'] })))
+  }
+
+  it('Board taps preview and replace destinations, then confirmMove commits through the switch guard', () => {
+    const raw = createBattleSession(playing({ A: ['a1', 'd4', 'c3'], B: ['a7', 'e5', 'b6'] }))
+    raw.selectUnit('A.m1')
+    raw.input({ type: 'tapTile', tile: raw.getSnapshot().reachable[0]! })
+    const confirmation = createActionConfirmation(raw)
+    const s = withMovePreview(confirmation.session)
+    s.selectUnit('A.m2')
+    const before = s.getSnapshot()
+    s.input({ type: 'tapTile', tile: before.reachable[0]! })
+    s.input({ type: 'tapTile', tile: before.reachable[1]! })
+    expect(s.getSnapshot().movePreview?.tile).toEqual(before.reachable[1])
+    expect(s.getSnapshot().state).toBe(before.state)
+    expect(confirmation.getPending()).toBeNull()
+    s.confirmMove()
+    expect(confirmation.getPending()).toMatchObject({ current: 'A.m1', next: 'A.m2' })
+    confirmation.confirm()
+    expect(s.getSnapshot().state.units.find(unit => unit.id === 'A.m2')?.tile).toEqual(before.reachable[1])
+  })
+
+  it('renders the engine-provided attack reach and blocked targets without calculating them', () => {
+    const s = previewSession()
+    s.selectUnit('A.m2')
+    s.input({ type: 'tapTile', tile: s.getSnapshot().reachable[0]! })
+    const snapshot = s.getSnapshot()
+    const panel = renderToStaticMarkup(createElement(MovePreviewPanel, { snapshot, session: s, data }))
+    expect(panel).toContain(th.movePreviewNote)
+    expect(panel).toContain(th.confirmMove)
+    for (const reach of snapshot.movePreview!.reach) {
+      expect(panel).toContain(reach.skill === null ? th.attack : data.skills[reach.skill]!.name)
+    }
+    const blocked = { ...snapshot, movePreview: { ...snapshot.movePreview!, reach: [{ skill: null, targets: ['B.m1'], blocked: [{ unit: 'B.m2', tile: t('b6')!, reason: 'no-line-of-sight' as const, blockedBy: ['B.m1'] }] }] } }
+    const blockedPanel = renderToStaticMarkup(createElement(MovePreviewPanel, { snapshot: blocked, session: s, data }))
+    expect(blockedPanel).toContain(th.movePreviewTargets('Tidewall (ทีม B)'))
+    expect(blockedPanel).toContain(th.blockedBy('Quillfox (ทีม B)', 'Tidewall (ทีม B)'))
+  })
+
+  it('Blink uses the preview panel and its own confirmation button', () => {
+    const s = previewSession()
+    s.selectUnit('A.m2')
+    s.chooseSkill('blink')
+    s.input({ type: 'tapTile', tile: s.getSnapshot().tileChoices[0]! })
+    const snapshot = s.getSnapshot()
+    const html = renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))
+    expect(html).toContain(th.hintMovePreview)
+    expect(html).toContain('>Blink</button>')
+    expect(html).not.toContain(th.confirmSkill)
+    s.input({ type: 'tapUnit', unit: 'A.m2' })
+    expect(s.getSnapshot().movePreview).toBeNull()
+  })
+
+  it('never hints movement with no reachable tiles, including after Action with a free skill', () => {
+    const s = previewSession()
+    s.selectUnit('A.m2')
+    const snapshot = s.getSnapshot()
+    const noMove = { ...snapshot, reachable: [] }
+    const html = renderToStaticMarkup(createElement(TurnPanel, { snapshot: noMove, session: s, data }))
+    expect(html).not.toContain(th.hintMoveOrAttack)
+    expect(html).not.toContain(th.hintMoveOrDefend)
+    expect(html).not.toContain(th.hintMove)
+    const acted = { ...noMove, state: { ...snapshot.state, units: snapshot.state.units.map(unit => unit.id === snapshot.selectedUnit ? { ...unit, hasActed: true } : unit) }, skills: [{ ...snapshot.skills[0]!, skill: 'camouflage', free: true as const, usable: true }] }
+    const free = renderToStaticMarkup(createElement(TurnPanel, { snapshot: acted, session: s, data }))
+    expect(free).toContain(th.hintFreeSkill('Camouflage'))
+    expect(free).not.toContain(th.hintMoveAndFreeSkill('Camouflage'))
   })
 })

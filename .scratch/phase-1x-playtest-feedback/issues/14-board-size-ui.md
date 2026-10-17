@@ -40,3 +40,7 @@
   device-pixel scales and verify that the next larger scale cannot fit.
 - PR #26 was still open when these fixes began; the merge-order requirement
   remains in force before either PR is merged second.
+
+- PR #26 merged as `295cd1a`. Merged updated `origin/main` into this branch;
+  resolved BattleScene imports by retaining both size-aware geometry and the
+  Move preview type, and retained both sets of text regression tests.

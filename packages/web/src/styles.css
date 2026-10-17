@@ -606,6 +606,26 @@ body {
   padding: 4px 0;
 }
 
+.move-preview {
+  margin-block: 12px;
+  padding: 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.move-reach {
+  padding-left: 20px;
+}
+
+.move-reach li {
+  margin-block: 8px;
+}
+
+.move-reach span {
+  display: block;
+}
+
 .legend details ul {
   margin: 4px 0 0;
   padding-left: 20px;

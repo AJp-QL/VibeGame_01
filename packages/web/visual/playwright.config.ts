@@ -27,7 +27,7 @@ export default defineConfig({
     launchOptions: {
       // Optional local smoke check only; baselines use Playwright's pinned browser.
       ...(process.env.VISUAL_CHROMIUM ? { executablePath: process.env.VISUAL_CHROMIUM } : {}),
-      args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+      args: ['--disable-lcd-text', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
     },
   },
   webServer: {
