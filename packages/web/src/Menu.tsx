@@ -269,7 +269,7 @@ const hex = (colour: number) => `#${colour.toString(16).padStart(6, '0')}`
 /** The chosen Board's terrain at a glance, in the Board's own colours; row 1 (team A) at the top. */
 function MiniBoard({ board }: { board: Board }) {
   return (
-    <div className="mini-board" role="img" aria-label={th.menu.boardPreview(board.name)}>
+    <div className="mini-board" style={{ gridTemplateColumns: `repeat(${board.terrain.length}, 16px)` }} role="img" aria-label={th.menu.boardPreview(board.name)}>
       {board.terrain.flatMap((row, y) =>
         row.map((terrain, x) => <span key={`${x},${y}`} style={{ background: hex(TERRAIN_COLOURS[terrain]) }} />),
       )}

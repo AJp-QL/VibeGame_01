@@ -68,11 +68,10 @@ body {
   border-color: var(--side-b);
 }
 
-/* The Phaser parent needs a definite size: MAX_ZOOM picks the largest whole
-   multiple of 224 px that fits both width and height. */
+/* The parent uses the Battle dimensions; Phaser fits whole device pixels. */
 .board {
   width: 100%;
-  height: max(224px, min(100vw - 32px, 75vh));
+  height: max(var(--board-pixels), min(100vw - 32px, 75vh));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -610,6 +609,7 @@ body {
 .legend details ul {
   margin: 4px 0 0;
   padding-left: 20px;
+}
 
 /* ---- ticket 13: menu ---- */
 
@@ -689,11 +689,10 @@ body {
   gap: 8px;
 }
 
-/* 7 × 16 px tiles + 1 px gaps: beside the options, or below them at 360 px. */
+/* One column per terrain column; tiles retain their existing 16 px size. */
 .mini-board {
   flex: none;
   display: grid;
-  grid-template-columns: repeat(7, 16px);
   grid-auto-rows: 16px;
   gap: 1px;
   padding: 1px;

@@ -14,7 +14,8 @@
  * during deployment never appear and cannot be tapped.
  */
 import * as Phaser from 'phaser'
-import { BOARD_SIZE, type Tile } from '@mt/shared'
+import type { Tile } from '@mt/shared'
+import { boardPixels, tileAtPoint, tileCentre, TILE_SIZE } from './boardGeometry.ts'
 import { derivedValues, type BattleSessionPort, type BattleSnapshot, type BattleState, type UnitId, type UnitState } from '@mt/session'
 import {
   AREA,
@@ -45,8 +46,6 @@ import {
 import type { BoardLabels } from './labels.ts'
 import { drawUnit } from './silhouettes.ts'
 
-export const TILE_SIZE = 32
-export const BOARD_PIXELS = TILE_SIZE * BOARD_SIZE
 
 /** Milliseconds per step when a Unit walks its path. */
 const STEP_MS = 90
@@ -73,11 +72,6 @@ export interface BattleSceneData {
   readonly session: BattleSessionPort
   readonly labels: BoardLabels
 }
-
-const tileCentre = (tile: Tile) => ({
-  x: tile.x * TILE_SIZE + TILE_SIZE / 2,
-  y: tile.y * TILE_SIZE + TILE_SIZE / 2,
-})
 
 interface UnitView {
   readonly container: Phaser.GameObjects.Container
@@ -145,10 +139,11 @@ export class BattleScene extends Phaser.Scene {
       }),
     )
     g.fillStyle(GRID_LINE, 1)
-    for (let i = 0; i <= BOARD_SIZE; i++) {
-      const at = Math.min(i * TILE_SIZE, BOARD_PIXELS - 1)
-      g.fillRect(at, 0, 1, BOARD_PIXELS)
-      g.fillRect(0, at, BOARD_PIXELS, 1)
+    const pixels = boardPixels(state)
+    for (let i = 0; i <= state.terrain.length; i++) {
+      const at = Math.min(i * TILE_SIZE, pixels - 1)
+      g.fillRect(at, 0, 1, pixels)
+      g.fillRect(0, at, pixels, 1)
     }
     for (const attuned of state.attuned) {
       const left = attuned.tile.x * TILE_SIZE
@@ -505,9 +500,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private onTap(pointer: Phaser.Input.Pointer): void {
-    const tile = { x: Math.floor(pointer.x / TILE_SIZE), y: Math.floor(pointer.y / TILE_SIZE) }
-    if (tile.x < 0 || tile.y < 0 || tile.x >= BOARD_SIZE || tile.y >= BOARD_SIZE) return
-    const unit = this.session.getSnapshot().units.find((u) => u.tile.x === tile.x && u.tile.y === tile.y)
+    const snapshot = this.session.getSnapshot()
+    const tile = tileAtPoint(pointer.x, pointer.y, snapshot.state.terrain.length)
+    if (tile === null) return
+    const unit = snapshot.units.find((u) => u.tile.x === tile.x && u.tile.y === tile.y)
     this.session.input(unit ? { type: 'tapUnit', unit: unit.id } : { type: 'tapTile', tile })
   }
 }

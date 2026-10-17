@@ -1,5 +1,5 @@
-import { useLayoutEffect, useRef } from 'react'
-import { mountBattleGame, type BoardLabels } from '@mt/battle'
+import { useLayoutEffect, useRef, type CSSProperties } from 'react'
+import { boardPixels, mountBattleGame, type BoardLabels } from '@mt/battle'
 import type { BattleSessionPort } from '@mt/session'
 import { th } from './strings.ts'
 
@@ -21,5 +21,5 @@ export function BattleView({ session }: { session: BattleSessionPort }) {
     return mountBattleGame(parent, session, LABELS)
   }, [session])
 
-  return <div ref={parentRef} className="board" />
+  return <div ref={parentRef} className="board" style={{ '--board-pixels': `${boardPixels(session.getSnapshot().state)}px` } as CSSProperties} />
 }

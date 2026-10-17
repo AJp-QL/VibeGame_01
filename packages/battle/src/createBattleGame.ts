@@ -1,21 +1,23 @@
 import * as Phaser from 'phaser'
-import { BattleScene, BOARD_PIXELS, type BattleSceneData } from './BattleScene.ts'
+import { boardPixels } from './boardGeometry.ts'
+import { BattleScene, type BattleSceneData } from './BattleScene.ts'
 import { alignInputOnPress, destroyBoard, fitBoard } from './boardFit.ts'
 import type { BattleSessionPort } from '@mt/session'
 import type { BoardLabels } from './labels.ts'
 
 /**
- * Mount the Board in `parent`. The canvas is 224x224 (7 tiles of 32 px),
+ * Mount the Board in `parent`. The canvas uses the Battle terrain dimensions and 32 px tiles,
  * scaled with nearest-neighbour sampling (pixelArt) by a whole number of
  * device pixels per Board pixel (`boardZoom`). Call `fitBattleGame` when the
  * parent changes size. Tear down with `destroyBattleGame`.
  */
 export function createBattleGame(parent: HTMLElement, session: BattleSessionPort, labels: BoardLabels): Phaser.Game {
+  const pixels = boardPixels(session.getSnapshot().state)
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: BOARD_PIXELS,
-    height: BOARD_PIXELS,
+    width: pixels,
+    height: pixels,
     backgroundColor: '#000000',
     pixelArt: true,
     scale: { mode: Phaser.Scale.NONE, zoom: 1 },
@@ -30,7 +32,7 @@ export function createBattleGame(parent: HTMLElement, session: BattleSessionPort
 /** Re-size the Board for its parent and the current devicePixelRatio, and refresh its input bounds. */
 export function fitBattleGame(game: Phaser.Game, parent: HTMLElement): void {
   if (!game.isBooted || game.canvas === undefined) return
-  fitBoard(game, parent, BOARD_PIXELS, window.devicePixelRatio || 1)
+  fitBoard(game, parent, game.scale.gameSize.width, window.devicePixelRatio || 1)
 }
 
 /**
