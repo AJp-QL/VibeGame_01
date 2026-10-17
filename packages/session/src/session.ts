@@ -44,6 +44,7 @@ import { chooseAction, createAi, planDeployment, type AiProfile, type AiState } 
 import {
   applyAction,
   areaTiles,
+  boardSizeOf,
   decidingSide,
   legalActions,
   previewAction,
@@ -638,7 +639,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       ready,
       // Burst's centres until one is picked; Blink's destinations all along (tap another to change).
       tileChoices: kind === 'tile' || (kind === 'area' && pendingTile === null) ? useTiles(uses) : [],
-      area: kind === 'area' && pendingTile !== null && aimedSkill !== undefined ? areaTiles(aimedSkill, pendingTile) : [],
+      area: kind === 'area' && pendingTile !== null && aimedSkill !== undefined ? areaTiles(aimedSkill, pendingTile, boardSizeOf(state)) : [],
       elementChoices,
       movePreview,
       canCommand: commandTargets(actions, selectedUnit).length > 0,

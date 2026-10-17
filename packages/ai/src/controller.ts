@@ -11,11 +11,12 @@
  */
 import {
   aiDiceStream,
+  boardSizeOf,
   decidingSide,
   legalActions,
   nextUint32,
   previewAction,
-  START_ZONE_ROWS,
+  startZoneRows,
   terrainEffectAt,
   type Action,
   type BattleState,
@@ -25,7 +26,7 @@ import {
   type UnitId,
   type UnitTemplate,
 } from '@mt/engine'
-import { BOARD_SIZE, sameTile, type Side, type Tile } from '@mt/shared'
+import { sameTile, type Side, type Tile } from '@mt/shared'
 import { BASIC_ATTACK, Ctx } from './model.ts'
 import { planUnit, type Plan } from './planner.ts'
 import type { AiProfile } from './profiles.ts'
@@ -145,8 +146,9 @@ export function planDeployment(state: BattleState, ai: AiState): { actions: read
   if (ai.deployment !== null) return { actions: ai.deployment, ai }
   const roster = state.deployment?.roster
   if (roster === undefined) throw new Error('No deployment to plan')
-  const rows = START_ZONE_ROWS[ai.side]
-  const centre = (BOARD_SIZE - 1) / 2
+  const size = boardSizeOf(state)
+  const rows = startZoneRows(ai.side, size)
+  const centre = (size - 1) / 2
   const back = [...rows].sort((a, b) => Math.abs(b - centre) - Math.abs(a - centre))[0] ?? 0
   const front = rows.find((r) => r !== back) ?? back
   const own = roster.filter((u) => u.side === ai.side)
@@ -157,7 +159,7 @@ export function planDeployment(state: BattleState, ai: AiState): { actions: read
   for (const unit of order) {
     let best: Tile | null = null
     let bestScore = -1e9
-    for (let x = 0; x < BOARD_SIZE; x++) {
+    for (let x = 0; x < size; x++) {
       for (const y of [back, front]) {
         const tile = { x, y }
         if (taken.some((t) => sameTile(t, tile))) continue

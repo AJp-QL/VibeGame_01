@@ -5,6 +5,7 @@
  * team B. When both have confirmed, the placements are revealed together,
  * initiative is rolled and the first Turn starts. Deployment uses no dice.
  */
+import { boardSizeOf } from './state.ts'
 import { BOARD_SIZE, isOnBoard, sameTile, tileName, type Side, type Tile } from '@mt/shared'
 import type { Action, ApplyResult, Rejection, RejectionCode } from './battle.ts'
 import { rollInitiative } from './initiative.ts'
@@ -12,14 +13,23 @@ import { emit, type Resolution } from './resolution.ts'
 import type { BattleState, Deployment, UnitId, UnitState, UnitTemplate } from './state.ts'
 import { startTurn, TEAM_SIZE } from './turns.ts'
 
-/** Rows (`y`) of each side's start zone: team A rows 1–2, team B rows 6–7 (rules §2.1, §17.1). */
-export const START_ZONE_ROWS: Readonly<Record<Side, readonly number[]>> = {
-  A: [0, 1],
-  B: [BOARD_SIZE - 2, BOARD_SIZE - 1],
+/** Rows (`y`) of each side's start zone on a Board of `size`: team A the first 2 rows, team B the last 2 (rules §2.1, §17.1). */
+export function startZoneRows(side: Side, size: number): readonly number[] {
+  return side === 'A' ? [0, 1] : [size - 2, size - 1]
 }
 
-export function isInStartZone(side: Side, tile: Tile): boolean {
-  return isOnBoard(tile) && START_ZONE_ROWS[side].includes(tile.y)
+/**
+ * Start zone rows of the 7x7 Boards.
+ * @deprecated Use `startZoneRows(side, size)` with the Board's size (phase 1.x ticket 13).
+ */
+export const START_ZONE_ROWS: Readonly<Record<Side, readonly number[]>> = {
+  A: startZoneRows('A', BOARD_SIZE),
+  B: startZoneRows('B', BOARD_SIZE),
+}
+
+/** Whether `tile` is in the start zone of `side` on a Board of `size` (7x7 unless given). */
+export function isInStartZone(side: Side, tile: Tile, size: number = BOARD_SIZE): boolean {
+  return isOnBoard(tile, size) && startZoneRows(side, size).includes(tile.y)
 }
 
 const otherSide = (side: Side): Side => (side === 'A' ? 'B' : 'A')
@@ -40,8 +50,9 @@ export function deploymentActions(state: BattleState): Action[] {
   const placed = deployment.placements[side]
   const taken = Object.values(placed)
   const free: Tile[] = []
-  for (const y of START_ZONE_ROWS[side]) {
-    for (let x = 0; x < BOARD_SIZE; x++) {
+  const size = boardSizeOf(state)
+  for (const y of startZoneRows(side, size)) {
+    for (let x = 0; x < size; x++) {
       if (!taken.some((t) => t.x === x && t.y === y)) free.push({ x, y })
     }
   }
@@ -68,8 +79,8 @@ export function applyDeploy(state: BattleState, unitId: UnitId, to: Tile): Apply
   if (unit.side !== side) {
     return reject(state, 'not-your-turn', `${unitId} belongs to side ${unit.side}; side ${side} is placing`)
   }
-  if (!isOnBoard(to)) return reject(state, 'off-board', `(${to.x}, ${to.y}) is not on the Board`)
-  if (!isInStartZone(side, to)) {
+  if (!isOnBoard(to, boardSizeOf(state))) return reject(state, 'off-board', `(${to.x}, ${to.y}) is not on the Board`)
+  if (!isInStartZone(side, to, boardSizeOf(state))) {
     return reject(state, 'outside-start-zone', `${tileName(to)} is not in side ${side}'s start zone`)
   }
   const placed = deployment.placements[side]

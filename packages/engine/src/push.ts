@@ -8,7 +8,7 @@
  */
 import { isOnBoard, sameTile, type Tile } from '@mt/shared'
 import { emit, type Resolution } from './resolution.ts'
-import { findUnit, type BattleState, type UnitId } from './state.ts'
+import { findUnit, type BattleState, type UnitId, boardSizeOf } from './state.ts'
 import { endOffTerrain } from './statuses.ts'
 
 /** The push direction (rules §6.4): `(sign(x_target − x_pusher), sign(y_target − y_pusher))`. */
@@ -32,9 +32,10 @@ export function pushOutcome(
   if (pusher === undefined || target === undefined) return { to: null, blocked: null }
   const step = pushDirection(pusher.tile, target.tile)
   let at = target.tile
+  const size = boardSizeOf(state)
   for (let i = 0; i < tiles; i++) {
     const next = { x: at.x + step.x, y: at.y + step.y }
-    if (!isOnBoard(next)) return { to: sameTile(at, target.tile) ? null : at, blocked: { tile: next, by: 'offBoard' } }
+    if (!isOnBoard(next, size)) return { to: sameTile(at, target.tile) ? null : at, blocked: { tile: next, by: 'offBoard' } }
     const occupant = state.units.find((u) => sameTile(u.tile, next))
     if (occupant !== undefined) return { to: sameTile(at, target.tile) ? null : at, blocked: { tile: next, by: occupant.id } }
     at = next

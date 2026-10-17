@@ -7,7 +7,7 @@
  * the engine (rules §3.2) and never stored.
  */
 import * as z from 'zod'
-import { BOARD_SIZE, rotate180, tileName } from './tiles.ts'
+import { MAX_BOARD_SIZE, MIN_BOARD_SIZE, rotate180, tileName } from './tiles.ts'
 
 // ---------------------------------------------------------------- elements
 
@@ -43,27 +43,52 @@ export interface Board {
   readonly terrain: readonly (readonly Terrain[])[]
 }
 
+/** The side of a square Board: its number of rows (phase 1.x ticket 13; rules §2.1). */
+export function boardSize(board: Board): number {
+  return board.terrain.length
+}
+
 export const ID = z.string().regex(/^[a-z][a-z0-9_]*$/, 'id must be snake_case')
 
-const boardRow = z
-  .string()
-  .regex(
-    new RegExp(`^[.FWMDLK]{${BOARD_SIZE}}$`),
-    `a row is ${BOARD_SIZE} symbols from . F W M D L K`,
-  )
+const BOARD_SYMBOLS = /^[.FWMDLK]*$/
+
+/**
+ * A Board is a square: as many symbols in each row as there are rows, all from
+ * . F W M D L K. Every wrong row is reported; `true` when all rows are right.
+ */
+function checkRows(rows: readonly string[], ctx: z.RefinementCtx): boolean {
+  const size = rows.length
+  let right = true
+  rows.forEach((row, y) => {
+    if (row.length !== size) {
+      right = false
+      ctx.addIssue({
+        code: 'custom',
+        path: ['rows', y],
+        message: `a Board is a square: ${size} rows need ${size} symbols in each row, but row ${y + 1} has ${row.length}`,
+      })
+    }
+    if (!BOARD_SYMBOLS.test(row)) {
+      right = false
+      ctx.addIssue({ code: 'custom', path: ['rows', y], message: 'a row is made of the symbols . F W M D L K' })
+    }
+  })
+  return right
+}
 
 /**
  * A Board must look the same when turned 180 degrees (rules §2.1), so both
- * sides get the same layout: tile (x, y) and (6 − x, 6 − y) share a terrain.
- * Each mismatched pair is reported once, at the row of its first tile.
+ * sides get the same layout: tile (x, y) and (n − 1 − x, n − 1 − y) share a
+ * terrain. Each mismatched pair is reported once, at the row of its first tile.
  */
 function checkRotationalSymmetry(rows: readonly string[], ctx: z.RefinementCtx): void {
-  for (let y = 0; y < BOARD_SIZE; y++) {
-    for (let x = 0; x < BOARD_SIZE; x++) {
+  const size = rows.length
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
       const tile = { x, y }
-      const turned = rotate180(tile)
+      const turned = rotate180(tile, size)
       // Visit each pair once, from the tile that comes first in reading order.
-      if (turned.y * BOARD_SIZE + turned.x <= y * BOARD_SIZE + x) continue
+      if (turned.y * size + turned.x <= y * size + x) continue
       const symbol = rows[y]?.charAt(x)
       const turnedSymbol = rows[turned.y]?.charAt(turned.x)
       if (symbol !== turnedSymbol) {
@@ -81,9 +106,11 @@ export const BoardSchema: z.ZodType<Board> = z
   .strictObject({
     id: ID,
     name: z.string().min(1),
-    rows: z.array(boardRow).length(BOARD_SIZE),
+    rows: z.array(z.string()).min(MIN_BOARD_SIZE).max(MAX_BOARD_SIZE),
   })
-  .superRefine(({ rows }, ctx) => checkRotationalSymmetry(rows, ctx))
+  .superRefine(({ rows }, ctx) => {
+    if (checkRows(rows, ctx)) checkRotationalSymmetry(rows, ctx)
+  })
   .transform(({ id, name, rows }) => ({
     id,
     name,
