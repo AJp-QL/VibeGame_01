@@ -13,7 +13,7 @@ import { SkillButtons } from '../src/SkillButtons.tsx'
 import { PreviewCard } from '../src/ActionPreview.tsx'
 import { logLines } from '../src/EventLog.tsx'
 import { createBattleSession, createBattle, menuBoards, menuScenarios, type BattleState } from '@mt/session'
-import { dataHash, loadGameData, tileFromName, type Side } from '@mt/shared'
+import { dataHash, loadGameData, tileFromName, type Board, type Side } from '@mt/shared'
 import { loadBundledGameData } from '../src/gameData.ts'
 import { describeAction } from '../src/replay.ts'
 import { skillSummary } from '../src/skillText.ts'
@@ -42,15 +42,15 @@ function gameData() {
 const data = gameData()
 const t = tileFromName
 
-/** A Battle in play on Scenario 1 / crossroads with the Units on `tiles` (Tamer, m1, m2 per side). */
-function playing(tiles: Readonly<Record<Side, readonly [string, string, string]>>): BattleState {
+/** A Scenario 1 Battle on the chosen Board (Crossroads by default); Tamer, m1, m2 per side. */
+function playing(tiles: Readonly<Record<Side, readonly [string, string, string]>>, board: Board = data.boards.crossroads!): BattleState {
   const placed = (side: Side) => {
     const [tamer, m1, m2] = tiles[side].map(t)
     return [tamer!, m1!, m2!] as const
   }
   return createBattle({
     scenario: data.scenarios.scenario_1!,
-    board: data.boards.crossroads!,
+    board,
     species: data.species,
     skills: data.skills,
     statuses: data.statuses,
@@ -308,6 +308,18 @@ describe('phase 1.x activation warnings', () => {
   })
 })
 
+
+describe('push-blocked log on a 9×9 Board', () => {
+  it('keeps the destination name beyond the old seventh column', () => {
+    const board: Board = { id: 'arena', name: 'Arena', terrain: Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => 'normal')) }
+    const state = playing({ A: ['a1', 'h5', 'a2'], B: ['i9', 'i5', 'a9'] }, board)
+    expect(state.terrain).toHaveLength(9)
+    expect(logLines({ type: 'pushBlocked', unit: 'A.m1', by: 'B.m2', tile: t('i5'), blockedBy: 'B.m1' }, id => id, state, data))
+      .toEqual([th.logPushBlocked('A.m1', 'i5', 'B.m1')])
+    expect(logLines({ type: 'pushBlocked', unit: 'A.m1', by: 'B.m2', tile: t('j5'), blockedBy: 'offBoard' }, id => id, state, data))
+      .toEqual([th.logPushBlocked('A.m1', '', null)])
+  })
+})
 
 describe('phase 1.x Move preview UI', () => {
   function previewSession() {

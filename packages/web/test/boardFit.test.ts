@@ -3,7 +3,7 @@ import { alignInputOnPress, boardZoom, destroyBoard, fitBoard, snapOffset, type 
 
 const BASE = 224
 
-/** The Board's box (styles.css `.board`): full width, height max(224px, min(100vw - 32px, 75vh)). */
+/** The 7×7 Board's box (styles.css `.board`): full width, height max(224px, min(100vw - 32px, 75vh)). */
 function boardBox(viewportWidth: number, viewportHeight: number) {
   const width = viewportWidth - 32
   return { width, height: Math.max(224, Math.min(viewportWidth - 32, 0.75 * viewportHeight)) }

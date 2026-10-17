@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./boardFit": "./src/boardFit.ts"
+    "./boardFit": "./src/boardFit.ts",
+    "./boardGeometry": "./src/boardGeometry.ts"
   },
   "dependencies": {
     "@mt/session": "workspace:*",
