@@ -6,6 +6,7 @@ import {
   SIDES,
   tileFromName,
   type Element,
+  type GameData,
   type ElementWheel,
   type Scenario,
   type ScenarioTeam,
@@ -14,7 +15,17 @@ import {
   type Stats,
   type StatusType,
 } from '@mt/shared'
-import { applyAction, createBattle, type ApplyResult, type BattleState, type DiceSource } from '../src/index.ts'
+import {
+  applyAction,
+  createBattle,
+  recordReplay,
+  replayBattle,
+  type Action,
+  type ApplyResult,
+  type BattleState,
+  type DiceSource,
+  type ReplayHeader,
+} from '../src/index.ts'
 
 const DATA_DIR = fileURLToPath(new URL('../../../data/', import.meta.url))
 
@@ -202,4 +213,28 @@ export function deployBothSides(
     if (side === 'A') state = applied(applyAction(state, { type: 'confirmDeployment' })).state
   }
   return applied(applyAction(state, { type: 'confirmDeployment' }))
+}
+
+/**
+ * The same actions with a `declineInspiration` after every one that pauses for
+ * Inspiration (rules §18). For Replay tests whose dice come from a Dice Seed:
+ * which rolls are offered depends on the dice, so the answers are worked out
+ * by playing the actions.
+ */
+export function declineEveryOffer(header: ReplayHeader, data: GameData, actions: readonly Action[]): Action[] {
+  const start = replayBattle(recordReplay(header, data, []), data)
+  if (!start.ok) throw new Error('replay failed to start')
+  let state = start.final
+  const out: Action[] = []
+  const play = (action: Action) => {
+    const result = applyAction(state, action)
+    if (!result.ok) throw new Error(result.rejection.message)
+    state = result.state
+    out.push(action)
+  }
+  for (const action of actions) {
+    play(action)
+    while (state.pending?.kind === 'inspiration') play({ type: 'declineInspiration', side: state.pending.side })
+  }
+  return out
 }

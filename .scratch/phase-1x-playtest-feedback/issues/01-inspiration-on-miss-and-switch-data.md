@@ -6,10 +6,15 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** in progress (PR open)
 
-- [ ] rules §18 และตาราง Inspiration แก้ตามกติกาใหม่ มี D-row ใน §23 และแถวใน decision log
-- [ ] engine ไม่เสนอ Inspiration เมื่อโดน และยังเสนอเมื่อพลาด, save ไม่ผ่าน, initiative (test ผ่าน interface ของ engine ทุกกรณีรวม Burst หลายเป้าและ counterattack)
-- [ ] ENGINE_VERSION ขยับ minor (0.9.0 → 0.10.0) ใน commit เดียวกัน; SIM_PROFILES และ sim-v4 parity ผ่านเหมือนเดิม; AI ยัง deterministic
-- [ ] snapshot ของ session มีข้อมูล "เริ่ม Unit อื่นจะจบ Unit ที่ยังใช้ Action ได้" และ "Unit ที่เดินแล้วแต่ยังไม่ใช้ Action" มี test ผ่าน session (รวมกรณี Unit ปัจจุบันไม่มี Action ที่ทำได้แล้ว = ไม่ต้องเตือน)
-- [ ] เปิด ticket 02 (Codex) ให้ refresh visual fixtures ตามกฎใน AGENTS.md (ticket 02 ครอบแล้ว)
+- [x] rules §18 และตาราง Inspiration แก้ตามกติกาใหม่ มี D-row ใน §23 และแถวใน decision log
+- [x] engine ไม่เสนอ Inspiration เมื่อโดน และยังเสนอเมื่อพลาด, save ไม่ผ่าน, initiative (test ผ่าน interface ของ engine ทุกกรณีรวม Burst หลายเป้าและ counterattack)
+- [x] ENGINE_VERSION ขยับ minor (0.9.0 → 0.10.0) ใน commit เดียวกัน; SIM_PROFILES และ sim-v4 parity ผ่านเหมือนเดิม; AI ยัง deterministic
+- [x] snapshot ของ session มีข้อมูล "เริ่ม Unit อื่นจะจบ Unit ที่ยังใช้ Action ได้" และ "Unit ที่เดินแล้วแต่ยังไม่ใช้ Action" มี test ผ่าน session (รวมกรณี Unit ปัจจุบันไม่มี Action ที่ทำได้แล้ว = ไม่ต้องเตือน)
+- [x] เปิด ticket 02 (Codex) ให้ refresh visual fixtures ตามกฎใน AGENTS.md (ticket 02 ครอบแล้ว: ยังต้องทำก่อนที่ job ภาพจะเทียบภาพอีก ENGINE_VERSION 0.10.0 ทำให้ fixture ล้าสมัย job จะเตือนแต่ยังเขียว)
+
+## Comments
+
+- Engine: `rollD20` offers Inspiration only when the roll went against its owner (miss / failed save); initiative unchanged. 22 tests rewritten to the new rule (misses scripted), new cases for hit and passed save not offered; replay tests use `declineEveryOffer` in `test/fixtures.ts`. ENGINE_VERSION 0.10.0, rules §18/§21.6, D-29. Sim parity and AI tests pass unchanged apart from the AI test that expected a passed save to be offered.
+- Session: `snapshot.actionAtStake` and `snapshot.movedWithoutAction` (+ exported functions), tests in `packages/session/test/sessionSwitch.test.ts`.

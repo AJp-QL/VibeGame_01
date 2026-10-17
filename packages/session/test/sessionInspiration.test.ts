@@ -55,6 +55,14 @@ function rendDice(): DiceSource {
   return { rolls: [...attack, 4, 5, 15] }
 }
 
+/** Scripted dice for a basic attack on Tidewall that misses (a 1 never hits), then a reroll that misses too. */
+function missDice(): DiceSource {
+  const probe = previewAction(createBattle(setup({ rolls: [] })), { type: 'basicAttack', unit: 'A.m1', target: 'B.m1' })
+  if (!probe.ok || probe.preview?.type !== 'attack') throw new Error('Fangrel cannot reach Tidewall')
+  const count = probe.preview.rollMode === 'normal' ? 1 : 2
+  return { rolls: [...Array<number>(count).fill(1), ...Array<number>(count).fill(2)] }
+}
+
 function useRend(session: BattleSession) {
   session.selectUnit('A.m1')
   session.chooseSkill('rend')
@@ -63,8 +71,9 @@ function useRend(session: BattleSession) {
 }
 
 describe('BattleSession: Inspiration prompt', () => {
-  it('after an attack roll the attacking side is asked; using it rerolls and spends it', () => {
-    const session = createBattleSession(createBattle(setup({ seed: '0123456789abcdef' })))
+  it('after a missed attack roll the attacking side is asked; using it rerolls and spends it', () => {
+    // A missed attack roll is the one to be asked about.
+    const session = createBattleSession(createBattle(setup(missDice())))
     session.selectUnit('A.m1')
     session.chooseAttack()
     session.input({ type: 'tapUnit', unit: 'B.m1' })
@@ -84,7 +93,8 @@ describe('BattleSession: Inspiration prompt', () => {
   })
 
   it('while the decision is pending, taps and other buttons do nothing', () => {
-    const session = createBattleSession(createBattle(setup({ seed: '0123456789abcdef' })))
+    // A missed attack roll is the one to be asked about.
+    const session = createBattleSession(createBattle(setup(missDice())))
     session.selectUnit('A.m1')
     session.chooseAttack()
     session.input({ type: 'tapUnit', unit: 'B.m1' })
@@ -102,9 +112,8 @@ describe('BattleSession: Inspiration prompt', () => {
 
   it("a save on team A's Turn hands the device to team B, then back to team A", () => {
     const session = createBattleSession(createBattle(setup(rendDice())))
+    // Team A's attack hits, so only team B's failed save is a decision.
     useRend(session)
-    expect(session.getSnapshot().state.pending).toMatchObject({ side: 'A' })
-    session.declineInspiration()
     let snapshot = session.getSnapshot()
     expect(snapshot.state.pending).toMatchObject({ kind: 'inspiration', side: 'B', roll: { type: 'saveRolled', saved: false } })
     expect(snapshot.state.sideToAct).toBe('A')

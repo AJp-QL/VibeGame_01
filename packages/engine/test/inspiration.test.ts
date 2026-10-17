@@ -15,9 +15,10 @@ import {
 } from '../src/index.ts'
 import { deployBothSides, gameData, NEUTRAL_ELEMENTS, scenario1Battle, type BattleOptions } from './fixtures.ts'
 
-// Inspiration (rules §18, §21.6, D-09, D-10): each side may reroll one of its
-// own d20s once per Battle (initiative, attack rolls, saves), right after
-// seeing it and before any other die. The action pauses for the decision.
+// Inspiration (rules §18, §21.6, D-09, D-10, D-29): each side may reroll one of
+// its own d20s once per Battle, right after seeing it and before any other die,
+// but only when the roll went against it: a missed attack roll, a failed save,
+// or the losing side of initiative. The action pauses for the decision.
 
 const BOTH: Readonly<Record<Side, boolean>> = { A: true, B: true }
 
@@ -47,28 +48,35 @@ const hp = (state: BattleState, id: UnitId) => state.units.find((u) => u.id === 
 const code = (result: ApplyResult) => (result.ok ? 'accepted' : result.rejection.code)
 
 describe('Inspiration on attack rolls: the attacking side decides (rules §18, §10.5 step 2)', () => {
-  it('the attack pauses right after the d20, before damage, with a decision for the attacking side', () => {
+  it('a hit is not offered Inspiration: damage follows at once', () => {
     const { state, events } = attack(battle({ dice: { rolls: [15, 3] } }), 'A.m1', 'B.m1')
+    expect(types(events)).toEqual(['attackRolled', 'damageDealt'])
+    expect(state.pending).toBeNull()
+    expect(state.inspiration).toEqual({ A: true, B: true })
+  })
+
+  it('the attack pauses right after a missed d20, before anything else, with a decision for the attacking side', () => {
+    const { state, events } = attack(battle({ dice: { rolls: [3] } }), 'A.m1', 'B.m1')
     expect(types(events)).toEqual(['attackRolled', 'inspirationOffered'])
     expect(events[1]).toEqual({ type: 'inspirationOffered', side: 'A', roll: events[0] })
-    expect(state.pending).toMatchObject({ kind: 'inspiration', side: 'A', roll: { type: 'attackRolled', natural: 15, hit: true } })
+    expect(state.pending).toMatchObject({ kind: 'inspiration', side: 'A', roll: { type: 'attackRolled', natural: 3, hit: false } })
     expect(decidingSide(state)).toBe('A')
     expect(legalActions(state)).toEqual([
       { type: 'useInspiration', side: 'A' },
       { type: 'declineInspiration', side: 'A' },
     ])
-    // Nothing after the d20 has happened yet: no damage die drawn, HP unchanged.
+    // Nothing after the d20 has happened yet: HP unchanged.
     expect(rollsUsed(state)).toBe(1)
     expect(hp(state, 'B.m1')).toBe(31)
     // The attack is booked: the Action is used.
     expect(state.units.find((u) => u.id === 'A.m1')?.hasActed).toBe(true)
   })
 
-  it('hit then miss: the new roll stands even when it is worse', () => {
-    const paused = attack(battle({ dice: { rolls: [15, 3] } }), 'A.m1', 'B.m1').state
+  it('miss then miss: the new roll stands, and is not offered again', () => {
+    const paused = attack(battle({ dice: { rolls: [3, 4] } }), 'A.m1', 'B.m1').state
     const { state, events } = use(paused, 'A')
     expect(types(events)).toEqual(['inspirationUsed', 'attackRolled'])
-    expect(events[1]).toMatchObject({ rolls: [3], natural: 3, total: 5, hit: false, rerolled: true })
+    expect(events[1]).toMatchObject({ rolls: [4], natural: 4, total: 6, hit: false, rerolled: true })
     expect(state.pending).toBeNull()
     expect(state.inspiration).toEqual({ A: false, B: true })
     expect(hp(state, 'B.m1')).toBe(31)
@@ -110,9 +118,9 @@ describe('Inspiration on attack rolls: the attacking side decides (rules §18, �
     expect(rollsUsed(state)).toBe(1)
   })
 
-  it('is offered again on the next roll while unused, and never once used (once per Battle)', () => {
-    // Seeded dice: only who is asked matters here.
-    let state = decline(attack(battle(), 'A.m1', 'B.m1').state, 'A').state
+  it('is offered again on the next miss while unused, and never once used (once per Battle)', () => {
+    // Every d20 is a miss (3 or 1 never reaches the Guard): only who is asked matters here.
+    let state = decline(attack(battle({ dice: { rolls: [3, 1, 1, 3, 3, 1] } }), 'A.m1', 'B.m1').state, 'A').state
     state = endTurn(state).state
     // Team B's Tidewall attacks: team B is offered on its own d20.
     let step = attack(state, 'B.m1', 'A.m1')
@@ -120,11 +128,11 @@ describe('Inspiration on attack rolls: the attacking side decides (rules §18, �
     step = use(step.state, 'B')
     expect(step.state.inspiration).toEqual({ A: true, B: false })
     state = endTurn(step.state).state
-    // Team A's next attack is offered again (A declined before); team A uses it.
+    // Team A's next miss is offered again (A declined before); team A uses it.
     state = use(attack(state, 'A.m1', 'B.m1').state, 'A').state
     expect(state.inspiration).toEqual({ A: false, B: false })
     state = endTurn(state).state
-    // Neither side has Inspiration left: an attack resolves without pausing.
+    // Neither side has Inspiration left: a miss resolves without pausing.
     const last = attack(state, 'B.m1', 'A.m1')
     expect(types(last.events)).not.toContain('inspirationOffered')
     expect(last.state.pending).toBeNull()
@@ -135,11 +143,19 @@ describe('Inspiration on saves: the target\'s side decides, during the other sid
   // Rend: attack 15 (hit) → damage 4 + 2 = 6 → save 5 + 2 = 7 < 11 (fails) → reroll 15 + 2 = 17 (saves).
   const dice = { rolls: [15, 4, 5, 15] }
 
-  it('the save pauses for team B while it is team A\'s Turn; the paused state shows the damage', () => {
-    const atRoll = rend(battle({ dice }))
-    expect(atRoll.state.pending).toMatchObject({ side: 'A' })
-    const { state, events } = decline(atRoll.state, 'A')
-    expect(types(events)).toEqual(['inspirationDeclined', 'damageDealt', 'saveRolled', 'inspirationOffered'])
+  it('a save that passes is not offered Inspiration', () => {
+    // attack 15 (hit) → damage 4 → save 15 + 2 = 17 (saves).
+    const { state, events } = rend(battle({ dice: { rolls: [15, 4, 15] } }))
+    expect(types(events)).toEqual(['skillUsed', 'attackRolled', 'damageDealt', 'saveRolled'])
+    expect(state.pending).toBeNull()
+    expect(state.units.find((u) => u.id === 'B.m1')?.statuses).toEqual([])
+    expect(state.inspiration).toEqual({ A: true, B: true })
+  })
+
+  it('the failed save pauses for team B while it is team A\'s Turn; the paused state shows the damage', () => {
+    // Team A hit, so it is not asked: the first pause is team B's failed save.
+    const { state, events } = rend(battle({ dice }))
+    expect(types(events)).toEqual(['skillUsed', 'attackRolled', 'damageDealt', 'saveRolled', 'inspirationOffered'])
     expect(state.sideToAct).toBe('A')
     expect(decidingSide(state)).toBe('B')
     expect(state.pending).toMatchObject({ kind: 'inspiration', side: 'B', roll: { type: 'saveRolled', roll: 5, saved: false } })
@@ -153,7 +169,7 @@ describe('Inspiration on saves: the target\'s side decides, during the other sid
   })
 
   it('using it rerolls the save: the new roll stands and Bleed does not stick', () => {
-    const paused = decline(rend(battle({ dice })).state, 'A').state
+    const paused = rend(battle({ dice })).state
     const { state, events } = use(paused, 'B')
     expect(types(events)).toEqual(['inspirationUsed', 'saveRolled'])
     expect(events[1]).toMatchObject({ unit: 'B.m1', roll: 15, total: 17, saved: true, rerolled: true })
@@ -164,7 +180,7 @@ describe('Inspiration on saves: the target\'s side decides, during the other sid
   })
 
   it('declining keeps the failed save: Bleed sticks', () => {
-    const paused = decline(rend(battle({ dice })).state, 'A').state
+    const paused = rend(battle({ dice })).state
     const { events } = decline(paused, 'B')
     expect(types(events)).toEqual(['inspirationDeclined', 'statusApplied'])
   })
@@ -187,14 +203,14 @@ describe('the dice order after a reroll (rules §21.4)', () => {
   it('the same Battle with every decision declined uses the same dice as without Inspiration', () => {
     const rolls = [15, 4, 5]
     const without = rend(battle({ inspiration: { A: false, B: false }, dice: { rolls } })).state
-    const declined = decline(decline(rend(battle({ dice: { rolls } })).state, 'A').state, 'B').state
+    const declined = decline(rend(battle({ dice: { rolls } })).state, 'B').state
     expect(declined.units).toEqual(without.units)
     expect(declined.dice).toEqual(without.dice)
   })
 })
 
 describe('while an Inspiration decision is pending only its answers are legal', () => {
-  const paused = () => attack(battle({ dice: { rolls: [15, 3] } }), 'A.m1', 'B.m1').state
+  const paused = () => attack(battle({ dice: { rolls: [3, 4] } }), 'A.m1', 'B.m1').state
   const tile = tileFromName
 
   it.each<[string, Action]>([
@@ -236,17 +252,26 @@ describe('while an Inspiration decision is pending only its answers are legal', 
 
 describe("Inspiration and Hit and Run's step (rules §10.5 steps 2 and 8)", () => {
   it('the decision on the attack roll comes first, then the step', () => {
-    const state = battle({ dice: { rolls: [12, 5] } })
+    const state = battle({ dice: { rolls: [3] } })
     const paused = accepted(applyAction(state, { type: 'useSkill', unit: 'A.m1', skill: 'hit_and_run', target: 'B.m1' }))
     expect(types(paused.events)).toEqual(['skillUsed', 'attackRolled', 'inspirationOffered'])
     expect(paused.state.pending).toMatchObject({ kind: 'inspiration' })
     expect(code(applyAction(paused.state, { type: 'retreat', unit: 'A.m1', to: null }))).toBe('decision-pending')
     const { state: after, events } = decline(paused.state, 'A')
-    expect(types(events)).toEqual(['inspirationDeclined', 'damageDealt'])
+    expect(types(events)).toEqual(['inspirationDeclined'])
     expect(after.pending).toMatchObject({ kind: 'retreat', side: 'A', unit: 'A.m1' })
     expect(legalActions(after).every((a) => a.type === 'retreat')).toBe(true)
     const stepped = accepted(applyAction(after, { type: 'retreat', unit: 'A.m1', to: tileFromName('d3') }))
     expect(stepped.state.pending).toBeNull()
+  })
+})
+
+describe("Hit and Run's step after a hit (rules §10.5 step 8)", () => {
+  it('a hit is not offered Inspiration: the step comes right after the damage', () => {
+    const state = battle({ dice: { rolls: [12, 5] } })
+    const { state: after, events } = accepted(applyAction(state, { type: 'useSkill', unit: 'A.m1', skill: 'hit_and_run', target: 'B.m1' }))
+    expect(types(events)).toEqual(['skillUsed', 'attackRolled', 'damageDealt'])
+    expect(after.pending).toMatchObject({ kind: 'retreat', side: 'A', unit: 'A.m1' })
   })
 })
 
@@ -345,11 +370,13 @@ describe('Replay records the Inspiration decisions (rules §18)', () => {
         actions.push(answer)
       }
     }
-    play({ type: 'useSkill', unit: 'A.m1', skill: 'rend', target: 'B.m1' })
-    play({ type: 'endTurn' })
-    play({ type: 'basicAttack', unit: 'B.m1', target: 'A.m1' })
-    play({ type: 'endTurn' })
-    play({ type: 'basicAttack', unit: 'A.m1', target: 'B.m1' })
+    // Inspiration is offered only on a miss or a failed save, so keep attacking until both answers have been recorded.
+    const answered = (type: Action['type']) => actions.some((a) => a.type === type)
+    for (let turn = 0; turn < 12 && !(answered('useInspiration') && answered('declineInspiration')) && state.outcome === null; turn++) {
+      const mine = state.sideToAct
+      play({ type: 'basicAttack', unit: `${mine}.m1`, target: `${mine === 'A' ? 'B' : 'A'}.m1` })
+      play({ type: 'endTurn' })
+    }
     expect(actions.some((a) => a.type === 'useInspiration')).toBe(true)
     expect(actions.some((a) => a.type === 'declineInspiration')).toBe(true)
 

@@ -14,7 +14,7 @@ import {
   type BattleState,
   type UnitId,
 } from '../src/index.ts'
-import { gameData, kitGameData, NEUTRAL_ELEMENTS, scenario1Battle, type BattleOptions } from './fixtures.ts'
+import { declineEveryOffer, gameData, kitGameData, NEUTRAL_ELEMENTS, scenario1Battle, type BattleOptions } from './fixtures.ts'
 
 // Tidewall's loadout (rules §15.1): Taunt, Shield Bash, Counter, Pincer Guard.
 // Every Monster forest (neutral) and off forest, water and desert tiles, so
@@ -296,13 +296,12 @@ describe('Counter and Countering (rules §14.2, D-23)', () => {
 
   it('the counterattack\'s d20 belongs to Tidewall\'s side, which may reroll it with Inspiration (rules §18)', () => {
     const both: Readonly<Record<Side, boolean>> = { A: true, B: true }
-    let state = counteringTidewall({ inspiration: both, dice: { rolls: [15, 4, 12, 18, 2, 6] } })
+    let state = counteringTidewall({ inspiration: both, dice: { rolls: [15, 4, 3, 18, 2, 6] } })
+    // Team A's attack hits (no offer); Tidewall's counterattack misses, so team B is asked.
     let step = act(state, attack('A.m1', 'B.m1'))
-    expect(step.state.pending).toMatchObject({ kind: 'inspiration', side: 'A' })
-    step = act(step.state, { type: 'declineInspiration', side: 'A' })
-    expect(types(step.events)).toEqual(['inspirationDeclined', 'damageDealt', 'counterattack', 'attackRolled', 'inspirationOffered'])
+    expect(types(step.events)).toEqual(['attackRolled', 'damageDealt', 'counterattack', 'attackRolled', 'inspirationOffered'])
     state = step.state
-    expect(state.pending).toMatchObject({ kind: 'inspiration', side: 'B', roll: { attacker: 'B.m1', skill: 'counterattack', natural: 12 } })
+    expect(state.pending).toMatchObject({ kind: 'inspiration', side: 'B', roll: { attacker: 'B.m1', skill: 'counterattack', natural: 3, hit: false } })
     expect(decidingSide(state)).toBe('B')
     expect(state.sideToAct).toBe('A')
     step = act(state, { type: 'useInspiration', side: 'B' })
@@ -519,21 +518,17 @@ describe('Replay with Tidewall\'s skills', () => {
       diceSeed: '0123456789abcdef',
       preset: { tiles: { A: tiles('A'), B: tiles('B') }, firstSide: 'B' },
     } as const
-    // A Replay's Battle has Inspiration: every attack roll and save pauses for its side's answer.
-    const actions: Action[] = [
+    // A Replay's Battle has Inspiration: a missed attack roll or failed save pauses for its side's answer.
+    const actions = declineEveryOffer(header, kitGameData, [
       skill('B.m1', 'counter'),
       { type: 'endTurn' },
       attack('A.m1', 'B.m1'),
-      { type: 'declineInspiration', side: 'A' },
-      { type: 'declineInspiration', side: 'B' },
       { type: 'endTurn' },
       skill('B.m1', 'taunt', 'A.m1'),
-      { type: 'declineInspiration', side: 'A' },
       { type: 'endTurn' },
       { type: 'endTurn' },
       skill('B.m1', 'shield_bash', 'A.m1'),
-      { type: 'declineInspiration', side: 'B' },
-    ]
+    ])
     const replay = recordReplay(header, kitGameData, actions)
     const first = replayBattle(replay, kitGameData)
     const second = replayBattle(JSON.parse(JSON.stringify(replay)), kitGameData)
