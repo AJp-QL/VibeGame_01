@@ -116,15 +116,36 @@ describe('bundled game data', () => {
 })
 
 describe('Camouflage free skill text (ticket 28)', () => {
-  function session() {
+  function session(quillfoxTile = 'd7') {
     return createBattleSession(createBattle({
       scenario: data.scenarios.scenario_1!, board: data.boards.crossroads!,
       species: data.species, skills: data.skills, statuses: data.statuses,
-      elementWheel: data.elementWheel, dice: { rolls: [] },
-      preset: { tiles: { A: [t('a1')!, t('e4')!, t('c3')!], B: [t('g7')!, t('f3')!, t('d7')!] }, firstSide: 'B' },
+      elementWheel: data.elementWheel, dice: { seed: '0123456789abcdef' },
+      preset: { tiles: { A: [t('a1')!, t('e4')!, t('c3')!], B: [t('g7')!, t('f3')!, t(quillfoxTile)!] }, firstSide: 'B' },
       inspiration: { A: false, B: false },
     }))
   }
+
+  it('mentions both Move and the free skill after Long Shot before moving (ticket 30)', () => {
+    const s = session('e7')
+    s.selectUnit('B.m2')
+    s.chooseSkill('long_shot')
+    s.input({ type: 'tapUnit', unit: 'A.m1' })
+    expect(s.getSnapshot().ready).toMatchObject({ type: 'useSkill', skill: 'long_shot' })
+    s.confirmAttack()
+    const snapshot = s.getSnapshot()
+    expect(snapshot.rejection).toBeNull()
+    expect(snapshot.units.find(u => u.id === 'B.m2')).toMatchObject({ hasMoved: false, hasActed: true })
+    expect(snapshot.skills.find(b => b.skill === 'camouflage')).toMatchObject({ free: true, usable: true })
+    expect(th.hintMoveAndFreeSkill('Camouflage')).toBe('ยังเดินได้ และยังใช้ Camouflage ได้ (ไม่ใช้ Action)')
+    const panel = renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))
+    expect(panel).toContain(`<p class="hint">${th.hintMoveAndFreeSkill('Camouflage')}</p>`)
+
+    s.input({ type: 'tapTile', tile: t('f7')! })
+    const moved = s.getSnapshot()
+    expect(moved.units.find(u => u.id === 'B.m2')).toMatchObject({ hasMoved: true, hasActed: true })
+    expect(renderToStaticMarkup(createElement(TurnPanel, { snapshot: moved, session: s, data }))).not.toContain(th.hintMoveAndFreeSkill('Camouflage'))
+  })
 
   it('offers the remaining free skill after Move and Action, then previews and logs its cost', () => {
     const s = session()

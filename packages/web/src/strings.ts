@@ -35,6 +35,7 @@ export const th = {
   hintDefendOnly: 'Unit นี้เดินแล้ว ยังกด "ป้องกัน" ได้',
   hintAlreadyMoved: 'Unit นี้เดินไปแล้วใน Turn นี้',
   hintFreeSkill: (skill: string) => `ยังใช้ ${skill} ได้ (ไม่ใช้ Action)`,
+  hintMoveAndFreeSkill: (skill: string) => `ยังเดินได้ และยังใช้ ${skill} ได้ (ไม่ใช้ Action)`,
   hintNothingLeft: 'Unit นี้เดินและใช้ Action ไปแล้วใน Turn นี้',
   hintChooseTarget: 'แตะศัตรูที่ไฮไลต์สีแดงเพื่อดูโอกาสโดนก่อนยืนยัน',
   hintConfirm: 'ดูโอกาสโดนและ damage แล้วกดยืนยัน หรือแตะศัตรูตัวอื่นเพื่อเปลี่ยนเป้า',
