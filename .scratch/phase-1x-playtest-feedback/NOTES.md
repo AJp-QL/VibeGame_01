@@ -8,30 +8,33 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 - Phase 1.x spec (PR #15) and tickets 01–17 (PR #17) merged. Source: playtest v0.1.5 Replay + 3 player comments, grill-with-docs 2026-10-17 (5 decision-log rows dated 2026-10-17).
 - Ticket 04 got one extra item from the PR #16 review (PR #18): "ยังเดินได้" only when the Unit has reachable tiles (Pinned Unit case).
 - AGENTS.md now allows several Claude sessions in parallel, each in its own worktree and `claude/<ticket>-<slug>` branch (PR #19).
+- 2026-10-18 (main = eadfe69): 01, 02, 03, 13 merged. Codex PRs #26 (04) and #27 (14) reviewed. Tickets 18 (claude) and 19 (codex) added from the #26 review.
 
 ## Tickets
 
 | # | Ticket | Owner | Blocked by | State |
 |---|---|---|---|---|
-| 01 | Inspiration only on a miss + switch/end-of-Turn data | claude | — | **in progress, other session** (see Gotchas: uncommitted on `main` in the main checkout) |
-| 02 | Quick UI fixes + fixture refresh | codex | 01 | waiting |
-| 03 | Move preview in session | claude | — | **in progress, other session** (no branch pushed yet) |
-| 04 | Move preview UI | codex | 03 | waiting |
-| 05 | Undo in engine and session | claude | 01 | waiting |
+| 01 | Inspiration only on a miss + switch/end-of-Turn data | claude | — | done (PR #21, ENGINE_VERSION 0.10.0) |
+| 02 | Quick UI fixes + fixture refresh | codex | 01 | done (PR #25) |
+| 03 | Move preview in session | claude | — | done (PR #22) |
+| 04 | Move preview UI | codex | 03 | PR #26 reviewed, CI green; human merges (gaps → 18, 19) |
+| 05 | Undo in engine and session | claude | 01 | ready, not started (user: wait) |
 | 06 | Replay format 2 + playback + play stats | claude | 05 | waiting |
 | 07 | Undo / Start over / playback toggle UI | codex | 06, 02 | waiting |
-| 08 | Range experiments (simulator) — stops for the user's choice | claude | 01 | waiting |
+| 08 | Range experiments (simulator) — stops for the user's choice | claude | 01 | ready, not started (user: wait) |
 | 09 | Apply chosen range combination | claude | 08 + user choice | waiting |
 | 10 | Fixture refresh after range change | codex | 09 | waiting |
 | 11 | Threat zone in session | claude | 03, 09 | waiting |
 | 12 | Threat zone UI | codex | 11, 04 | waiting |
-| 13 | Board size per Board: expand engine/AI/simulator | claude | — | **in progress, other session** (no branch pushed yet) |
-| 14 | Board size per Board: battle/web | codex | 13 | waiting |
+| 13 | Board size per Board: expand engine/AI/simulator | claude | — | done (PR #23) |
+| 14 | Board size per Board: battle/web | codex | 13 | PR #27 reviewed, CI green; needs fix first: `EventLog.tsx:150` `isOnBoard(event.tile)` uses default size 7. Conflicts with #26 in `BattleScene.ts` (second to merge merges `origin/main`) |
 | 15 | Contract BOARD_SIZE + 9x9 Boards | claude | 13, 14, 09 | waiting |
 | 16 | 9x9 Boards UI | codex | 15 | waiting |
-| 17 | Release v0.2.0 + next playtest | claude | 07, 10, 12, 16 | waiting |
+| 17 | Release v0.2.0 + next playtest | claude | 07, 10, 12, 16, 19 | waiting |
+| 18 | Move preview session follow-up: tap Unit cancels only the preview; `BattleSnapshot.movePreview?` | claude | 04 | waiting (from PR #26 review) |
+| 19 | Move preview UI cleanup: no cast, story 3 test, naming, visual README | codex | 18 | waiting |
 
-Next unblocked after merges: 01 → unblocks 02, 05, 08. 03 → unblocks 04. 13 → unblocks 14.
+Next unblocked after merges: 04 → unblocks 18. 18 → unblocks 19. 05 and 08 wait for the user's go.
 
 ## Lead's job
 

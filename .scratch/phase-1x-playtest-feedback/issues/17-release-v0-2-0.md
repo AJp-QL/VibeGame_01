@@ -4,7 +4,7 @@
 
 **What to build:** playtester รอบถัดไปได้เล่นเวอร์ชันที่มีทุกอย่างของ phase 1.x: release v0.2.0 ด้วย tag หลัง CI บน main เขียว ตรวจเว็บ live และเตรียมโน้ตสำหรับ playtest ว่ามีอะไรใหม่และอยากให้ลองอะไร (Move preview, Undo, Start over, ระยะใหม่, Board 9x9) (spec user story 52)
 
-**Blocked by:** 07 — UI Undo/Start over, 10 — fixtures หลังแก้ระยะ, 12 — UI Threat zone, 16 — UI Board 9x9
+**Blocked by:** 07 — UI Undo/Start over, 10 — fixtures หลังแก้ระยะ, 12 — UI Threat zone, 16 — UI Board 9x9, 19 — UI Move preview cleanup
 
 **Status:** ready-for-agent
 
