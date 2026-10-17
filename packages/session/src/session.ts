@@ -48,6 +48,7 @@ import {
   decidingSide,
   legalActions,
   previewAction,
+  undoPoint,
   unitSkills,
   unitsVisibleTo,
   type Action,
@@ -57,6 +58,7 @@ import {
   type CommandOption,
   type RejectionCode,
   type SkillAvailability,
+  type UndoLabel,
   type UnitId,
   type UseSkillAction,
 } from '@mt/engine'
@@ -113,6 +115,16 @@ export interface MovePreview {
   readonly reach: readonly MoveReach[]
 }
 
+/**
+ * Undo (rules §17.5, D-30): what the button would do. `to` says where it goes
+ * back to, `actions` how many actions it withdraws.
+ */
+export interface UndoOffer {
+  /** The start of the Turn, or just after the last dice roll or Inspiration answer, whichever came later. */
+  readonly to: UndoLabel
+  readonly actions: number
+}
+
 /** A loadout skill button of the selected Unit. */
 export interface SkillButton extends SkillAvailability {
   /** The engine has at least one legal use of it right now. */
@@ -138,6 +150,12 @@ export interface SessionSnapshot extends BattleSnapshot {
   readonly pendingOption: CommandOption | null
   /** The selected Unit is a Tamer that may issue a Command now (rules §16). */
   readonly canCommand: boolean
+  /**
+   * Undo: set when the side to act, here at the device, can go back to the safe
+   * point of this Turn (there is an action after it); `null` otherwise, and
+   * always during the AI's Turn or a hand-over screen (spec stories 14-22).
+   */
+  readonly undo: UndoOffer | null
   /** Move preview: the reachable tile being looked at (UI state, not game state), or `null`. */
   readonly movePreviewTile: Tile | null
   /**
@@ -203,6 +221,12 @@ export interface BattleSession extends BattleSessionPort {
   chooseCommandOption(option: CommandOption): void
   /** Attune: the element for the tile picked. */
   chooseElement(element: Element): void
+  /**
+   * Go back to the safe point of this Turn (`snapshot.undo`): the Battle, its
+   * activations and the actions list return to that point; the dice are as they
+   * were. Does nothing when `snapshot.undo` is `null`.
+   */
+  undo(): void
   /** Move preview: look at a reachable tile with the selected Unit as if it stood there; another tile replaces it. Nothing moves. */
   previewMove(tile: Tile): void
   /** Move preview: drop the previewed tile. */
@@ -240,6 +264,7 @@ type Computed =
   | 'area'
   | 'elementChoices'
   | 'movePreview'
+  | 'undo'
   | 'canCommand'
   | 'actionAtStake'
   | 'movedWithoutAction'
@@ -555,6 +580,13 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     return null
   }
 
+  /** Undo for `base`: only at the device of the side to act, never during the AI's Turn or a hand-over screen. */
+  function undoOffer(base: Omit<SessionSnapshot, Computed>, history: readonly BattleState[]): UndoOffer | null {
+    if (base.screen !== 'board' || !humanMayAct(base.state)) return null
+    const point = undoPoint(history, base.actions)
+    return point === null ? null : { to: point.label, actions: base.actions.length - point.keep }
+  }
+
   function snapshotOf(base: Omit<SessionSnapshot, Computed>): SessionSnapshot {
     const { state, selectedUnit, mode, pendingSkill, pendingTile, chosenTargets } = base
     const actions = legalActions(state)
@@ -642,6 +674,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       area: kind === 'area' && pendingTile !== null && aimedSkill !== undefined ? areaTiles(aimedSkill, pendingTile, boardSizeOf(state)) : [],
       elementChoices,
       movePreview,
+      undo: undoOffer(base, states),
       canCommand: commandTargets(actions, selectedUnit).length > 0,
       actionAtStake: actionAtStake(state, actions),
       movedWithoutAction: movedWithoutAction(state, actions),
@@ -653,6 +686,11 @@ export function createBattleSession(initial: BattleState, options: SessionOption
         (base.screen === 'board' || state.pending !== null),
     }
   }
+
+  /** `states[k]` is the Battle after the first `k` accepted actions (`states[0]` is where this session began): what Undo returns to. */
+  const states: BattleState[] = [initial]
+  /** `logLengths[k]` is the length of the event log after the first `k` actions. */
+  const logLengths: number[] = [0]
 
   let snapshot = snapshotOf({
     state: initial,
@@ -684,6 +722,9 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       update({ rejection: result.rejection.code })
       return
     }
+    // The history first: the snapshot built by `update` reads it for Undo.
+    states.push(result.state)
+    logLengths.push(snapshot.log.length + result.events.length)
     update({
       screen: screenAfter(before, result.state, action, opponent !== null),
       state: result.state,
@@ -886,6 +927,27 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     },
     chooseElement(element) {
       if (snapshot.elementChoices.includes(element)) update({ pendingElement: element, rejection: null })
+    },
+    undo() {
+      const offer = snapshot.undo
+      if (offer === null) return
+      const point = undoPoint(states, snapshot.actions)
+      if (point === null) return
+      states.length = point.keep + 1
+      logLengths.length = point.keep + 1
+      const state = states[point.keep]!
+      update({
+        state,
+        events: [],
+        revision: snapshot.revision + 1,
+        selectedUnit: state.pending?.kind === 'retreat' ? state.pending.unit : null,
+        ...NO_AIM,
+        inspectedUnit: null,
+        rejection: null,
+        log: snapshot.log.slice(0, logLengths[point.keep]),
+        actions: snapshot.actions.slice(0, point.keep),
+        screen: 'board',
+      })
     },
     previewMove(tile) {
       const { state, selectedUnit, mode, reachable } = snapshot
