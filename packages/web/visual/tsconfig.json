@@ -2,6 +2,7 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": ".",
+    "jsx": "react-jsx",
     "outDir": "../.tsbuild/visual",
     "lib": ["es2023", "dom", "dom.iterable"],
     "types": ["node", "vite/client"]

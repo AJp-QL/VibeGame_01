@@ -6,10 +6,26 @@
 
 **Blocked by:** 03 — Move preview ใน session
 
-**Status:** ready-for-agent
+**Status:** in progress (implementation complete; PR CI pending)
 
-- [ ] เงา Unit และแผง preview แสดงตามข้อมูลของ session ไม่คำนวณกติกาเอง
-- [ ] ปุ่ม "เดิน" / "Blink" ยืนยันการเดิน; แตะช่องอื่นและแตะ Unit ทำงานตามที่บอก
-- [ ] hint ใน TurnPanel อธิบาย Move preview และบอกว่า "ยังเดินได้" เฉพาะเมื่อ Unit มีช่องที่เดินได้จริง (ตาม reachable ของ session ไม่ใช่แค่ยังไม่ได้เดิน) เช่น Unit ที่ติด Pin ต้องไม่ถูกบอกว่ายังเดินได้ (พบจาก review PR #16)
-- [ ] ข้อความอยู่ใน strings ของ web มี text test
+- [x] เงา Unit และแผง preview แสดงตามข้อมูลของ session ไม่คำนวณกติกาเอง
+- [x] ปุ่ม "เดิน" / "Blink" ยืนยันการเดิน; แตะช่องอื่นและแตะ Unit ทำงานตามที่บอก
+- [x] hint ใน TurnPanel อธิบาย Move preview และบอกว่า "ยังเดินได้" เฉพาะเมื่อ Unit มีช่องที่เดินได้จริง (ตาม reachable ของ session ไม่ใช่แค่ยังไม่ได้เดิน) เช่น Unit ที่ติด Pin ต้องไม่ถูกบอกว่ายังเดินได้ (พบจาก review PR #16)
+- [x] ข้อความอยู่ใน strings ของ web มี text test
 - [ ] screenshot test ของเงาและแผงที่ desktop และ 360 px ไม่มี horizontal scroll; CI เขียวทั้งสาม job
+
+
+## Comments
+
+- Preview taps call `previewMove`; Move/Blink confirmation calls `confirmMove`
+  through ticket 02's activation guard. Target and blocker lists come directly
+  from `snapshot.movePreview.reach`. The renderer reads the optional live-session
+  preview while Replay ports continue to work unchanged.
+- Movement hints use `reachable.length`, including free-skill hints after Action.
+- Added six Linux/pinned Chromium baselines and browser interaction cases at
+  1280 and 360 px. All 19 original Board baselines remain unchanged.
+- Local checks: frozen install, typecheck, 817 tests passed (1 intentional skip),
+  build and Replay validation passed.
+- [Every-image inspection and screenshots](../evidence/04-move-preview-ui/README.md).
+- Merge-order rule: whichever of tickets 04 and 14 merges second must merge
+  latest `origin/main` into its branch and rerun all checks before merging.

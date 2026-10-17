@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { withMovePreview } from './movePreviewSession.ts'
 import { createActionConfirmation } from './actionConfirmation.ts'
 import { StartUnitDialog } from './StartUnitDialog.tsx'
 import { decidingSide, type BattleOutcome, type BattleSession } from '@mt/session'
@@ -33,7 +34,7 @@ interface BattleScreenProps {
 
 export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAgain, onMenu, onExportReplay, onFinished, feedbackUrl }: BattleScreenProps) {
   const confirmation = useMemo(() => createActionConfirmation(sourceSession), [sourceSession])
-  const session = confirmation.session
+  const session = useMemo(() => withMovePreview(confirmation.session), [confirmation])
   const snapshot = useBattleSession(session, onFinished)
   const { state } = snapshot
   const scenario = data.scenarios[state.scenarioId]

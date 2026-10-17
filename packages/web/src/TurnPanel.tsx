@@ -7,6 +7,7 @@ import { SkillButtons } from './SkillButtons.tsx'
 import { TerrainSwatch } from './TerrainLegend.tsx'
 import { PreviewCard } from './ActionPreview.tsx'
 import { InspirationPrompt } from './InspirationPrompt.tsx'
+import { MovePreviewPanel } from './MovePreviewPanel.tsx'
 import { th } from './strings.ts'
 
 function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, current: UnitState | undefined, data: GameData) {
@@ -15,6 +16,7 @@ function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, cu
   if (state.pending?.kind === 'inspiration') return th.inspiration.hint(state.pending.side)
   if (state.pending !== null) return th.hintRetreat(selected === undefined ? state.pending.unit : unitName(selected, data))
   if (selected === undefined) return th.hintSelect(state.sideToAct)
+  if (snapshot.movePreview !== null) return th.hintMovePreview
   if (snapshot.mode === 'attack') {
     if (snapshot.preview !== null) return th.hintConfirm
     return snapshot.canAttack ? th.hintChooseTarget : th.hintAllBlocked
@@ -35,6 +37,7 @@ function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, cu
       if (snapshot.preview !== null) return th.hintConfirmSkill(skill)
       return snapshot.pendingTile === null ? th.hintChooseAttuneTile(skill) : th.hintChooseElement(skill, tileName(snapshot.pendingTile))
     }
+    if (aimed?.effects?.replacesMove === true) return th.hintBlinkPreview
     if (aimed?.target === 'tile') return snapshot.preview !== null ? th.hintConfirmSkill(skill) : th.hintChooseTile(skill)
     if (aimed?.target === 'area') {
       const max = aimed.area?.maxTargets ?? 1
@@ -51,12 +54,12 @@ function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, cu
   const freeSkill = snapshot.skills.find((button) => button.free === true && button.usable)
   if (selected.hasActed && freeSkill !== undefined) {
     const skill = skillName(data, freeSkill.skill)
-    return selected.hasMoved ? th.hintFreeSkill(skill) : th.hintMoveAndFreeSkill(skill)
+    return snapshot.reachable.length === 0 ? th.hintFreeSkill(skill) : th.hintMoveAndFreeSkill(skill)
   }
-  if (selected.hasMoved) {
+  if (snapshot.reachable.length === 0) {
     if (snapshot.canAttack) return th.hintAttackOnly
     if (snapshot.canDefend) return th.hintDefendOnly
-    return selected.hasActed ? th.hintNothingLeft : th.hintAlreadyMoved
+    return selected.hasActed ? th.hintNothingLeft : selected.hasMoved ? th.hintAlreadyMoved : th.hintNoMove
   }
   if (current !== undefined && current.id !== selected.id) return th.hintSwitchEnds(unitName(current, data))
   if (snapshot.canAttack) return th.hintMoveOrAttack
@@ -139,7 +142,8 @@ export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapsh
       {snapshot.mode !== 'move' && snapshot.blocked.length > 0 && (
         <BlockedTargets blocked={snapshot.blocked} name={namer(state, data)} />
       )}
-      {snapshot.preview !== null && (
+      {snapshot.movePreview !== null && <MovePreviewPanel snapshot={snapshot} session={session} data={data} />}
+      {snapshot.preview !== null && snapshot.movePreview === null && (
         <PreviewCard preview={snapshot.preview} action={snapshot.ready} name={namer(state, data)} data={data} />
       )}
       {state.pending?.kind === 'inspiration' ? (
@@ -178,12 +182,12 @@ export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapsh
               {th.command}
             </button>
           )}
-          {snapshot.ready !== null && (
+          {snapshot.ready !== null && snapshot.movePreview === null && (
             <button type="button" className="primary" onClick={() => session.confirmAttack()}>
               {snapshot.mode === 'skill' ? th.confirmSkill : snapshot.mode === 'command' ? th.confirmCommand : th.confirmAttack}
             </button>
           )}
-          {snapshot.mode !== 'move' && (
+          {snapshot.mode !== 'move' && snapshot.movePreview === null && (
             <button type="button" className="secondary" onClick={() => session.cancel()}>
               {th.cancel}
             </button>
