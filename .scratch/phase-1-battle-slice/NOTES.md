@@ -8,6 +8,7 @@ Working state for the lead session. Survives compaction; read this first when re
 - Balance (19 + 27, game:greedy both sides, 2,000 Battles/set): team A 43-57%, turn limit <= 12.6%; Mark, Pin, Hex used; Camouflage is a free skill (D-28). Reports: docs/balance/ticket-19-team-balance.md, ticket-27-camouflage.md.
 - Multi-agent (ADR 0004) running: Claude = engine side, PRs from claude/*, lead merges own PRs after green CI and pushes v* tags; Codex cloud = UI, PRs from codex/*, Claude reviews with /code-review, human merges. gh at `C:\Program Files\GitHub CLI\gh.exe`. Tag push allowed by `.claude/settings.local.json`.
 - Deployed: v0.1.4 (2026-10-16, balance + free Camouflage), v0.1.5 (2026-10-17, ticket 28 UI text, CI visual job). Live URL in Tuning section below: tuning target met, human may now share it with playtesters.
+- Phase 1.x (playtest v0.1.5 feedback): spec + tickets 01-17 in .scratch/phase-1x-playtest-feedback/ (Claude next: 01 -> 03 -> 05 -> 08 -> 13; Codex: 02, 04, ... after their Claude ticket).
 - Open: 30 hint free skill + move (Codex, ready), 32 Node 26 (Claude, from 2026-10-28). Human: play one Battle in a visible browser (see "Still unverified by eye"), then share the URL. Later: Blink nearly unused (only matters when Wispling is Pinned; wait for playtest feedback); phase 2 planning (grill-with-docs -> to-spec -> to-tickets).
 - History: v0.1.0-v0.1.3 (2026-10-16) tickets 01-21; 20 session package, 21 CI, 22 agent docs, 23 AI lookahead, 24 App.tsx split, 25 visual tests, 26 CI visual job.
 
