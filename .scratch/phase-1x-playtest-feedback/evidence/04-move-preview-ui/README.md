@@ -38,3 +38,8 @@ pinned Chromium and existing Linux libraries ran the suite successfully.
 Merge order: tickets 04 and 14 touch BattleScene and styles. Whichever PR merges
 second must first merge current `origin/main` into its branch, resolve any
 conflicts and rerun all checks, including visual comparisons.
+
+CI initially exposed Ubuntu LCD text antialiasing (colored subpixel edges),
+while Debian used grayscale, despite identical pinned fonts and Chromium.
+The screenshot browser now uses `--disable-lcd-text` for consistent grayscale
+text. Board pixels and geometry matched; the difference was confined to text.
