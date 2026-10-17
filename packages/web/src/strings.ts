@@ -48,8 +48,13 @@ export const th = {
   hintActivationOver: 'Unit นี้เล่นจบแล้วใน Turn นี้ เพราะเริ่มเล่น Unit อื่นไปแล้ว',
   hintActivationLimit: (limit: number) => `Turn นี้เล่นครบ ${limit} Unit แล้ว Unit นี้ต้องรอ Turn หน้า`,
 
-  endTurnWarnTitle: 'ยังมี Unit ที่ยังไม่ได้ทำอะไร',
-  endTurnWarnBody: (units: string) => `${units} ยังไม่ได้ทำอะไรใน Turn นี้ จะจบ Turn เลยไหม`,
+  endTurnWarnTitle: 'ยังมี Unit ที่ยังใช้ Action ได้',
+  endTurnWarnBody: (units: string) => `${units} ยังไม่ได้ทำอะไร หรือเดินแล้วแต่ยังไม่ใช้ Action ใน Turn นี้ จะจบ Turn เลยไหม`,
+  startUnitTitle: 'ยืนยันเริ่ม Unit อื่น',
+  startUnitBody: (current: string, next: string) => `${current} ยังใช้ Action ได้ เริ่ม ${next} เลยไหม`,
+  startUnit: (unit: string) => `เริ่ม ${unit}`,
+  returnToUnit: (unit: string) => `กลับไปเล่น ${unit}`,
+  hiddenAdjacent: 'ศัตรูที่ยืนติดกันยังเล็ง Unit ที่ Hidden ได้',
   endTurnAnyway: 'จบ Turn เลย',
   keepPlaying: 'กลับไปเล่นต่อ',
 

@@ -841,3 +841,15 @@ body {
 .result.side-draw {
   border-left-color: var(--muted);
 }
+
+.start-unit-dialog {
+  color: var(--text);
+  width: min(480px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  margin: auto;
+}
+
+.start-unit-dialog::backdrop {
+  background: rgb(0 0 0 / 70%);
+}

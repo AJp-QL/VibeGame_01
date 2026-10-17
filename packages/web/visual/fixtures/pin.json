@@ -1,7 +1,7 @@
 {
   "format": "monster-tactics-replay",
   "formatVersion": 1,
-  "engineVersion": "0.9.0",
+  "engineVersion": "0.10.0",
   "dataHash": "7139faa5c0e0442faecd037b37f67c5520b366a3fa5ec4d3a500be99fbadf78f",
   "scenarioId": "scenario_2",
   "boardId": "crossroads",
@@ -42,7 +42,6 @@
   },
   "actions": [
     {"type":"useSkill","unit":"B.m2","skill":"pin","target":"A.m2"},
-    {"type":"declineInspiration","side":"B"},
     {"type":"declineInspiration","side":"A"}
   ]
 }

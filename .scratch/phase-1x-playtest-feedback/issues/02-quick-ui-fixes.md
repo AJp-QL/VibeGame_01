@@ -6,10 +6,31 @@
 
 **Blocked by:** 01 — Inspiration เฉพาะเมื่อพลาด และข้อมูลการเปลี่ยน Unit / จบ Turn ใน session
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] dialog ยืนยันก่อนเปลี่ยน Unit ขึ้นเฉพาะเมื่อ session บอกว่าจะจบ Unit ที่ยังใช้ Action ได้ และไม่ขึ้นในกรณีอื่น
-- [ ] คำเตือนจบ Turn แสดง Unit ที่เดินแล้วแต่ยังไม่ใช้ Action
-- [ ] คำอธิบาย Camouflage มีประโยคเรื่องศัตรูที่ยืนติดกัน
-- [ ] ข้อความทั้งหมดอยู่ใน strings ของ web มี text test
-- [ ] visual fixtures บันทึกใหม่ด้วย engine ปัจจุบัน baseline ตรวจด้วยตาทุกภาพ CI เขียวทั้งสาม job (ไม่มีคำเตือน fixtures stale)
+- [x] dialog ยืนยันก่อนเปลี่ยน Unit ขึ้นเฉพาะเมื่อ session บอกว่าจะจบ Unit ที่ยังใช้ Action ได้ และไม่ขึ้นในกรณีอื่น
+- [x] คำเตือนจบ Turn แสดง Unit ที่เดินแล้วแต่ยังไม่ใช้ Action
+- [x] คำอธิบาย Camouflage มีประโยคเรื่องศัตรูที่ยืนติดกัน
+- [x] ข้อความทั้งหมดอยู่ใน strings ของ web มี text test
+- [x] visual fixtures บันทึกใหม่ด้วย engine ปัจจุบัน baseline ตรวจด้วยตาทุกภาพ CI เขียวทั้งสาม job (ไม่มีคำเตือน fixtures stale)
+
+
+## Comments
+
+- Uses `snapshot.actionAtStake` to hold a Move, Defend, attack, skill, or Command
+  before starting another Unit. Selecting/inspecting alone does not start an
+  activation. Confirm runs the held command once; Return/Escape reselects the
+  current Unit without spending its Action. Stale commands are discarded.
+- End Turn combines idle Units with `snapshot.movedWithoutAction`; all new
+  player-facing text lives in web strings. Camouflage now explains adjacent
+  enemies can target Hidden Units.
+- Regenerated all fixtures for ENGINE_VERSION 0.10.0 using `visual:fixtures`;
+  updated Linux baselines with pinned Chromium and inspected all 19 images.
+- [Desktop/mobile screenshots and per-image inspection notes](../evidence/02-quick-ui-fixes/README.md).
+- Validation: frozen install, typecheck, 813 tests passed (1 intentional skip),
+  build, path ownership check (33 files), Replay validation, visual update
+  (19/19), and three visual comparisons (57/57) passed. Desktop and 360 px
+  browser interaction checks passed.
+- [PR #25](https://github.com/AJp-QL/VibeGame_01/pull/25).
+  [CI run](https://github.com/AJp-QL/VibeGame_01/actions/runs/39042308791):
+  build, ownership, and Board visual regression all green; fixtures match.

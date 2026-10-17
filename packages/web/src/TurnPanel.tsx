@@ -74,7 +74,7 @@ export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapsh
   }
 
   function onEndTurn() {
-    const idle = idleUnits(state)
+    const idle = [...new Set([...idleUnits(state), ...snapshot.movedWithoutAction])]
     if (idle.length > 0) setWarning(idle.map(nameOf))
     else session.endTurn()
   }

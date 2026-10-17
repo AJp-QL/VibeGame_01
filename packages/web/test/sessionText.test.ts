@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { createActionConfirmation } from '../src/actionConfirmation.ts'
+import { StartUnitDialog } from '../src/StartUnitDialog.tsx'
 import { TurnPanel } from '../src/TurnPanel.tsx'
 import { SkillButtons } from '../src/SkillButtons.tsx'
 import { PreviewCard } from '../src/ActionPreview.tsx'
@@ -196,5 +198,110 @@ describe('Camouflage free skill text (ticket 28)', () => {
     expect(renderToStaticMarkup(createElement(TurnPanel, { snapshot: s.getSnapshot(), session: s, data }))).not.toContain(th.hintFreeSkill('Camouflage'))
     const state = s.getSnapshot().state
     expect(logLines({ type: 'skillUsed', unit: 'B.m1', skill: 'counter', targets: ['B.m1'] }, id => id, state, data).join('')).not.toContain(th.noAction)
+  })
+})
+
+
+describe('phase 1.x activation warnings', () => {
+  function movedSession() {
+    const s = createBattleSession(playing({ A: ['a1', 'd4', 'g1'], B: ['a7', 'd5', 'g7'] }))
+    s.selectUnit('A.m1')
+    s.input({ type: 'tapTile', tile: s.getSnapshot().reachable[0]! })
+    expect(s.getSnapshot().actionAtStake).toBe('A.m1')
+    return s
+  }
+
+  it('holds a Move until confirmed, permits inspection, and starts the chosen Unit once', () => {
+    const s = movedSession()
+    const c = createActionConfirmation(s)
+    c.session.input({ type: 'tapUnit', unit: 'B.m1' })
+    expect(c.getPending()).toBeNull()
+    c.session.input({ type: 'tapUnit', unit: 'A.m2' })
+    expect(c.getPending()).toBeNull()
+    const before = s.getSnapshot()
+    c.session.input({ type: 'tapTile', tile: before.reachable[0]! })
+    expect(s.getSnapshot()).toBe(before)
+    expect(c.getPending()).toMatchObject({ current: 'A.m1', next: 'A.m2' })
+    const html = renderToStaticMarkup(createElement(StartUnitDialog, { confirmation: c, data }))
+    expect(html).toContain(th.startUnitBody('Fangrel', 'Wispling'))
+    expect(html).toContain(th.startUnit('Wispling'))
+    expect(html).toContain(th.returnToUnit('Fangrel'))
+    c.confirm()
+    expect(s.getSnapshot().state.activations.current).toBe('A.m2')
+    expect(s.getSnapshot().revision).toBe(before.revision + 1)
+    c.confirm()
+    expect(s.getSnapshot().revision).toBe(before.revision + 1)
+  })
+
+  it('cancel returns to the original Unit without using its Action; Defend is guarded too', () => {
+    const s = movedSession()
+    const c = createActionConfirmation(s)
+    c.session.selectUnit('A.m2')
+    c.session.defend()
+    const revision = s.getSnapshot().revision
+    c.cancel()
+    expect(s.getSnapshot()).toMatchObject({ selectedUnit: 'A.m1', actionAtStake: 'A.m1', revision })
+    c.session.defend()
+    expect(c.getPending()).toBeNull()
+    expect(s.getSnapshot().state.units.find(u => u.id === 'A.m1')?.hasActed).toBe(true)
+    c.session.selectUnit('A.m2')
+    c.session.defend()
+    expect(c.getPending()).toBeNull()
+    expect(s.getSnapshot().state.activations.current).toBe('A.m2')
+  })
+
+  it('guards a confirmed skill, and discards a stale queued command', () => {
+    const s = movedSession()
+    const c = createActionConfirmation(s)
+    c.session.selectUnit('A.m2')
+    c.session.chooseSkill('blink')
+    c.session.input({ type: 'tapTile', tile: s.getSnapshot().tileChoices[0]! })
+    expect(s.getSnapshot().ready).toMatchObject({ type: 'useSkill', skill: 'blink' })
+    c.session.confirmAttack()
+    expect(c.getPending()).not.toBeNull()
+    s.endTurn()
+    const after = s.getSnapshot()
+    c.confirm()
+    expect(s.getSnapshot()).toBe(after)
+  })
+
+  it('also warns before Command starts the Tamer activation', () => {
+    const s = createBattleSession(playing({ A: ['d2', 'c3', 'e2'], B: ['d7', 'c5', 'e6'] }))
+    s.endTurn()
+    s.continueHotseat()
+    s.endTurn()
+    s.continueHotseat()
+    s.selectUnit('A.m1')
+    s.input({ type: 'tapTile', tile: s.getSnapshot().reachable[0]! })
+    const c = createActionConfirmation(s)
+    c.session.selectUnit('A.tamer')
+    c.session.chooseCommand()
+    c.session.input({ type: 'tapUnit', unit: 'A.m2' })
+    c.session.chooseCommandOption('advantage')
+    expect(s.getSnapshot().ready).toMatchObject({ type: 'command' })
+    c.session.confirmAttack()
+    expect(c.getPending()).toMatchObject({ current: 'A.m1', next: 'A.tamer' })
+    expect(s.getSnapshot().state.command).toBeNull()
+    c.confirm()
+    expect(s.getSnapshot().state.activations.current).toBe('A.tamer')
+    expect(s.getSnapshot().state.command?.target).toBe('A.m2')
+  })
+
+  it('does not warn without an Action at stake or for an invalid action', () => {
+    const s = createBattleSession(playing({ A: ['a1', 'd4', 'g1'], B: ['a7', 'd5', 'g7'] }))
+    const c = createActionConfirmation(s)
+    c.session.confirmAttack()
+    c.session.defend()
+    expect(c.getPending()).toBeNull()
+    c.session.selectUnit('A.m1')
+    c.session.defend()
+    expect(c.getPending()).toBeNull()
+    expect(s.getSnapshot().actionAtStake).toBeNull()
+  })
+
+  it('End Turn copy covers moved Units and Camouflage explains adjacent targeting', () => {
+    expect(th.endTurnWarnBody('Fangrel')).toContain('เดินแล้วแต่ยังไม่ใช้ Action')
+    expect(skillSummary(data.skills.camouflage!, data.statuses)).toContain(th.hiddenAdjacent)
+    expect(skillSummary(data.skills.blink!, data.statuses)).not.toContain(th.hiddenAdjacent)
   })
 })

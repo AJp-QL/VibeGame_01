@@ -1,3 +1,6 @@
+import { useMemo } from 'react'
+import { createActionConfirmation } from './actionConfirmation.ts'
+import { StartUnitDialog } from './StartUnitDialog.tsx'
 import { decidingSide, type BattleOutcome, type BattleSession } from '@mt/session'
 import type { GameData } from '@mt/shared'
 import { BattleView } from './BattleView.tsx'
@@ -28,7 +31,9 @@ interface BattleScreenProps {
   feedbackUrl: string | null
 }
 
-export function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu, onExportReplay, onFinished, feedbackUrl }: BattleScreenProps) {
+export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAgain, onMenu, onExportReplay, onFinished, feedbackUrl }: BattleScreenProps) {
+  const confirmation = useMemo(() => createActionConfirmation(sourceSession), [sourceSession])
+  const session = confirmation.session
   const snapshot = useBattleSession(session, onFinished)
   const { state } = snapshot
   const scenario = data.scenarios[state.scenarioId]
@@ -36,6 +41,7 @@ export function BattleScreen({ data, session, diceSeed, onPlayAgain, onMenu, onE
 
   return (
     <main className="battle">
+      <StartUnitDialog confirmation={confirmation} data={data} />
       <StatusBar state={state} />
       {snapshot.aiSide !== null && <p className="muted vs-ai">{th.ai.sides(otherSide(snapshot.aiSide), snapshot.aiSide)}</p>}
 
