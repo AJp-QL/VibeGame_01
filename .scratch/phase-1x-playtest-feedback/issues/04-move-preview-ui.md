@@ -10,6 +10,6 @@
 
 - [ ] เงา Unit และแผง preview แสดงตามข้อมูลของ session ไม่คำนวณกติกาเอง
 - [ ] ปุ่ม "เดิน" / "Blink" ยืนยันการเดิน; แตะช่องอื่นและแตะ Unit ทำงานตามที่บอก
-- [ ] hint ใน TurnPanel อธิบาย Move preview
+- [ ] hint ใน TurnPanel อธิบาย Move preview และบอกว่า "ยังเดินได้" เฉพาะเมื่อ Unit มีช่องที่เดินได้จริง (ตาม reachable ของ session ไม่ใช่แค่ยังไม่ได้เดิน) เช่น Unit ที่ติด Pin ต้องไม่ถูกบอกว่ายังเดินได้ (พบจาก review PR #16)
 - [ ] ข้อความอยู่ใน strings ของ web มี text test
 - [ ] screenshot test ของเงาและแผงที่ desktop และ 360 px ไม่มี horizontal scroll; CI เขียวทั้งสาม job
