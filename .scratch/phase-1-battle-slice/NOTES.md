@@ -2,14 +2,14 @@
 
 Working state for the lead session. Survives compaction; read this first when resuming.
 
-## Status (2026-10-15)
+## Status (2026-10-17)
 
-- Done on main: tickets 01-17 (phase 1 slice complete). Tests: 714 passing. ENGINE_VERSION 0.7.0.
-- Done: 16 simulator (parity passed; baseline in docs/balance/phase-1-baseline.md).
-- Deployed v0.1.1 (tickets 01-17). Verified live 2026-10-16: full Battle vs AI to result screen (desktop), menu stats, back-to-menu, 375px mobile board 336px single canvas no h-scroll, no console errors. NOT distributed -- next: tuning tickets 18+ (team A near 50%).
-- Deployed v0.1.2 (2026-10-16): selection fix + ticket 18 (engine 0.8.0). Ticket 18 had no sim effect: AI values Mark only within the same Turn.
-- Done: 20 session package, 21 CI (PR #1). Agents now use claude/* branches + PRs; lead merges own PRs after CI green (gh at `C:\Program Files\GitHub CLI\gh.exe`).
-- Done: 22 agent docs (AGENTS.md ownership/workflow, docs/agents/codex.md, Owner lines). Next (Claude): 23 AI values Mark -> 19 balance. Codex can start 24 (split App.tsx) now -> 25 visual regression -> 26 CI job for 25 (Claude). Human: set up Codex cloud per docs/agents/codex.md part 1.
+- Phase 1 done: tickets 01-28 and 31 done (29 wontfix, covered by 28). ENGINE_VERSION 0.9.0. CI has 3 jobs (build, path check, Board visual regression), runners pinned to ubuntu-24.04 (31).
+- Balance (19 + 27, game:greedy both sides, 2,000 Battles/set): team A 43-57%, turn limit <= 12.6%; Mark, Pin, Hex used; Camouflage is a free skill (D-28). Reports: docs/balance/ticket-19-team-balance.md, ticket-27-camouflage.md.
+- Multi-agent (ADR 0004) running: Claude = engine side, PRs from claude/*, lead merges own PRs after green CI and pushes v* tags; Codex cloud = UI, PRs from codex/*, Claude reviews with /code-review, human merges. gh at `C:\Program Files\GitHub CLI\gh.exe`. Tag push allowed by `.claude/settings.local.json`.
+- Deployed: v0.1.4 (2026-10-16, balance + free Camouflage), v0.1.5 (2026-10-17, ticket 28 UI text, CI visual job). Live URL in Tuning section below: tuning target met, human may now share it with playtesters.
+- Open: 30 hint free skill + move (Codex, ready), 32 Node 26 (Claude, from 2026-10-28). Human: play one Battle in a visible browser (see "Still unverified by eye"), then share the URL. Later: Blink nearly unused (only matters when Wispling is Pinned; wait for playtest feedback); phase 2 planning (grill-with-docs -> to-spec -> to-tickets).
+- History: v0.1.0-v0.1.3 (2026-10-16) tickets 01-21; 20 session package, 21 CI, 22 agent docs, 23 AI lookahead, 24 App.tsx split, 25 visual tests, 26 CI visual job.
 
 ## Process rules
 
