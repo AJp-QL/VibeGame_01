@@ -6,13 +6,13 @@
 
 **Blocked by:** 03 — Move preview ใน session
 
-**Status:** in progress (implementation complete; PR CI pending)
+**Status:** done
 
 - [x] เงา Unit และแผง preview แสดงตามข้อมูลของ session ไม่คำนวณกติกาเอง
 - [x] ปุ่ม "เดิน" / "Blink" ยืนยันการเดิน; แตะช่องอื่นและแตะ Unit ทำงานตามที่บอก
 - [x] hint ใน TurnPanel อธิบาย Move preview และบอกว่า "ยังเดินได้" เฉพาะเมื่อ Unit มีช่องที่เดินได้จริง (ตาม reachable ของ session ไม่ใช่แค่ยังไม่ได้เดิน) เช่น Unit ที่ติด Pin ต้องไม่ถูกบอกว่ายังเดินได้ (พบจาก review PR #16)
 - [x] ข้อความอยู่ใน strings ของ web มี text test
-- [ ] screenshot test ของเงาและแผงที่ desktop และ 360 px ไม่มี horizontal scroll; CI เขียวทั้งสาม job
+- [x] screenshot test ของเงาและแผงที่ desktop และ 360 px ไม่มี horizontal scroll; CI เขียวทั้งสาม job
 
 
 ## Comments
@@ -29,3 +29,8 @@
 - [Every-image inspection and screenshots](../evidence/04-move-preview-ui/README.md).
 - Merge-order rule: whichever of tickets 04 and 14 merges second must merge
   latest `origin/main` into its branch and rerun all checks before merging.
+- Final validation: 25/25 visual tests passed locally; all three CI jobs passed
+  on [run 39044913923](https://github.com/AJp-QL/VibeGame_01/actions/runs/39044913923).
+  The screenshot browser disables LCD text so pinned-font text compares across
+  Debian and Ubuntu. No baselines changed for this fix.
+- [PR #26](https://github.com/AJp-QL/VibeGame_01/pull/26), pending review/merge.
