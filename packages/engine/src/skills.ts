@@ -15,7 +15,7 @@ import { emit } from './resolution.ts'
 import { distance } from './movement.ts'
 import { QUILLFOX_SKILLS } from './quillfoxSkills.ts'
 import type { SkillHandler, SkillHandlers, SkillResolution, SkillUse } from './skillHandler.ts'
-import { findUnit, type BattleState, type StatusId, type UnitId, type UnitState } from './state.ts'
+import { findUnit, type BattleState, type StatusId, type UnitId, type UnitState, boardSizeOf } from './state.ts'
 import { endOffTerrain, giveSkillStatuses, isImmobile, statusOdds, type StatusOdds } from './statuses.ts'
 import { TAMER_SKILLS } from './tamerSkills.ts'
 import { TIDEWALL_SKILLS } from './tidewallSkills.ts'
@@ -394,7 +394,7 @@ export function previewSkill(state: BattleState, action: UseSkillAction): { ok: 
 
 /** Empty tiles within `steps` steps of the Unit, each step to an adjacent empty tile (rules §15.1). */
 export function retreatTiles(state: BattleState, unit: UnitState, steps: number): Tile[] {
-  const empty = (tile: Tile) => isOnBoard(tile) && !state.units.some((u) => sameTile(u.tile, tile))
+  const empty = (tile: Tile) => isOnBoard(tile, boardSizeOf(state)) && !state.units.some((u) => sameTile(u.tile, tile))
   const seen: Tile[] = [unit.tile]
   let frontier: Tile[] = [unit.tile]
   const found: Tile[] = []
@@ -461,7 +461,7 @@ export function applyRetreat(state: BattleState, action: RetreatAction): ApplyRe
   const resolved: BattleState = { ...state, pending: null }
   if (action.to === null) return { ok: true, state: resolved, events: [{ type: 'retreatDeclined', unit: unit.id }] }
   const to = action.to
-  if (!isOnBoard(to)) return reject('off-board', `(${to.x}, ${to.y}) is not on the Board`)
+  if (!isOnBoard(to, boardSizeOf(state))) return reject('off-board', `(${to.x}, ${to.y}) is not on the Board`)
   if (state.units.some((u) => sameTile(u.tile, to))) return reject('tile-occupied', 'That tile is occupied')
   if (!retreatTiles(state, unit, pending.steps).some((t) => sameTile(t, to))) {
     return reject('out-of-reach', `${unit.id} can step only ${pending.steps} tile(s)`)

@@ -68,6 +68,7 @@ import {
   type UnitState,
   type UnitStatus,
   type UnitTemplate,
+  boardSizeOf,
 } from './state.ts'
 import {
   applyStatus,
@@ -546,9 +547,10 @@ function startFromPreset(
     return placeUnit(unit, preset.tiles[unit.side][slot])
   })
   const taken = new Set<string>()
+  const size = boardSizeOf(state)
   for (const unit of units) {
-    const name = isOnBoard(unit.tile) ? tileName(unit.tile) : `(${unit.tile.x}, ${unit.tile.y})`
-    if (!isOnBoard(unit.tile) || taken.has(name)) throw new Error(`Unit ${unit.id} cannot start on ${name}`)
+    const name = isOnBoard(unit.tile, size) ? tileName(unit.tile) : `(${unit.tile.x}, ${unit.tile.y})`
+    if (!isOnBoard(unit.tile, size) || taken.has(name)) throw new Error(`Unit ${unit.id} cannot start on ${name}`)
     taken.add(name)
   }
   const inPlay: BattleState = { ...state, phase: 'play', units, deployment: null, firstSide: preset.firstSide }
@@ -720,7 +722,7 @@ function reject(state: BattleState, code: RejectionCode, message: string): Apply
 function applyMove(state: BattleState, unitId: UnitId, to: Tile): ApplyResult {
   const unit = checkActor(state, unitId, 'move')
   if (isRejection(unit)) return { ok: false, state, rejection: unit }
-  if (!isOnBoard(to)) return reject(state, 'off-board', `(${to.x}, ${to.y}) is not on the Board`)
+  if (!isOnBoard(to, boardSizeOf(state))) return reject(state, 'off-board', `(${to.x}, ${to.y}) is not on the Board`)
   const occupant = state.units.find((u) => u.tile.x === to.x && u.tile.y === to.y)
   if (occupant !== undefined) {
     return reject(state, 'tile-occupied', `${tileName(to)} is occupied by ${occupant.id}`)

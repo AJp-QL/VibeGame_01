@@ -160,7 +160,7 @@ export class Ctx {
    */
   preview(st: BattleState, attacker: UnitState, target: UnitState, skillId: string): AttackPreview {
     const d = distance(attacker.tile, target.tile)
-    const key = `${attacker.id}@${attacker.tile.x}${attacker.tile.y}>${target.id}:${d <= 1 ? d : 2}:${skillId}:${protectedNow(st, target) ? 1 : 0}`
+    const key = `${attacker.id}@${attacker.tile.x},${attacker.tile.y}>${target.id}:${d <= 1 ? d : 2}:${skillId}:${protectedNow(st, target) ? 1 : 0}`
     let p = this.previews.get(key)
     if (p === undefined) {
       p = previewAttackWhatIf(st, attacker.id, target.id, skillId)
@@ -206,7 +206,7 @@ export class Ctx {
    * with roll mode `adv`, from where they stand.
    */
   bestAttack(st: BattleState, attacker: UnitState, target: UnitState, adv: Adv, readyNow: boolean): readonly [number, number] {
-    const key = `${attacker.id}@${attacker.tile.x}${attacker.tile.y}>${target.id}@${target.tile.x}${target.tile.y}:${adv}:${readyNow ? 1 : 0}:${protectedNow(st, target) ? 1 : 0}`
+    const key = `${attacker.id}@${attacker.tile.x},${attacker.tile.y}>${target.id}@${target.tile.x},${target.tile.y}:${adv}:${readyNow ? 1 : 0}:${protectedNow(st, target) ? 1 : 0}`
     const cached = this.bestAttacks.get(key)
     if (cached !== undefined) return cached
     let best: readonly [number, number] = [0, 0]
@@ -229,7 +229,7 @@ export class Ctx {
     const prot = protectedNow(st, unit)
     const mv = options.move ?? moveRangeNow(st, enemy)
     const delta = options.damageDelta ?? 0
-    const key = `${enemy.id}>${unit.id}@${unit.tile.x}${unit.tile.y}:${mv}:${delta}:${prot ? 1 : 0}`
+    const key = `${enemy.id}>${unit.id}@${unit.tile.x},${unit.tile.y}:${mv}:${delta}:${prot ? 1 : 0}`
     const cached = this.threatFroms.get(key)
     if (cached !== undefined) return cached
     const dd = distance(enemy.tile, unit.tile)
@@ -247,7 +247,7 @@ export class Ctx {
    * `target` from where they stand. `adv` null: sim.py's simple estimate.
    */
   bestEv(st: BattleState, attacker: UnitState, target: UnitState, adv: Adv | null, readyNow: boolean): number {
-    const key = `${attacker.id}@${attacker.tile.x}${attacker.tile.y}>${target.id}@${target.tile.x}${target.tile.y}:${adv}:${readyNow ? 1 : 0}:${protectedNow(st, target) ? 1 : 0}`
+    const key = `${attacker.id}@${attacker.tile.x},${attacker.tile.y}>${target.id}@${target.tile.x},${target.tile.y}:${adv}:${readyNow ? 1 : 0}:${protectedNow(st, target) ? 1 : 0}`
     const cached = this.bestEvs.get(key)
     if (cached !== undefined) return cached
     let best = 0
@@ -278,7 +278,7 @@ export class Ctx {
    */
   threat(st: BattleState, unit: UnitState, extraDefence = 0, hidden = false, at: Tile = unit.tile): number {
     const prot = protectedNow(st, unit)
-    const key = `${unit.id}@${at.x}${at.y}:${extraDefence}:${hidden ? 1 : 0}:${prot ? 1 : 0}`
+    const key = `${unit.id}@${at.x},${at.y}:${extraDefence}:${hidden ? 1 : 0}:${prot ? 1 : 0}`
     const cached = this.threats.get(key)
     if (cached !== undefined) return cached
     let total = 0
@@ -381,6 +381,7 @@ export function withUnitAt(st: BattleState, unitId: UnitId, tile: Tile): BattleS
   return { ...st, units: st.units.map((u) => (u.id === unitId ? { ...u, tile } : u)) }
 }
 
+/** A number for each tile of any Board (up to 16 wide), to key maps and sets. */
 export function tileKey(tile: Tile): number {
-  return tile.y * 7 + tile.x
+  return tile.y * 16 + tile.x
 }

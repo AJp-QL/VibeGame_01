@@ -5,6 +5,7 @@ import {
   loadGameData,
   SIDES,
   tileFromName,
+  type Board,
   type Element,
   type GameData,
   type ElementWheel,
@@ -41,6 +42,20 @@ function readDataDir(): Record<string, unknown> {
 
 /** The real data/ folder, validated. */
 export const gameData = loadGameData(readDataDir())
+
+/**
+ * A 9x9 Board for tests of other Board sizes (phase 1.x ticket 13). Not in data/:
+ * it is loaded through the same schema as the real Boards. Forest on c2 and g8
+ * (turned 180° onto each other), mountain-free, otherwise plain.
+ */
+export const arena: Board = loadGameData({
+  ...readDataDir(),
+  'boards/arena.json': {
+    id: 'arena',
+    name: 'Arena',
+    rows: ['.........', '..F......', '.........', '.........', '....W....', '.........', '.........', '......F..', '.........'],
+  },
+}).boards.arena!
 
 /**
  * Prototype kit stats of Scenario 1 (rules §20.2 before the ticket 19 tuning),
@@ -103,6 +118,8 @@ export interface BattleOptions {
   readonly loadouts?: Readonly<Record<string, readonly string[]>>
   /** Element wheel instead of data/elements. */
   readonly elementWheel?: ElementWheel
+  /** Board to play on instead of Crossroads (e.g. `arena`, 9x9). */
+  readonly board?: Board
   readonly dice?: DiceSource
   /**
    * Which sides start with Inspiration. Default: neither, so tests about
@@ -140,7 +157,7 @@ function setup(dice: DiceSource | undefined, options: BattleOptions = {}) {
       ...base,
       teams: { A: withEdits(base.teams.A, 'A', options), B: withEdits(base.teams.B, 'B', options) },
     },
-    board: gameData.boards.crossroads!,
+    board: options.board ?? gameData.boards.crossroads!,
     species: gameData.species,
     skills: Object.fromEntries(
       Object.entries(gameData.skills).map(([id, skill]) => [id, { ...skill, ...options.skills?.[id] }]),
@@ -183,8 +200,8 @@ export const NEUTRAL_ELEMENTS: Readonly<Record<string, Element>> = {
 }
 
 /** A Scenario 1 Battle on Crossroads at the start of deployment (no Inspiration unless asked for). */
-export function scenario1Deployment(dice?: DiceSource, inspiration?: Readonly<Record<Side, boolean>>): BattleState {
-  return createBattle(setup(dice, inspiration === undefined ? {} : { inspiration }))
+export function scenario1Deployment(dice?: DiceSource, inspiration?: Readonly<Record<Side, boolean>>, board?: Board): BattleState {
+  return createBattle(setup(dice, { ...(inspiration === undefined ? {} : { inspiration }), ...(board === undefined ? {} : { board }) }))
 }
 
 type Applied = Extract<ApplyResult, { ok: true }>

@@ -3,7 +3,7 @@
 rules engine แบบ deterministic ที่ใช้ร่วมกันทุกส่วนของเกม
 
 ## เก็บอะไร
-- กติกาการต่อสู้ 7x7, d20 check, การคำนวณ stat, growth, combine
+- กติกาการต่อสู้บน Board สี่เหลี่ยมจัตุรัสที่แต่ละ Board กำหนดขนาดเอง (7x7 ใน phase 1, ทดสอบ 9x9; phase 1.x ticket 13), d20 check, การคำนวณ stat, growth, combine
 - pure functions: state + action -> state ใหม่ ไม่มี side effect, ไม่แตะ UI/network/เวลาจริง
 - seeded RNG และ replay จาก seed + ลำดับ action
 

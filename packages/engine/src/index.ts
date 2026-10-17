@@ -57,9 +57,9 @@ export { COMMAND_RANGE, type CommandAction } from './command.ts'
 export type { HealPreview, TerrainPreview } from './tamerSkills.ts'
 export { elementBeats, terrainEffectAt, type RollEffect, type RollMode, type RollModeSource } from './rollMode.ts'
 export type { DerivedValues } from './derived.ts'
-export { isInStartZone, START_ZONE_ROWS, unitsVisibleTo } from './deployment.ts'
+export { isInStartZone, START_ZONE_ROWS, startZoneRows, unitsVisibleTo } from './deployment.ts'
 export { distance, moveRangeNow } from './movement.ts'
-export { COMMAND_OPTIONS, ROUND_LIMIT } from './state.ts'
+export { boardSizeOf, COMMAND_OPTIONS, ROUND_LIMIT } from './state.ts'
 export type {
   Activations,
   AttunedTile,

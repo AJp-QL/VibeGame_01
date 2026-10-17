@@ -1,5 +1,7 @@
 export {
   BOARD_SIZE,
+  MAX_BOARD_SIZE,
+  MIN_BOARD_SIZE,
   isOnBoard,
   isTileName,
   rotate180,
@@ -38,6 +40,7 @@ export {
   ELEMENTS,
   MOVEMENTS,
   ROLES,
+  boardSize,
   SIDES,
   STATS,
   type Board,

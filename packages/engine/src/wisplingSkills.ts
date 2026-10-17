@@ -24,7 +24,7 @@ import { distance } from './movement.ts'
 import { emit } from './resolution.ts'
 import { GENERIC, type SkillHandler, type SkillHandlers, type SkillResolution, type SkillUse } from './skillHandler.ts'
 import type { UseSkillAction } from './skills.ts'
-import { findUnit, type BattleState, type UnitState } from './state.ts'
+import { findUnit, type BattleState, type UnitState, boardSizeOf } from './state.ts'
 import { untargetableFrom } from './statuses.ts'
 
 function rejection(code: RejectionCode, message: string, blockedBy?: readonly string[]): Rejection {
@@ -32,23 +32,26 @@ function rejection(code: RejectionCode, message: string, blockedBy?: readonly st
 }
 
 /** Every tile of the Board in reading order (row by row), so legal uses are listed the same way every time. */
-function boardTiles(): Tile[] {
+function boardTiles(size: number): Tile[] {
   const tiles: Tile[] = []
-  for (let y = 0; y < BOARD_SIZE; y++) for (let x = 0; x < BOARD_SIZE; x++) tiles.push({ x, y })
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) tiles.push({ x, y })
   return tiles
 }
 
-/** The tiles an area skill covers around `centre` (Burst: the centre and its 8 neighbours), on the Board, reading order. */
-export function areaTiles(skill: Skill, centre: Tile): Tile[] {
+/**
+ * The tiles an area skill covers around `centre` (Burst: the centre and its 8
+ * neighbours), on a Board of `size` (7x7 unless given), reading order.
+ */
+export function areaTiles(skill: Skill, centre: Tile, size: number = BOARD_SIZE): Tile[] {
   const radius = skill.area?.radius ?? 0
-  return boardTiles().filter((tile) => distance(tile, centre) <= radius)
+  return boardTiles(size).filter((tile) => distance(tile, centre) <= radius)
 }
 
 // ------------------------------------------------------------------ Burst
 
 /** Whether `user` may centre `skill` on `centre` (D-14, rules §7.1): on the Board, distance 0 to range, line of sight from 2. */
 function checkCentre(state: BattleState, user: UnitState, skill: Skill, centre: Tile): Rejection | null {
-  if (!isOnBoard(centre)) return rejection('off-board', `(${centre.x}, ${centre.y}) is not on the Board`)
+  if (!isOnBoard(centre, boardSizeOf(state))) return rejection('off-board', `(${centre.x}, ${centre.y}) is not on the Board`)
   const d = distance(user.tile, centre)
   if (d > skill.range) return rejection('out-of-range', `${tileName(centre)} is ${d} tiles away; ${skill.name} reaches ${skill.range}`)
   // Rules §7.1, §15.1: only to the centre (as the line's end), from distance 2, unless the user is Flying.
@@ -142,7 +145,7 @@ const BURST: SkillHandler = {
   uses(state, user, skill) {
     const max = skill.area?.maxTargets ?? 1
     const uses: UseSkillAction[] = []
-    for (const centre of boardTiles()) {
+    for (const centre of boardTiles(boardSizeOf(state))) {
       if (checkCentre(state, user, skill, centre) !== null) continue
       for (const choice of orderedChoices(areaEnemies(state, user, skill, centre), max)) {
         uses.push({ type: 'useSkill', unit: user.id, skill: skill.id, tile: centre, targets: choice.map((u) => u.id) })
@@ -159,7 +162,7 @@ const BURST: SkillHandler = {
       skill: use.skill.id,
       user: use.user.id,
       centre,
-      area: areaTiles(use.skill, centre),
+      area: areaTiles(use.skill, centre, boardSizeOf(state)),
       attacks: use.targets.map((target, index) =>
         previewAttack(index === 0 ? state : later, { attacker: use.user, target, skill: use.skill }),
       ),
@@ -175,7 +178,7 @@ const BLINK: SkillHandler = {
     if (to === undefined || action.target !== undefined || action.targets !== undefined || action.element !== undefined) {
       return rejection('invalid-target', `${skill.name} needs a destination tile only`)
     }
-    if (!isOnBoard(to)) return rejection('off-board', `(${to.x}, ${to.y}) is not on the Board`)
+    if (!isOnBoard(to, boardSizeOf(state))) return rejection('off-board', `(${to.x}, ${to.y}) is not on the Board`)
     const d = distance(user.tile, to)
     // D-13: always `skill.range`; no Command or Aquatic bonus, and Pin does not stop it.
     if (d < 1 || d > skill.range) return rejection('out-of-range', `${tileName(to)} is ${d} tiles away; ${skill.name} reaches 1 to ${skill.range}`)
@@ -184,8 +187,8 @@ const BLINK: SkillHandler = {
     return []
   },
 
-  uses(_state, user, skill) {
-    return boardTiles().map((tile) => ({ type: 'useSkill', unit: user.id, skill: skill.id, tile }))
+  uses(state, user, skill) {
+    return boardTiles(boardSizeOf(state)).map((tile) => ({ type: 'useSkill', unit: user.id, skill: skill.id, tile }))
   },
 
   *resolve(state: BattleState, use: SkillUse): SkillResolution {

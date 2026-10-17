@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { applyAction, createBattle, decidingSide, type Action, type BattleEvent, type BattleState } from '@mt/engine'
-import { loadGameData, type Side } from '@mt/shared'
+import { loadGameData, type Board, type Side } from '@mt/shared'
 import { chooseAction, createAi, type AiProfile, type AiState } from '../src/index.ts'
 
 const DATA_DIR = fileURLToPath(new URL('../../../data/', import.meta.url))
@@ -19,9 +19,19 @@ function readDataDir(): Record<string, unknown> {
 
 export const gameData = loadGameData(readDataDir())
 
-export function newBattle(scenarioId: string, boardId: string, seed: string): BattleState {
+/** A 9x9 Board for tests of other Board sizes (phase 1.x ticket 13): loaded through the real schema, not part of data/. */
+export const arena = loadGameData({
+  ...readDataDir(),
+  'boards/arena.json': {
+    id: 'arena',
+    name: 'Arena',
+    rows: ['.........', '..F......', '.........', '.........', '....W....', '.........', '.........', '......F..', '.........'],
+  },
+}).boards.arena!
+
+export function newBattle(scenarioId: string, boardId: string, seed: string, boardOverride?: Board): BattleState {
   const scenario = gameData.scenarios[scenarioId]
-  const board = gameData.boards[boardId]
+  const board = boardOverride ?? gameData.boards[boardId]
   if (scenario === undefined || board === undefined) throw new Error(`No ${scenarioId} / ${boardId}`)
   return createBattle({
     scenario,

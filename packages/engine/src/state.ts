@@ -320,6 +320,11 @@ export function findAnyUnit(state: BattleState, id: UnitId): UnitState | undefin
   return findUnit(state, id) ?? state.fallen.find((unit) => unit.id === id)
 }
 
+/** The side of the (square) Board the Battle is played on: its number of rows (phase 1.x ticket 13). */
+export function boardSizeOf(state: BattleState): number {
+  return state.terrain.length
+}
+
 export function terrainAt(state: BattleState, tile: Tile): Terrain | undefined {
   return state.terrain[tile.y]?.[tile.x]
 }

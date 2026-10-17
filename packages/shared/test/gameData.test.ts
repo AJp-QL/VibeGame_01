@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DataError, loadGameData, tileFromName, type DataIssue } from '../src/index.ts'
+import { boardSize, DataError, loadGameData, tileFromName, type DataIssue } from '../src/index.ts'
 import { readDataDir } from './readDataDir.ts'
 
 const realFiles = readDataDir()
@@ -179,6 +179,43 @@ describe('malformed data is rejected', () => {
         message: 'not the same after a 180° turn: g2 is "M" but a6 is "."',
       },
     ])
+  })
+
+  describe('Boards of other sizes (phase 1.x ticket 13)', () => {
+    // 9x9, the same after a 180° turn: F at c2 ↔ g8, W at e5 stays.
+    const rows9 = ['.........', '..F......', '.........', '.........', '....W....', '.........', '.........', '......F..', '.........']
+    const big = (rows: string[]) => ({ id: 'big', name: 'Big', rows })
+
+    it('loads a 9x9 Board and reports its size', () => {
+      const data = loadGameData(withFile('boards/big.json', big(rows9)))
+      const board = data.boards.big
+      expect(board && boardSize(board)).toBe(9)
+      expect(board?.terrain[1]?.[2]).toBe('forest')
+      expect(board?.terrain[7]?.[6]).toBe('forest')
+      expect(boardSize(data.boards.crossroads!)).toBe(7)
+    })
+
+    it('rejects a Board that is not a square', () => {
+      const issues = issuesOf(withFile('boards/big.json', big(rows9.slice(0, 8))))
+      expect(issues.map((i) => i.path)).toEqual(expect.arrayContaining(['rows.0']))
+      expect(issues[0]?.message).toContain('a Board is a square')
+    })
+
+    it('rejects a 9x9 Board that is not the same after a 180° turn', () => {
+      const rows = [...rows9]
+      rows[7] = '.........'
+      const issues = issuesOf(withFile('boards/big.json', big(rows)))
+      expect(issues).toEqual([
+        { file: 'boards/big.json', path: 'rows.1', message: 'not the same after a 180° turn: c2 is "F" but g8 is "."' },
+      ])
+    })
+
+    it('rejects Boards smaller than 3x3 or larger than 15x15', () => {
+      expect(issuesOf(withFile('boards/big.json', big(['..', '..']))).length).toBeGreaterThan(0)
+      const huge = Array.from({ length: 16 }, () => '.'.repeat(16))
+      expect(issuesOf(withFile('boards/big.json', big(huge))).length).toBeGreaterThan(0)
+      expect(() => loadGameData(withFile('boards/big.json', big(Array.from({ length: 15 }, () => '.'.repeat(15)))))).not.toThrow()
+    })
   })
 
   it('rejects an id that does not match its file name', () => {

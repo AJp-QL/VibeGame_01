@@ -9,6 +9,7 @@
  */
 import {
   applyAction,
+  boardSizeOf,
   COMMAND_RANGE,
   distance,
   moveRangeNow,
@@ -29,6 +30,7 @@ import {
   findUnit,
   hasStatus,
   tamerOf,
+  tileKey,
   withUnitAt,
   type Ctx,
 } from './model.ts'
@@ -505,7 +507,7 @@ function bestStep(ctx: Ctx, st: BattleState, unit: UnitState, pv0: number): { ti
   let gain = 0
   for (const d of NEIGHBOURS) {
     const q = { x: unit.tile.x + d.x, y: unit.tile.y + d.y }
-    if (!isOnBoard(q) || st.units.some((u) => sameTile(u.tile, q))) continue
+    if (!isOnBoard(q, boardSizeOf(st)) || st.units.some((u) => sameTile(u.tile, q))) continue
     let value: number
     if (ctx.profile.simQuirks) value = posValue(ctx, st, unit, q)
     else {
@@ -644,16 +646,17 @@ interface Dest {
  */
 function simOrder(st: BattleState, unit: UnitState): Map<number, number> {
   const passOver = unit.kind === 'monster' && unit.movement === 'flying'
-  const occupied = new Set(st.units.filter((u) => u.id !== unit.id).map((u) => u.tile.y * 7 + u.tile.x))
-  const order = new Map<number, number>([[unit.tile.y * 7 + unit.tile.x, 0]])
+  const size = boardSizeOf(st)
+  const occupied = new Set(st.units.filter((u) => u.id !== unit.id).map((u) => tileKey(u.tile)))
+  const order = new Map<number, number>([[tileKey(unit.tile), 0]])
   let frontier: Tile[] = [unit.tile]
   while (frontier.length > 0) {
     const next: Tile[] = []
     for (const p of frontier) {
       for (const d of NEIGHBOURS) {
         const q = { x: p.x + d.x, y: p.y + d.y }
-        const k = q.y * 7 + q.x
-        if (!isOnBoard(q) || order.has(k)) continue
+        const k = tileKey(q)
+        if (!isOnBoard(q, size) || order.has(k)) continue
         order.set(k, order.size)
         if (!occupied.has(k) || passOver) next.push(q)
       }
@@ -674,7 +677,7 @@ function destinations(st: BattleState, unit: UnitState, legal: readonly Action[]
     }
   }
   const order = simOrder(st, unit)
-  const rank = (t: Tile) => order.get(t.y * 7 + t.x) ?? 999
+  const rank = (t: Tile) => order.get(tileKey(t)) ?? 999
   walks.sort((a, b) => rank(a.tile) - rank(b.tile))
   blinks.sort((a, b) => a.tile.y - b.tile.y || a.tile.x - b.tile.x)
   const dests: Dest[] = [{ tile: unit.tile, move: null }, ...walks]

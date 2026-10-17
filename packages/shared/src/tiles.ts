@@ -1,32 +1,45 @@
 /**
  * Board coordinates (rules §2.1).
  *
- * `x` is the column index (a = 0 … g = 6) and `y` the row index
- * (row 1 = 0 … row 7 = 6). Data files and the UI use the tile name form
- * "a1" … "g7"; code uses `Tile` objects.
+ * `x` is the column index (a = 0, b = 1, …) and `y` the row index
+ * (row 1 = 0, row 2 = 1, …). Data files and the UI use the tile name form
+ * "a1" … "g7" on a 7x7 Board; code uses `Tile` objects.
+ *
+ * The size belongs to each Board (`boardSize(board)`, phase 1.x ticket 13): a
+ * Board is a square of 3 to `MAX_BOARD_SIZE` tiles. The helpers here take the
+ * size as an optional last argument.
  */
 
-/** The Board is always 7x7 in phase 1 (rules §2.1). */
+/**
+ * The size of the phase 1 Boards.
+ * @deprecated Read the size from the Board (`boardSize`). Kept for battle and
+ * web until they move over (phase 1.x ticket 14); it is also the default size
+ * of the helpers below.
+ */
 export const BOARD_SIZE = 7
+
+/** The smallest and the largest square Board (columns a to o). */
+export const MIN_BOARD_SIZE = 3
+export const MAX_BOARD_SIZE = 15
 
 export interface Tile {
   readonly x: number
   readonly y: number
 }
 
-const COLUMNS = 'abcdefg'
-const TILE_NAME = /^[a-g][1-7]$/
+const COLUMNS = 'abcdefghijklmno'
+const TILE_NAME = /^[a-o](?:[1-9]|1[0-5])$/
 
 export function isTileName(name: string): boolean {
   return TILE_NAME.test(name)
 }
 
-/** "d1" → { x: 3, y: 0 }. Throws on a name outside a1–g7. */
+/** "d1" → { x: 3, y: 0 }. Throws on a name that is not a column letter and a row number (a1 … o15). Whether it is on a Board is `isOnBoard`. */
 export function tileFromName(name: string): Tile {
   if (!isTileName(name)) {
-    throw new Error(`Not a tile name: "${name}" (expected a1–g7)`)
+    throw new Error(`Not a tile name: "${name}" (expected a column letter and a row number, like d4)`)
   }
-  return { x: COLUMNS.indexOf(name.charAt(0)), y: Number(name.charAt(1)) - 1 }
+  return { x: COLUMNS.indexOf(name.charAt(0)), y: Number(name.slice(1)) - 1 }
 }
 
 /** { x: 3, y: 0 } → "d1". */
@@ -35,24 +48,19 @@ export function tileName(tile: Tile): string {
 }
 
 /**
- * The tile a tile lands on when the Board turns 180 degrees, e.g. a1 ↔ g7,
- * c2 ↔ e6, d4 ↔ d4. Every Board must look the same after the turn (rules §2.1).
+ * The tile a tile lands on when a Board of `size` turns 180 degrees, e.g. on
+ * 7x7 a1 ↔ g7, c2 ↔ e6, d4 ↔ d4. Every Board must look the same after the turn
+ * (rules §2.1).
  */
-export function rotate180(tile: Tile): Tile {
-  return { x: BOARD_SIZE - 1 - tile.x, y: BOARD_SIZE - 1 - tile.y }
+export function rotate180(tile: Tile, size: number = BOARD_SIZE): Tile {
+  return { x: size - 1 - tile.x, y: size - 1 - tile.y }
 }
 
 export function sameTile(a: Tile, b: Tile): boolean {
   return a.x === b.x && a.y === b.y
 }
 
-export function isOnBoard(tile: Tile): boolean {
-  return (
-    Number.isInteger(tile.x) &&
-    Number.isInteger(tile.y) &&
-    tile.x >= 0 &&
-    tile.x < BOARD_SIZE &&
-    tile.y >= 0 &&
-    tile.y < BOARD_SIZE
-  )
+/** Whether `tile` is on a Board of `size` tiles a side. */
+export function isOnBoard(tile: Tile, size: number = BOARD_SIZE): boolean {
+  return Number.isInteger(tile.x) && Number.isInteger(tile.y) && tile.x >= 0 && tile.x < size && tile.y >= 0 && tile.y < size
 }

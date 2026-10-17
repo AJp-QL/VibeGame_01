@@ -4,7 +4,7 @@
  */
 import { isOnBoard, sameTile, type Tile } from '@mt/shared'
 import { baseMoveRange } from './derived.ts'
-import { terrainAt, type BattleState, type UnitState } from './state.ts'
+import { terrainAt, type BattleState, type UnitState, boardSizeOf } from './state.ts'
 import { isImmobile } from './statuses.ts'
 
 /** Distance between two tiles: Chebyshev, diagonals count 1 (rules §2.3). */
@@ -46,6 +46,7 @@ const key = (tile: Tile): number => tile.y * 100 + tile.x
  */
 export function reachableTiles(state: BattleState, unit: UnitState): ReadonlyMap<number, readonly Tile[]> {
   const range = moveRangeNow(state, unit)
+  const size = boardSizeOf(state)
   const canPassOver = unit.kind === 'monster' && unit.movement === 'flying'
   const occupied = new Set(state.units.filter((u) => u.id !== unit.id).map((u) => key(u.tile)))
 
@@ -58,7 +59,7 @@ export function reachableTiles(state: BattleState, unit: UnitState): ReadonlyMap
     for (const { tile, path } of frontier) {
       for (const d of STEPS) {
         const to = { x: tile.x + d.x, y: tile.y + d.y }
-        if (!isOnBoard(to) || visited.has(key(to))) continue
+        if (!isOnBoard(to, size) || visited.has(key(to))) continue
         visited.add(key(to))
         const toPath = [...path, to]
         if (occupied.has(key(to))) {
