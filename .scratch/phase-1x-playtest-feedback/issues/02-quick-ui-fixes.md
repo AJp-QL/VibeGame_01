@@ -6,10 +6,24 @@
 
 **Blocked by:** 01 — Inspiration เฉพาะเมื่อพลาด และข้อมูลการเปลี่ยน Unit / จบ Turn ใน session
 
-**Status:** ready-for-agent
+**Status:** in progress (implementation and local checks complete; awaiting PR CI)
 
-- [ ] dialog ยืนยันก่อนเปลี่ยน Unit ขึ้นเฉพาะเมื่อ session บอกว่าจะจบ Unit ที่ยังใช้ Action ได้ และไม่ขึ้นในกรณีอื่น
-- [ ] คำเตือนจบ Turn แสดง Unit ที่เดินแล้วแต่ยังไม่ใช้ Action
-- [ ] คำอธิบาย Camouflage มีประโยคเรื่องศัตรูที่ยืนติดกัน
-- [ ] ข้อความทั้งหมดอยู่ใน strings ของ web มี text test
+- [x] dialog ยืนยันก่อนเปลี่ยน Unit ขึ้นเฉพาะเมื่อ session บอกว่าจะจบ Unit ที่ยังใช้ Action ได้ และไม่ขึ้นในกรณีอื่น
+- [x] คำเตือนจบ Turn แสดง Unit ที่เดินแล้วแต่ยังไม่ใช้ Action
+- [x] คำอธิบาย Camouflage มีประโยคเรื่องศัตรูที่ยืนติดกัน
+- [x] ข้อความทั้งหมดอยู่ใน strings ของ web มี text test
 - [ ] visual fixtures บันทึกใหม่ด้วย engine ปัจจุบัน baseline ตรวจด้วยตาทุกภาพ CI เขียวทั้งสาม job (ไม่มีคำเตือน fixtures stale)
+
+
+## Comments
+
+- Uses `snapshot.actionAtStake` to hold a Move, Defend, attack, skill, or Command
+  before starting another Unit. Selecting/inspecting alone does not start an
+  activation. Confirm runs the held command once; Return/Escape reselects the
+  current Unit without spending its Action. Stale commands are discarded.
+- End Turn combines idle Units with `snapshot.movedWithoutAction`; all new
+  player-facing text lives in web strings. Camouflage now explains adjacent
+  enemies can target Hidden Units.
+- Regenerated all fixtures for ENGINE_VERSION 0.10.0 using `visual:fixtures`;
+  updated Linux baselines with pinned Chromium and inspected all 19 images.
+- [Desktop/mobile screenshots and per-image inspection notes](../evidence/02-quick-ui-fixes/README.md).

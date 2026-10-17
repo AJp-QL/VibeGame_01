@@ -80,6 +80,7 @@ export function skillSummary(skill: Skill, statuses: Readonly<Record<string, Sta
     const name = statusName(statuses, application.status)
     parts.push(application.save === undefined ? th.skillGives(name) : th.skillGivesSave(name, statName(application.save)))
   }
+  if (skill.applies?.some(application => application.status === 'hidden')) parts.push(th.hiddenAdjacent)
   if (skill.attack !== undefined && skill.damage === undefined) parts.push(th.skillNoDamage)
   if (skill.effects?.retreat !== undefined) parts.push(th.skillRetreat)
   if (skill.effects?.heal !== undefined) parts.push(th.skillHeal(diceText(skill.effects.heal.dice), statName(skill.effects.heal.stat)))
