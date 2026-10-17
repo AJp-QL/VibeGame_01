@@ -13,6 +13,8 @@ export {
   type BattleSession,
   type BlockedTarget,
   type HotseatScreen,
+  type MovePreview,
+  type MoveReach,
   type SelectionMode,
   type SessionOptions,
   type SessionSnapshot,

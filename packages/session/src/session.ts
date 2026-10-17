@@ -87,6 +87,31 @@ export interface BlockedTarget {
   readonly blockedBy: readonly UnitId[]
 }
 
+/** What one attack option could reach from a previewed tile (Move preview). */
+export interface MoveReach {
+  /** The skill id; `null` is the Basic Attack. */
+  readonly skill: string | null
+  /** Enemies the engine would let it target from the tile, in the engine's order. */
+  readonly targets: readonly UnitId[]
+  /** Enemies in range that line of sight or Hidden rule out from the tile. */
+  readonly blocked: readonly BlockedTarget[]
+}
+
+/**
+ * The selected Unit as if it stood on a tile it has not moved to (spec: Move
+ * preview). Worked out by the engine on a copy of the Battle: the Move (or
+ * Blink) is applied there and the legal actions read from the result. The
+ * Battle itself does not change and no die is rolled.
+ */
+export interface MovePreview {
+  readonly unit: UnitId
+  readonly tile: Tile
+  /** The skill that gets it there (Blink), or `null` for a plain Move. */
+  readonly skill: string | null
+  /** The Basic Attack and each ready attack skill, with whom it could reach from `tile`. */
+  readonly reach: readonly MoveReach[]
+}
+
 /** A loadout skill button of the selected Unit. */
 export interface SkillButton extends SkillAvailability {
   /** The engine has at least one legal use of it right now. */
@@ -112,6 +137,13 @@ export interface SessionSnapshot extends BattleSnapshot {
   readonly pendingOption: CommandOption | null
   /** The selected Unit is a Tamer that may issue a Command now (rules §16). */
   readonly canCommand: boolean
+  /** Move preview: the reachable tile being looked at (UI state, not game state), or `null`. */
+  readonly movePreviewTile: Tile | null
+  /**
+   * Move preview: what the selected Unit could do from `movePreviewTile`, or from
+   * the destination of a Blink being aimed. `null` when there is no preview.
+   */
+  readonly movePreview: MovePreview | null
   /**
    * The Unit playing now when it can still use its Action: starting another Unit
    * ends its activation and loses that Action (`actionAtStake`), so the UI asks
@@ -170,6 +202,12 @@ export interface BattleSession extends BattleSessionPort {
   chooseCommandOption(option: CommandOption): void
   /** Attune: the element for the tile picked. */
   chooseElement(element: Element): void
+  /** Move preview: look at a reachable tile with the selected Unit as if it stood there; another tile replaces it. Nothing moves. */
+  previewMove(tile: Tile): void
+  /** Move preview: drop the previewed tile. */
+  cancelMovePreview(): void
+  /** Move preview: carry out the previewed Move, or the Blink being aimed. */
+  confirmMove(): void
   /** Carry out the previewed attack or skill. */
   confirmAttack(): void
   /** After Hit and Run: stay instead of stepping. */
@@ -200,6 +238,7 @@ type Computed =
   | 'tileChoices'
   | 'area'
   | 'elementChoices'
+  | 'movePreview'
   | 'canCommand'
   | 'actionAtStake'
   | 'movedWithoutAction'
@@ -319,6 +358,49 @@ function blockedAreaTargets(
   })
 }
 
+/** Distinct enemies of `unit` among the targets of the legal uses of `skill`, Basic Attack when `skill` is null. */
+function reachOf(moved: BattleState, actions: readonly Action[], unit: UnitId, skill: string | null): MoveReach {
+  const side = moved.units.find((u) => u.id === unit)?.side
+  const isEnemy = (id: UnitId) => moved.units.find((u) => u.id === id)?.side !== side
+  let targets: UnitId[]
+  let blocked: BlockedTarget[]
+  if (skill !== null && aimKind(moved, skill) === 'area') {
+    const uses = usesOf(actions, unit, skill)
+    const centres = useTiles(uses)
+    targets = [...new Set(centres.flatMap((centre) => nextAreaTargets(uses, centre, [])))]
+    blocked = centres.flatMap((centre) => blockedAreaTargets(moved, unit, skill, centre, []))
+    blocked = blocked.filter((b, i) => blocked.findIndex((o) => o.unit === b.unit) === i && !targets.includes(b.unit))
+  } else {
+    targets = aimTargets(actions, unit, skill)
+    blocked = blockedTargets(moved, unit, skill)
+  }
+  return { skill, targets: targets.filter(isEnemy), blocked }
+}
+
+/**
+ * What `unit` could attack from where `action` (a Move, or Blink) takes it:
+ * the engine applies the action to a copy of `state` and reads the legal
+ * actions of the result (spec: Move preview). `null` if the engine refuses.
+ */
+function movePreviewOf(state: BattleState, unit: UnitId, action: Action): MovePreview | null {
+  const result = applyAction(state, action)
+  if (!result.ok || result.state.pending !== null) return null
+  const moved = result.state
+  const destination = action.type === 'move' ? action.to : action.type === 'useSkill' ? action.tile : undefined
+  if (destination === undefined) return null
+  const used = action.type === 'useSkill' ? action.skill : null
+  const actions = legalActions(moved)
+  const options: (string | null)[] = [null]
+  for (const button of unitSkills(moved, unit)) {
+    const skill = moved.skills[button.skill]
+    const attacks = skill !== undefined && (skill.attack !== undefined || skill.dcStat !== undefined)
+    const ready = button.cooldown === 0 && !button.spent && button.implemented && button.free !== true
+    if (attacks && ready && button.skill !== used) options.push(button.skill)
+  }
+  const reach = options.map((skill) => reachOf(moved, actions, unit, skill))
+  return { unit, tile: destination, skill: used, reach }
+}
+
 /** Units of the side to act that have at least one legal action. */
 function unitsThatCanAct(actions: readonly Action[]): UnitId[] {
   return [...new Set(actions.flatMap((action) => ('unit' in action ? [action.unit] : [])))]
@@ -405,6 +487,7 @@ const NO_AIM = {
   chosenTargets: [],
   pendingElement: null,
   pendingOption: null,
+  movePreviewTile: null,
 } as const
 
 const otherSide = (side: Side): Side => (side === 'A' ? 'B' : 'A')
@@ -511,6 +594,20 @@ export function createBattleSession(initial: BattleState, options: SessionOption
             ...skill,
             usable: actions.some((a) => a.type === 'useSkill' && a.unit === selected.id && a.skill === skill.skill),
           }))
+    let movePreview: MovePreview | null = null
+    if (state.phase === 'play' && state.pending === null && selectedUnit !== null) {
+      const tile = base.movePreviewTile
+      const move: Action | null =
+        mode === 'move' && tile !== null && moveTiles(actions, selectedUnit).some((t) => sameTile(t, tile))
+          ? { type: 'move', unit: selectedUnit, to: tile }
+          : null
+      const blink =
+        ready !== null && ready.type === 'useSkill' && ready.unit === selectedUnit && state.skills[ready.skill]?.effects?.replacesMove === true
+          ? ready
+          : null
+      const action = move ?? blink
+      if (action !== null) movePreview = movePreviewOf(state, selectedUnit, action)
+    }
     const tilesOf = (ids: readonly UnitId[]) =>
       ids.flatMap((id) => {
         const unit = state.units.find((u) => u.id === id)
@@ -543,6 +640,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       tileChoices: kind === 'tile' || (kind === 'area' && pendingTile === null) ? useTiles(uses) : [],
       area: kind === 'area' && pendingTile !== null && aimedSkill !== undefined ? areaTiles(aimedSkill, pendingTile) : [],
       elementChoices,
+      movePreview,
       canCommand: commandTargets(actions, selectedUnit).length > 0,
       actionAtStake: actionAtStake(state, actions),
       movedWithoutAction: movedWithoutAction(state, actions),
@@ -788,6 +886,23 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     chooseElement(element) {
       if (snapshot.elementChoices.includes(element)) update({ pendingElement: element, rejection: null })
     },
+    previewMove(tile) {
+      const { state, selectedUnit, mode, reachable } = snapshot
+      if (!humanMayAct(state) || state.phase !== 'play' || state.pending !== null || selectedUnit === null || mode !== 'move') return
+      if (reachable.some((t) => sameTile(t, tile))) update({ movePreviewTile: tile, inspectedUnit: null, rejection: null })
+    },
+    cancelMovePreview() {
+      if (snapshot.movePreviewTile !== null) update({ movePreviewTile: null, rejection: null })
+    },
+    confirmMove() {
+      const { movePreview, ready, selectedUnit } = snapshot
+      if (movePreview === null || selectedUnit === null || !humanMayAct(snapshot.state)) return
+      if (movePreview.skill !== null) {
+        if (ready !== null) dispatch(ready)
+      } else {
+        dispatch({ type: 'move', unit: selectedUnit, to: movePreview.tile })
+      }
+    },
     confirmAttack() {
       if (snapshot.ready !== null && humanMayAct(snapshot.state)) dispatch(snapshot.ready)
     },
@@ -812,7 +927,8 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     },
     cancel() {
       if (snapshot.state.pending !== null) return
-      if (snapshot.chosenTargets.length > 0) update({ chosenTargets: snapshot.chosenTargets.slice(0, -1), rejection: null })
+      if (snapshot.movePreviewTile !== null) update({ movePreviewTile: null, rejection: null })
+      else if (snapshot.chosenTargets.length > 0) update({ chosenTargets: snapshot.chosenTargets.slice(0, -1), rejection: null })
       else if (snapshot.pendingElement !== null) update({ pendingElement: null, rejection: null })
       else if (snapshot.pendingOption !== null) update({ pendingOption: null, rejection: null })
       else if (snapshot.pendingTile !== null) {

@@ -6,11 +6,15 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** in progress (PR open)
 
-- [ ] เลือกช่องเพื่อดูแล้ว state ของ Battle ไม่เปลี่ยน และไม่ใช้ลูกเต๋า
-- [ ] รายการศัตรูที่ถึงต่อ skill ตรงกับ legal actions ที่ Unit จะมีจริงหลังเดินไปช่องนั้น (test เทียบกับการเดินจริง หลายตำแหน่งและหลาย skill รวม line of sight บัง)
-- [ ] ยืนยันแล้วเดินจริง, แตะช่องอื่นเปลี่ยนช่องที่ดู, แตะ Unit ยกเลิก; Blink ใช้ flow เดียวกัน
-- [ ] Unit ที่เดินแล้วไม่มี Move preview; Hotseat ทั้งสองฝั่งใช้ได้
-- [ ] การเดินแบบเดิม (แตะช่องแล้วเดินทันที) ยังทำงานได้จนกว่า UI จะเปลี่ยน (ticket 04) เพื่อไม่ให้ main พัง
-- [ ] package README ของ session อธิบาย API ใหม่
+- [x] เลือกช่องเพื่อดูแล้ว state ของ Battle ไม่เปลี่ยน และไม่ใช้ลูกเต๋า
+- [x] รายการศัตรูที่ถึงต่อ skill ตรงกับ legal actions ที่ Unit จะมีจริงหลังเดินไปช่องนั้น (test เทียบกับการเดินจริง หลายตำแหน่งและหลาย skill รวม line of sight บัง)
+- [x] ยืนยันแล้วเดินจริง, แตะช่องอื่นเปลี่ยนช่องที่ดู, แตะ Unit ยกเลิก; Blink ใช้ flow เดียวกัน
+- [x] Unit ที่เดินแล้วไม่มี Move preview; Hotseat ทั้งสองฝั่งใช้ได้
+- [x] การเดินแบบเดิม (แตะช่องแล้วเดินทันที) ยังทำงานได้จนกว่า UI จะเปลี่ยน (ticket 04) เพื่อไม่ให้ main พัง
+- [x] package README ของ session อธิบาย API ใหม่
+
+## Comments
+
+- `previewMove` / `cancelMovePreview` / `confirmMove`, `snapshot.movePreviewTile` and `snapshot.movePreview` (additive). The engine applies the Move or Blink to a copy of the Battle and reads the legal actions (no state change, no dice). Tests: `packages/session/test/sessionMovePreview.test.ts` (18, incl. real-vs-preview for every reachable tile in an open layout and a line-of-sight layout, Burst, Blink, Hotseat team B). The old tap-to-move path is unchanged for ticket 04.
