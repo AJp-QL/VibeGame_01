@@ -49,7 +49,10 @@ function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, cu
   if (started.includes(selected.id) && playing !== selected.id) return th.hintActivationOver
   if (!started.includes(selected.id) && started.length >= limit) return th.hintActivationLimit(limit)
   const freeSkill = snapshot.skills.find((button) => button.free === true && button.usable)
-  if (selected.hasActed && freeSkill !== undefined) return th.hintFreeSkill(skillName(data, freeSkill.skill))
+  if (selected.hasActed && freeSkill !== undefined) {
+    const skill = skillName(data, freeSkill.skill)
+    return selected.hasMoved ? th.hintFreeSkill(skill) : th.hintMoveAndFreeSkill(skill)
+  }
   if (selected.hasMoved) {
     if (snapshot.canAttack) return th.hintAttackOnly
     if (snapshot.canDefend) return th.hintDefendOnly
