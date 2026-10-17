@@ -5,6 +5,7 @@
 import type { Build, Element, ElementWheel, Movement, Side, Skill, Stats, StatusType, Terrain, Tile } from '@mt/shared'
 import type { Action, BattleEvent } from './battle.ts'
 import type { DiceStream } from './dice.ts'
+import type { VariantRules } from './variantRules.ts'
 
 /** "A.tamer", "A.m1", "A.m2", "B.tamer", … — stable for the whole Battle. */
 export type UnitId = string
@@ -238,6 +239,8 @@ export interface AttunedTile {
 }
 
 export interface BattleState {
+  /** Experiment switches (phase 1.x ticket 08); absent in the game. */
+  readonly variantRules?: VariantRules
   readonly scenarioId: string
   readonly boardId: string
   /**

@@ -60,6 +60,10 @@ describe('summarizeBattle (hand-made Battle)', () => {
   ])
   const events = [
     { type: 'initiativeDecided', firstSide: 'B' },
+    // Two Turns are over (B's, then A's) when A's first attack roll comes in the third.
+    { type: 'turnStarted', side: 'B', turn: 1, round: 1 },
+    { type: 'turnStarted', side: 'A', turn: 1, round: 1 },
+    { type: 'turnStarted', side: 'B', turn: 2, round: 2 },
     // Missed, rerolled with Inspiration, hit: one attack, one hit on a Tamer.
     { type: 'attackRolled', attacker: 'A.m1', target: 'B.tamer', hit: false },
     { type: 'inspirationUsed', side: 'A' },
@@ -106,6 +110,7 @@ describe('summarizeBattle (hand-made Battle)', () => {
       hitsTaken: { Tamer: 1, Wispling: 1 },
       tamerHits: 1,
       pushes: 1,
+      turnsBeforeFirstAttack: 2,
       skills: { 'Basic Attack': 1, 'Shield Bash': 1, Hex: 1, 'Command (advantage)': 1, Defend: 1, '(Counter triggered)': 1 },
     })
   })
@@ -128,6 +133,7 @@ describe('aggregate (hand-checked)', () => {
     tamerHits: 0,
     pushes: 0,
     skills: {},
+    turnsBeforeFirstAttack: 0,
     ...over,
   })
   const m = aggregate([

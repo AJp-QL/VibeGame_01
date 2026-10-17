@@ -26,3 +26,5 @@ export {
   type SimV4Result,
 } from './parity.ts'
 export { main, parseArgs, profileOf, type CliOptions, type Command } from './cli.ts'
+export { RANGE_VARIANTS, applyVariant, variantById, type RangeVariant } from './variants.ts'
+export { RANGE_BOARDS, RANGE_SCENARIOS, TARGETS, meetsTargets, rangeJobs, rangeTables, runRangeJobs, runRangeSet, type RangeJob, type RangeSetResult } from './ranges.ts'
