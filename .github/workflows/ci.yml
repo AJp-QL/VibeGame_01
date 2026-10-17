@@ -11,6 +11,8 @@
 #     (v7.0.2 is from 2026-10-07, too new for the two-week rule; the SHA is the commit, checked with the commits API)
 # pnpm/setup reads the pnpm version from package.json "packageManager" and installs
 # Node from `runtime` (docs/research/phase-1-stack.md §5, pnpm/setup README).
+# Runners are pinned to ubuntu-24.04 (ticket 31): ubuntu-latest moves to Ubuntu 26
+# from 2026-10-19, and new system libraries could change the visual baselines.
 name: CI
 
 on:
@@ -28,7 +30,7 @@ concurrency:
 jobs:
   build:
     name: Typecheck, test, build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout (full history, for git describe)
@@ -57,7 +59,7 @@ jobs:
 
   path-check:
     name: Path ownership check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout (full history, to find the merge base with main)
@@ -82,10 +84,10 @@ jobs:
 
   # Ticket 26. Board screenshot tests (packages/web/visual, ticket 25), kept out of
   # the root `pnpm test`. Baselines come only from Playwright's pinned Chromium on
-  # Linux, so this job runs on ubuntu-latest.
+  # Linux, so this job runs on a pinned Linux image (ubuntu-24.04, ticket 31).
   visual:
     name: Board visual regression
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout (full history, for git describe)
