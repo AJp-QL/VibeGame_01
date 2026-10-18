@@ -38,6 +38,7 @@ export function TerrainLegend() {
           <li>{th.legendWheel}</li>
           <li>{th.legendTerrain}</li>
           <li>{th.legendProtection}</li>
+          <li>{th.legendLongRange}</li>
           <li>{th.legendLineOfSight}</li>
         </ul>
       </details>

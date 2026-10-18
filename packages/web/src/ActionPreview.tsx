@@ -43,7 +43,7 @@ function RollModeSources({
   statuses: BattleState['statusTypes']
 }) {
   const sources = preview.rollModeSources
-  if (sources.length === 0) return <div className="muted">{th.previewNoSources}</div>
+  if (sources.length === 0 && !preview.longRangeDisadvantage) return <div className="muted">{th.previewNoSources}</div>
   const net = preview.rollMode === 'normal' ? th.previewNet.cancelled : th.previewNet[preview.rollMode]
   // Rules §5.3: Command's advantage does not count against a protected Tamer.
   const commandDropped = sources.some((s) => s.kind === 'tamerProtection')
@@ -55,6 +55,11 @@ function RollModeSources({
             <span className="tag">{th.rollEffect[source.effect]}</span> {sourceText(source, name, statuses, commandDropped)}
           </li>
         ))}
+        {preview.longRangeDisadvantage && (
+          <li className="disadvantage">
+            <span className="tag">{th.rollEffect.disadvantage}</span> {th.sourceLongRange}
+          </li>
+        )}
       </ul>
       <div className={`net ${preview.rollMode}`}>{net}</div>
     </div>
