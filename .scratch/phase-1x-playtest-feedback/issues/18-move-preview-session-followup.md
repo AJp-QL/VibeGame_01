@@ -6,7 +6,7 @@
 
 **Blocked by:** 04 — UI: Move preview (PR #26 merged ก่อน เพื่อไม่ให้ชนกับ wrapper ของ web); 25 — แก้ขั้น re-select ของ `move-preview.visual.ts` ก่อน merge (ไม่งั้น job ภาพแดง ดู Comments)
 
-**Status:** in progress (PR open)
+**Status:** done
 
 - [x] ขณะมี Move preview, `selectUnit(selectedUnit)` และ `input({ type: 'tapUnit', unit: selectedUnit })` ล้าง `movePreviewTile` / `movePreview` เท่านั้น: `selectedUnit`, `mode`, `reachable` (หรือ `tileChoices` ของ Blink) คงเดิม; test ทั้ง Move และ Blink และ Hotseat ฝั่ง B
 - [x] ไม่มี preview: แตะ Unit ที่เลือกอยู่ยังยกเลิกการเลือกเหมือนเดิม (test เดิมผ่าน)
@@ -19,3 +19,4 @@
 
 - `selectUnit` (and so `input` `tapUnit`) drops only the preview when the tapped Unit is the selected one and `movePreview` is not null: Move keeps `reachable`, Blink keeps `mode: skill` / `pendingSkill` with `pendingTile` cleared. `BattleSnapshot.movePreview?` added in `port.ts`; Replay player gives `null`. Tests in `sessionMovePreview.test.ts` (Move and Blink through `selectUnit` and `input`, Hotseat B, no preview, port type). ENGINE_VERSION unchanged.
 - PR #29: job ภาพ (ticket 26) แดง 6 กรณี `preview-*`: `move-preview.visual.ts` แตะ Unit เดิมสองครั้งโดยคิดว่าครั้งแรกเลิกเลือก ซึ่งขัดกับ spec story 3 ที่ ticket นี้แก้ ไฟล์อยู่ใน `packages/web` (Codex) จึงเปิด ticket 25 (`Owner: codex`) ให้แก้ test ให้ใช้ได้กับทั้งสองพฤติกรรม แล้วค่อย merge PR นี้ ตามกฎ "ไม่ merge ถ้า CI แดง"
+- Merged in PR #29 (after Codex ticket 25, PR #41, fixed the visual test that depended on the old deselect behaviour).

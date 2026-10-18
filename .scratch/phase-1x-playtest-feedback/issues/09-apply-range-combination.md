@@ -6,7 +6,7 @@
 
 **Blocked by:** 08 — ทดลองระยะ skill ใน simulator และการเลือกชุดของผู้ใช้ (บันทึกใน decision log) (2026-10-18: ไม่รอ ticket 20 แล้ว; 20 เป็นรอบปรับต่อบนชุดนี้)
 
-**Status:** in progress (PR open; one target open, see Comments)
+**Status:** in progress (merged in PR #34; one target open: first attack later on Shallows)
 
 - [x] data และ/หรือกติกาตามชุดที่ผู้ใช้เลือก; กติกาใหม่มี D-row ใน rules §23, ตาราง kit §20 และ test ตรงกัน, ทุกการเปลี่ยนมีแถว decision log พร้อมผล simulator
 - [x] ENGINE_VERSION ขยับถ้ากติกาเปลี่ยน; กติกาใหม่อยู่นอก sim-equivalent layer (แบบ ticket 27) ทำให้ sim-v4 parity ผ่าน
@@ -20,3 +20,4 @@
 - sim-equivalent layer: old ranges, plain Boards and `NO_RANGE_RULES` (`simEquivalentData`, `packages/ai/test/simParity/rebuild.ts`), so sim-v4 parity and the decision parity with sim.py still hold. Engine and session rule tests run on the kit as before ticket 09 (`fixtures.ts`, `kit.ts`); the new data and rules have their own tests.
 - **Open: the third target** (Turns before the first attack higher than before in *every* set) is met on Crossroads (S1 0.32 -> 0.44, S2 0.00 -> 0.20) but not on Shallows (S1 0.000 -> 0.002, S2 0.000), as the ticket 08 report said. The checkbox stays open; options are in `docs/balance/ticket-09-range-rules.md` (more sight blockers on Shallows as a measured variant, or the 9x9 Boards).
 - Codex ticket 26 (the one web unit test the new mountains broke) landed in PR #42; ticket 10 refreshes the visual fixtures and explains the new rules in the UI.
+- Merged in PR #34 (after Codex ticket 26, PR #42). The game now plays a+b+c. **Still open: the third target** (Turns before the first attack higher than before in every set): met on Crossroads, not on Shallows (S1 0.000 -> 0.002, S2 0.000). The checkbox stays unticked until the user decides between a measured Shallows variant with more sight blockers and the 9x9 Boards (tickets 14-16). Ticket 10 (Codex) refreshes the visual fixtures and explains the new rules in the UI.
