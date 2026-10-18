@@ -10,6 +10,7 @@ import { createActionConfirmation } from '../src/actionConfirmation.ts'
 import { StartUnitDialog } from '../src/StartUnitDialog.tsx'
 import { TurnPanel } from '../src/TurnPanel.tsx'
 import { SkillButtons } from '../src/SkillButtons.tsx'
+import { TerrainLegend } from '../src/TerrainLegend.tsx'
 import { PreviewCard } from '../src/ActionPreview.tsx'
 import { logLines } from '../src/EventLog.tsx'
 import { createBattleSession, createBattle, menuBoards, menuScenarios, type BattleState } from '@mt/session'
@@ -391,5 +392,79 @@ describe('phase 1.x Move preview UI', () => {
     const free = renderToStaticMarkup(createElement(TurnPanel, { snapshot: acted, session: s, data }))
     expect(free).toContain(th.hintFreeSkill('Camouflage'))
     expect(free).not.toContain(th.hintMoveAndFreeSkill('Camouflage'))
+  })
+})
+
+
+describe('phase 1.x range rules text', () => {
+  function markPreview(terrain: 'normal' | 'water', target = 'e2') {
+    const board: Board = { id: 'range-text', name: 'Range text', terrain: Array.from({ length: 7 }, () => Array.from({ length: 7 }, () => terrain)) }
+    const s = createBattleSession(playing({ A: [target, 'g2', 'g1'], B: ['g7', 'f7', 'a2'] }, board))
+    s.endTurn()
+    s.selectUnit('B.m2')
+    s.chooseSkill('mark')
+    s.input({ type: 'tapUnit', unit: 'A.tamer' })
+    const snapshot = s.getSnapshot()
+    expect(snapshot.preview?.type).toBe('attack')
+    if (snapshot.preview?.type !== 'attack') throw new Error('Expected Mark attack preview')
+    return snapshot.preview
+  }
+
+  it('shows long-range disadvantage even when rollModeSources is empty', () => {
+    const preview = markPreview('normal')
+    expect(preview.longRangeDisadvantage).toBe(true)
+    expect(preview.rollModeSources).toEqual([])
+    expect(preview.rollMode).toBe('disadvantage')
+    const html = renderToStaticMarkup(createElement(PreviewCard, { preview, action: null, name: id => id, data }))
+    expect(html).toContain(th.sourceLongRange)
+    expect(html).toContain(th.previewNet.disadvantage)
+    expect(html).not.toContain(th.previewNoSources)
+  })
+
+  it('shows the long-range cause and the net cancellation alongside terrain advantage', () => {
+    const preview = markPreview('water')
+    expect(preview.longRangeDisadvantage).toBe(true)
+    expect(preview.rollMode).toBe('normal')
+    const html = renderToStaticMarkup(createElement(PreviewCard, { preview, action: null, name: id => id, data }))
+    expect(html).toContain(th.sourceLongRange)
+    expect(html).toContain(th.sourceTerrainMatch(th.terrain.water))
+    expect(html).toContain(th.previewNet.cancelled)
+    const near = markPreview('normal', 'd2')
+    expect(near.longRangeDisadvantage).toBeUndefined()
+    const nearHtml = renderToStaticMarkup(createElement(PreviewCard, { preview: near, action: null, name: id => id, data }))
+    expect(nearHtml).not.toContain(th.sourceLongRange)
+    expect(nearHtml).toContain(th.previewNoSources)
+  })
+
+  it('names mountains when the session reports terrain-blocked targets without Unit blockers', () => {
+    const raw = createBattleSession(playing({ A: ['e2', 'g2', 'g1'], B: ['g7', 'f7', 'a2'] }))
+    raw.endTurn()
+    const s = withMovePreview(raw)
+    s.selectUnit('B.m2')
+    s.chooseSkill('mark')
+    expect(s.getSnapshot().blocked).toContainEqual(expect.objectContaining({ unit: 'A.tamer', reason: 'no-line-of-sight', blockedBy: [] }))
+    const targeting = renderToStaticMarkup(createElement(TurnPanel, { snapshot: s.getSnapshot(), session: s, data }))
+    expect(targeting).toContain(th.blockedBy('Tamer (ทีม A)', ''))
+    s.cancel()
+    s.input({ type: 'tapTile', tile: t('b3')! })
+    const snapshot = s.getSnapshot()
+    expect(snapshot.movePreview?.reach.flatMap(option => option.blocked)).toContainEqual(expect.objectContaining({ unit: 'A.tamer', reason: 'no-line-of-sight', blockedBy: [] }))
+    const panel = renderToStaticMarkup(createElement(MovePreviewPanel, { snapshot, session: s, data }))
+    expect(panel).toContain(th.blockedBy('Tamer (ทีม A)', ''))
+  })
+
+  it('describes current ranges, distant attacks and mountain sight blockers', () => {
+    for (const id of ['long_shot', 'element_bolt', 'pin']) expect(skillSummary(data.skills[id]!, data.statuses)).toContain(th.skillRange(3))
+    expect(skillSummary(data.skills.mark!, data.statuses)).toContain(th.skillRange(4))
+    for (const id of ['mark', 'burst']) expect(skillSummary(data.skills[id]!, data.statuses)).toContain(th.skillLongRange)
+    expect(skillSummary(data.skills.mark!, data.statuses)).toContain(th.skillLineOfSight)
+    expect(skillSummary(data.skills.blink!, data.statuses)).not.toContain(th.skillLongRange)
+    const legend = renderToStaticMarkup(createElement(TerrainLegend))
+    expect(legend).toContain(th.legendLongRange)
+    expect(legend).toContain('Unit และภูเขา')
+    expect(legend).toContain('Flying')
+    expect(legend).not.toContain('terrain ไม่บังแนวเล็ง')
+    expect(th.blockedBy('Quillfox', '')).toBe('Quillfox: ภูเขา ขวางแนวเล็ง (line of sight)')
+    expect(th.rejection['no-line-of-sight']).toContain('ภูเขา')
   })
 })
