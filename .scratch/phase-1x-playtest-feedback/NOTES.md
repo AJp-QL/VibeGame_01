@@ -43,7 +43,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-25 | Move preview visual test re-select | codex | — | done (PR #41) |
 | P1X-26 | Web test vs range rules | codex | — | done (PR #42) |
 | P1X-27 | Range rules cleanup from the PR #34 review | claude | — | ready |
-| P1X-28 | Session: terrain sight blockers + line-of-sight distance export | claude | — | ready (from PR #45 review; merge-second rule with 27 on `combat.ts`) |
+| P1X-28 | Session: terrain sight blockers + line-of-sight distance export | claude | — | done (PR pending; merge-second rule with 27 on `combat.ts`) |
 | P1X-29 | UI: range and sight text from session | codex | P1X-28 (P1X-10 done) | waiting |
 
 Next: Codex P1X-29 after P1X-28. Claude P1X-06, 11, 15, 20, 23, 27, 28 ready.

@@ -51,7 +51,7 @@ export {
   type UseSkillAction,
 } from './skills.ts'
 export type { SaveOdds, StatusBonus, StatusOdds } from './statuses.ts'
-export { lineOfSightTiles } from './lineOfSight.ts'
+export { LINE_OF_SIGHT_FROM, lineOfSightTiles } from './lineOfSight.ts'
 export { areaTiles } from './wisplingSkills.ts'
 export { COMMAND_RANGE, type CommandAction } from './command.ts'
 export type { HealPreview, TerrainPreview } from './tamerSkills.ts'
