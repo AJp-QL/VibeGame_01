@@ -6,6 +6,9 @@
 import { sameTile, type Tile } from '@mt/shared'
 import type { BattleState, UnitState } from './state.ts'
 
+/** Line of sight (rules §7.1) is checked from this distance; at distance 1 nothing can stand in between. */
+export const LINE_OF_SIGHT_FROM = 2
+
 /**
  * The tiles the line from `from` to `to` passes, in order, without the start
  * and the end tile (rules §7.3 steps 1–5). The line is not symmetric: the

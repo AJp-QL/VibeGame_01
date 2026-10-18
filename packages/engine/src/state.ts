@@ -239,7 +239,10 @@ export interface AttunedTile {
 }
 
 export interface BattleState {
-  /** The range rules this Battle plays with (rules §5.1, §7.3, D-31). */
+  /**
+   * The range rules this Battle plays with (rules §5.1, §7.2, D-31). Optional only so that a state
+   * built without them (older tests, tools) plays as `NO_RANGE_RULES`; `createBattle` always sets it.
+   */
   readonly rangeRules?: RangeRules
   readonly scenarioId: string
   readonly boardId: string
