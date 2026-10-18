@@ -49,7 +49,7 @@ describe('the engine reads the size from the Battle', () => {
     expect(startZoneRows('A', 9)).toEqual([0, 1])
     expect(startZoneRows('B', 9)).toEqual([7, 8])
     expect(isInStartZone('B', tile('e8'), 9)).toBe(true)
-    expect(isInStartZone('B', tile('e8'))).toBe(false)
+    expect(isInStartZone('B', tile('e8'), 7)).toBe(false)
   })
 })
 
@@ -127,8 +127,7 @@ describe('Pushing, areas and Attune on a bigger Board', () => {
     const burst = gameData.skills.burst!
     expect(names(areaTiles(burst, tile('e5'), 9))).toEqual(['d4', 'd5', 'd6', 'e4', 'e5', 'e6', 'f4', 'f5', 'f6'])
     expect(names(areaTiles(burst, tile('i9'), 9))).toEqual(['h8', 'h9', 'i8', 'i9'])
-    // The default size is the 7x7 Boards'.
-    expect(names(areaTiles(burst, tile('g7')))).toEqual(['f6', 'f7', 'g6', 'g7'])
+    expect(names(areaTiles(burst, tile('g7'), 7))).toEqual(['f6', 'f7', 'g6', 'g7'])
   })
 
   it('Burst can be centred on the far edge of the Arena', () => {

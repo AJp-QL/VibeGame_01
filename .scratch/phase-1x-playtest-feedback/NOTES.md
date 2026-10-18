@@ -30,7 +30,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-12 | Threat zone UI | codex | P1X-11, P1X-04 | waiting |
 | P1X-13 | Board size per Board: expand engine/AI/simulator | claude | — | done (PR #23) |
 | P1X-14 | Board size per Board: battle/web | codex | P1X-13 | done (PR #27) |
-| P1X-15 | Contract BOARD_SIZE + 9x9 Boards | claude | P1X-13, P1X-14, P1X-09 | ready |
+| P1X-15 | Contract BOARD_SIZE + 9x9 Boards | claude | P1X-13, P1X-14, P1X-09 | PR open |
 | P1X-16 | 9x9 Boards UI | codex | P1X-15 | waiting |
 | P1X-17 | Release v0.2.0 + next playtest | claude | P1X-07, P1X-10, P1X-12, P1X-16, P1X-19, P1X-24, P1X-29 | waiting |
 | P1X-18 | Move preview session follow-up | claude | P1X-04, P1X-25 | done (PR #29) |

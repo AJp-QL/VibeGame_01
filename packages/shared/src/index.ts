@@ -1,5 +1,4 @@
 export {
-  BOARD_SIZE,
   MAX_BOARD_SIZE,
   MIN_BOARD_SIZE,
   isOnBoard,

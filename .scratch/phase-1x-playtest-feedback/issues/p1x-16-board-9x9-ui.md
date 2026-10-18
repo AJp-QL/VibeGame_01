@@ -11,4 +11,5 @@
 - [ ] เมนูแสดง Board 9x9 พร้อม mini Board
 - [ ] Board 9x9 เล่นได้ที่ desktop และ 360/375 px ไม่มี horizontal scroll, แตะถูกช่อง
 - [ ] screenshot ของ 9x9 อย่างน้อย 1 ฉาก; visual fixtures บันทึกใหม่ตาม data ปัจจุบัน baseline ตรวจด้วยตา
+- [ ] `boardBlurb` ใน `packages/web/src/strings.ts` มีคำอธิบายของ `grand_crossroads` และ `wide_shallows` (test `sessionText.test.ts` "each Board has a Thai description" ตรวจ; ticket 15 เพิ่ม Board แล้ว test นี้แดงจนกว่าจะมี)
 - [ ] CI เขียวทั้งสาม job

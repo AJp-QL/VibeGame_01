@@ -15,10 +15,10 @@ describe('tile names (rules §2.1)', () => {
     expect(tileFromName('o15')).toEqual({ x: 14, y: 14 })
     expect(tileName({ x: 8, y: 9 })).toBe('i10')
     for (const bad of ['p1', 'a16', 'a0', '1a', 'aa', 'a', '', 'A1', 'a01']) expect(() => tileFromName(bad), bad).toThrow()
-    expect(isOnBoard({ x: 7, y: 0 })).toBe(false)
+    expect(isOnBoard({ x: 7, y: 0 }, 7)).toBe(false)
     expect(isOnBoard({ x: 7, y: 0 }, 9)).toBe(true)
     expect(isOnBoard({ x: 9, y: 0 }, 9)).toBe(false)
-    expect(isOnBoard({ x: -1, y: 3 })).toBe(false)
+    expect(isOnBoard({ x: -1, y: 3 }, 7)).toBe(false)
     expect(isOnBoard({ x: 1.5, y: 3 }, 9)).toBe(false)
   })
 
@@ -29,7 +29,7 @@ describe('tile names (rules §2.1)', () => {
   })
 
   it('turns a tile 180 degrees around d4', () => {
-    const turned = (name: string) => tileName(rotate180(tileFromName(name)))
+    const turned = (name: string) => tileName(rotate180(tileFromName(name), 7))
     expect(turned('a1')).toBe('g7')
     expect(turned('c2')).toBe('e6')
     expect(turned('g4')).toBe('a4')
