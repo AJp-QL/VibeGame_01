@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { tileFromName } from '@mt/shared'
-import { applyAction, GAME_RANGE_RULES, legalActions, NO_RANGE_RULES, previewAction, type Action, type AttackPreview, type BattleState } from '../src/index.ts'
+import { applyAction, GAME_RANGE_RULES, LINE_OF_SIGHT_FROM, legalActions, NO_RANGE_RULES, previewAction, type Action, type AttackPreview, type BattleState } from '../src/index.ts'
 import { arena, gameData, NEUTRAL_ELEMENTS, scenario1Battle } from './fixtures.ts'
 
-// Experiment switches of phase 1.x ticket 08: a long-range disadvantage and terrain that
-// blocks line of sight. Both are off in the game; the simulator turns them on to measure.
+// The two range rules (phase 1.x tickets 08 and 09, D-31): a long-range disadvantage and terrain that
+// blocks line of sight. A Battle plays with both (`GAME_RANGE_RULES`); the rule tests of everything else
+// play the kit (old ranges, plain Boards, `NO_RANGE_RULES`), and these tests turn the rules on by hand.
+// The last block plays on data/ as shipped.
 
 const longShot = (target: string): Action => ({ type: 'useSkill', unit: 'B.m2', skill: 'long_shot', target })
 
@@ -18,7 +20,7 @@ function attackPreview(state: BattleState, action: Action): AttackPreview {
 // (neutral element). Column c is plain from c2 to c6, so no terrain gives either side an advantage.
 const at = (distance: number) => ({ A: ['g1', `c${6 - distance}`, 'g2'], B: ['g7', 'g6', 'c6'] }) as const
 
-describe('long-range disadvantage (variant b)', () => {
+describe('long-range disadvantage', () => {
   const rules = { longRangeDisadvantageFrom: 4 }
 
   it('the rule tests play without it (the kit): an attack at range 4 rolls normally', () => {
@@ -68,12 +70,12 @@ describe('long-range disadvantage (variant b)', () => {
   })
 })
 
-describe('terrain that blocks sight (variant c)', () => {
+describe('terrain that blocks sight', () => {
   // Crossroads has mountain on b2 and f6. Quillfox on c3 shoots Fangrel on a1: the line passes b2.
   const tiles = { A: ['g1', 'a1', 'g2'], B: ['g7', 'g6', 'c3'] } as const
   const shots = (state: BattleState) => legalActions(state).filter((a) => a.type === 'useSkill' && a.skill === 'long_shot' && a.target === 'A.m1')
 
-  it('the game is unchanged: terrain never blocks', () => {
+  it('without the rule (the kit, NO_RANGE_RULES) terrain never blocks', () => {
     const state = scenario1Battle({ tiles, elements: NEUTRAL_ELEMENTS, firstSide: 'B' })
     expect(shots(state)).toHaveLength(1)
   })
@@ -86,7 +88,29 @@ describe('terrain that blocks sight (variant c)', () => {
     if (!result.ok) {
       expect(result.rejection.code).toBe('no-line-of-sight')
       expect(result.rejection.blockedBy).toEqual([])
+      // The mountain on b2 is named, so the UI need not guess that "no Unit" means terrain.
+      expect(result.rejection.blockedByTerrain).toEqual([tileFromName('b2')])
     }
+  })
+
+  it('when a Unit and a mountain both stand on the line, the rejection names both', () => {
+    // A.m2 stands on the mountain b2, which is the only tile between c3 and a1.
+    const both = { A: ['g1', 'a1', 'b2'], B: ['g7', 'g6', 'c3'] } as const
+    const state = scenario1Battle({ tiles: both, elements: NEUTRAL_ELEMENTS, firstSide: 'B', rangeRules: { sightBlockedBy: ['mountain'] } })
+    const result = previewAction(state, longShot('A.m1'))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.rejection).toMatchObject({ code: 'no-line-of-sight', blockedBy: ['A.m2'], blockedByTerrain: [tileFromName('b2')] })
+  })
+
+  it('a Unit-only block names no terrain', () => {
+    const unitOnly = { A: ['g1', 'a1', 'b2'], B: ['g7', 'g6', 'c3'] } as const
+    const state = scenario1Battle({ tiles: unitOnly, elements: NEUTRAL_ELEMENTS, firstSide: 'B' })
+    const result = previewAction(state, longShot('A.m1'))
+    expect(result.ok === false && result.rejection.blockedByTerrain).toEqual([])
+  })
+
+  it('line of sight is checked from distance 2, a value the engine exports', () => {
+    expect(LINE_OF_SIGHT_FROM).toBe(2)
   })
 
   it('other terrain on the line does not block when only mountain does', () => {
@@ -108,6 +132,19 @@ describe('terrain that blocks sight (variant c)', () => {
     expect(bolts).toHaveLength(1)
   })
 
+  it('terrain blocks a Burst whose centre is behind it (checked to the centre, rules §7.1), for a Unit that does not fly', () => {
+    // Fangrel (A.m1, no wings) is given Burst: from a1 the line to the centre c3 passes the mountain on b2.
+    const behind = { A: ['g1', 'a1', 'g2'], B: ['g7', 'c3', 'g6'] } as const
+    const burst: Action = { type: 'useSkill', unit: 'A.m1', skill: 'burst', tile: tileFromName('c3'), targets: ['B.m1'] }
+    const loadouts = { 'A.m1': ['basic_attack', 'burst'] }
+    const open = scenario1Battle({ tiles: behind, elements: NEUTRAL_ELEMENTS, loadouts })
+    expect(previewAction(open, burst).ok).toBe(true)
+    const blocked = scenario1Battle({ tiles: behind, elements: NEUTRAL_ELEMENTS, loadouts, rangeRules: { sightBlockedBy: ['mountain'] } })
+    const result = previewAction(blocked, burst)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.rejection).toMatchObject({ code: 'no-line-of-sight', blockedBy: [] })
+  })
+
   it('the Unit-blocking rule still holds next to the terrain rule', () => {
     expect(tileFromName('b2')).toEqual({ x: 1, y: 1 })
     const withBlocker = { A: ['g1', 'a1', 'b2'], B: ['g7', 'g6', 'c3'] } as const
@@ -118,7 +155,7 @@ describe('terrain that blocks sight (variant c)', () => {
 })
 
 describe("the rules of the game (ticket 09, D-31): the data and the rules together", () => {
-  const real = { realRules: true, elements: NEUTRAL_ELEMENTS } as const
+  const real = { shippedData: true, elements: NEUTRAL_ELEMENTS } as const
   // Quillfox (B.m2) on g7 shoots up column g at Fangrel (A.m1): no mountain on that column.
   const atG = (distance: number) => ({ A: ['a1', `g${7 - distance}`, 'b1'], B: ['a7', 'b7', 'g7'] }) as const
 

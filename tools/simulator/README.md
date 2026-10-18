@@ -21,8 +21,8 @@ corepack pnpm sim boards   [--games 2000] [--seed 0] [--workers n] [--out docs/b
 
 `sim ranges` (ticket 08; ตั้งแต่ ticket 09 เกมเล่น variant `abc`) วัด variant ของระยะ skill ทุกแบบบนทุกชุด (Scenario 1/2 × Crossroads/Shallows) ด้วย AI ของเกม (`game:greedy`) ทั้งสองฝั่ง กระจายไปหลาย worker thread (`--workers`, ค่าเริ่มต้น = จำนวน CPU) และเขียน `<out>.md` (ตาราง) + `<out>.json` `run --variant <id>` เล่น variant เดียว Variant ไม่แตะ `data/` และกติกาของเกม มีอยู่แค่ในการรันนี้ (`src/variants.ts`) และเขียนเป็นชุดเต็มของสามส่วน (เปิดหรือปิด) ไม่ว่า data/ มีอะไร: `baseline` ยังหมายถึงระยะ, Board และกติกาก่อน ticket 09 และ `abc` = เกมตอนนี้ (test ยืนยันว่าเล่นได้ตัวเลขเดียวกับ run ธรรมดา) ตัวเลือก `--only baseline,abc` วัดเฉพาะบาง variant:
 - `a` ระยะสั้นลงใน data: Long Shot, Element Bolt, Pin 4 → 3, Mark 5 → 4
-- `b` attack roll ที่ระยะ 4 ขึ้นไปได้ disadvantage (สวิตช์ `VariantRules.longRangeDisadvantageFrom` ของ engine)
-- `c` ภูเขาบัง line of sight (สวิตช์ `VariantRules.sightBlockedBy`) พร้อมภูเขาเพิ่ม 4 ช่องต่อ Board เป็นคู่ที่หมุน 180° แล้วเหมือนเดิม (`EXTRA_MOUNTAINS`)
+- `b` attack roll ที่ระยะ 4 ขึ้นไปได้ disadvantage (กติกา `RangeRules.longRangeDisadvantageFrom` ของ engine (ตั้งแต่ ticket 09 เป็นกติกาของเกม))
+- `c` ภูเขาบัง line of sight (กติกา `RangeRules.sightBlockedBy` ของ engine (ตั้งแต่ ticket 09 เป็นกติกาของเกม)) พร้อมภูเขาเพิ่ม 4 ช่องต่อ Board เป็นคู่ที่หมุน 180° แล้วเหมือนเดิม (`EXTRA_MOUNTAINS`)
 - `ab`, `ac`, `bc`, `abc` = ผสม; `baseline` = วันนี้
 - ตัวชี้วัดใหม่ `turnsBeforeFirstAttack` (ใน `GameRecord` และ `Metrics`): จำนวน Turn (ของสองฝั่ง) ที่จบไปก่อน Turn ที่มี attack roll ครั้งแรก, 0 = โจมตีใน Turn แรก, Battle ที่ไม่มี attack roll เลยนับทุก Turn ที่มี
 - เป้าหมาย (spec story 41): ทีม A ชนะ 40–60%, turn limit ไม่เกิน 15% ทุกชุด, Turn ก่อนโจมตีครั้งแรกสูงกว่า baseline

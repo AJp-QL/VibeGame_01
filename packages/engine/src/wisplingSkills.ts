@@ -19,7 +19,7 @@
 import { isOnBoard, sameTile, tileName, type Skill, type Tile } from '@mt/shared'
 import type { ActionPreview, Rejection, RejectionCode } from './battle.ts'
 import { isFlying, previewAttack, spendAttackRoll } from './combat.ts'
-import { unitsOnLine } from './lineOfSight.ts'
+import { LINE_OF_SIGHT_FROM, unitsOnLine } from './lineOfSight.ts'
 import { sightBlockingTiles } from './rangeRules.ts'
 import { distance } from './movement.ts'
 import { emit } from './resolution.ts'
@@ -28,8 +28,13 @@ import type { UseSkillAction } from './skills.ts'
 import { findUnit, type BattleState, type UnitState, boardSizeOf } from './state.ts'
 import { untargetableFrom } from './statuses.ts'
 
-function rejection(code: RejectionCode, message: string, blockedBy?: readonly string[]): Rejection {
-  return blockedBy === undefined ? { code, message } : { code, message, blockedBy }
+function rejection(code: RejectionCode, message: string, blockedBy?: readonly string[], blockedByTerrain?: readonly Tile[]): Rejection {
+  return {
+    code,
+    message,
+    ...(blockedBy === undefined ? {} : { blockedBy }),
+    ...(blockedByTerrain === undefined ? {} : { blockedByTerrain }),
+  }
 }
 
 /** Every tile of the Board in reading order (row by row), so legal uses are listed the same way every time. */
@@ -56,17 +61,19 @@ function checkCentre(state: BattleState, user: UnitState, skill: Skill, centre: 
   const d = distance(user.tile, centre)
   if (d > skill.range) return rejection('out-of-range', `${tileName(centre)} is ${d} tiles away; ${skill.name} reaches ${skill.range}`)
   // Rules §7.1, §15.1: only to the centre (as the line's end), from distance 2, unless the user is Flying.
-  if (d >= 2 && !isFlying(user)) {
+  if (d >= LINE_OF_SIGHT_FROM && !isFlying(user)) {
     const ids = unitsOnLine(state, user.tile, centre).map((u) => u.id)
+    const terrain = sightBlockingTiles(state, user.tile, centre)
     if (ids.length > 0) {
       return rejection(
         'no-line-of-sight',
         `${ids.join(', ')} ${ids.length === 1 ? 'stands' : 'stand'} between ${user.id} and ${tileName(centre)}`,
         ids,
+        terrain,
       )
     }
-    if (sightBlockingTiles(state, user.tile, centre).length > 0) {
-      return rejection('no-line-of-sight', `Terrain blocks the line between ${user.id} and ${tileName(centre)}`, [])
+    if (terrain.length > 0) {
+      return rejection('no-line-of-sight', `Terrain blocks the line between ${user.id} and ${tileName(centre)}`, [], terrain)
     }
   }
   return null
