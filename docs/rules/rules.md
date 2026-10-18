@@ -562,6 +562,12 @@ Tamer ที่ได้รับการป้องกันยังถู�
 5. ถ้านี่คือ Turn ที่ 10 ของฝั่งที่เริ่มทีหลัง (จบ Round 10) ตัดสินตาม §19.2
 6. ไม่อย่างนั้นเริ่ม Turn ของอีกฝั่ง
 
+### 17.5 Undo [playtest v0.1.5, D-30]
+- ผู้เล่นย้อน action ของ Turn ตัวเองกลับถึง **จุดปลอดภัย** ได้ จุดปลอดภัยคืออันที่มาทีหลังกว่าระหว่าง (ก) ต้น Turn (หลัง End Turn ของอีกฝั่ง หรือก่อน action แรกของ Battle) และ (ข) หลัง action ล่าสุดที่ทอยลูกเต๋าอะไรก็ได้ (attack roll, save, damage, heal, Bleed tick, initiative, Inspiration ที่ทอยใหม่) หรือที่ตอบการทอยนั้น (ใช้หรือไม่ใช้ Inspiration)
+- ย้อนได้เฉพาะฝั่งที่กำลังเล่นภายใน Turn ของตัวเอง และเมื่อมีอย่างน้อย 1 action หลังจุดปลอดภัย ไม่มีในช่วงที่อีกฝั่งต้องตัดสินใจ (เช่น save) ไม่มีใน Turn ของ AI และ Battle ที่จบแล้วหรือยังไม่เริ่มเล่น (deployment) ย้อนไม่ได้
+- ผลคือ state เหมือนตอนอยู่ที่จุดปลอดภัยทุกอย่าง: ตำแหน่ง, Command, Defend (Guarded), Camouflage, Attune, activation ที่เริ่มแล้วและ Unit ที่กำลังเล่น ลูกเต๋าไม่ถูกทอยซ้ำ เพราะ action ที่ถูกย้อนไม่ได้ใช้ลูกเต๋าเลย (ลำดับลูกเต๋า §21.4 ไม่ขยับ) การเล่นต่อจึงเหมือนไม่เคยมี action เหล่านั้น
+- Undo ไม่ใช่ action ของเกมใน ticket นี้ (session ทำ ไม่บันทึกลง Replay) การบันทึกลง Replay เป็นของ Replay format 2 (ticket 06)
+
 ---
 
 ## 18. Inspiration [v1, v2, PRD, PT; ดู D-10, D-29]
@@ -734,6 +740,7 @@ sim.py ใช้ `random.Random` ดึงลูกเต๋าให้ AI ต�
 - **D-25**: การเทียบผล ±5 pp กับ sim v4 ใช้ stat ที่ sim v4 ใช้จริง (Tidewall 4 Star POW 16, Quillfox 4 Star SPI 12) ส่วน Scenario ในเกมใช้ค่าตาม kit (§20)
 - **D-28**: ตัดสิน 2026-10-16 (ticket 27, ผู้ใช้เลือกทางเลือก A ของ ticket 19): Camouflage ไม่ใช้ Action และ Move (§15.1) ผลต่อ simulator: docs/balance/ticket-27-camouflage.md
 - **D-29**: ตัดสิน 2026-10-17 (playtest v0.1.5, ticket 01 ของ phase 1.x): Inspiration เสนอเฉพาะเมื่อ attack roll ของฝั่งตัวเองพลาด (รวม Mark, ทุกเป้าของ Burst, counterattack) หรือ save ของฝั่งตัวเองไม่ผ่าน; initiative ตามเดิม (§18) ผลต่อ simulator: ไม่มี (ผู้เล่นเท่านั้นที่ถูกถาม AI ตัดสินจากผลที่เห็น) ENGINE_VERSION 0.9.0 → 0.10.0
+- **D-30**: ตัดสิน 2026-10-17 (playtest v0.1.5, ticket 05 ของ phase 1.x): Undo ถึงจุดปลอดภัยของ Turn ตัวเอง (§17.5) ผลต่อ simulator: ไม่มี (AI ไม่ใช้ Undo) ไม่ขยับ ENGINE_VERSION (session ล้วน)
 
 | รหัส | ประเด็น | แหล่งที่กำกวมหรือขัด | ที่ตัดสิน | ผลกระทบ |
 |---|---|---|---|---|
@@ -766,6 +773,7 @@ sim.py ใช้ `random.Random` ดึงลูกเต๋าให้ AI ต�
 | D-27 | ทอย 1 และ 20 ใน save | กฎ "20 = critical, 1 พลาดเสมอ" ใน v1 และ PRD เขียนไว้สำหรับ attack roll ไม่ได้พูดถึง save | save ใช้ผลรวมเทียบ DC อย่างเดียว [sim, docs/playtest/atk.py] | % ไม่ผ่าน save ที่ preview แสดง |
 | D-28 | Camouflage ใช้ Action ไหม | v1, PRD ให้ Camouflage เป็น skill Minor ที่ใช้เป็น Action (sim v4 ก็เช่นกัน); ticket 19 พบว่า Camouflage แทบไม่ถูกใช้ (≤ 0.015 ครั้งต่อ Battle) เพราะต้องเสีย Long Shot ของ Quillfox | skill ฟรี: ไม่ใช้ Action และ Move, ไม่เกิน 1 ครั้งต่อ activation ณ จุดใดก็ได้ใน activation, ยังเป็น Minor (ไม่มี cooldown จึงใช้ได้ทุก activation), ใช้แล้วนับเป็นการเริ่ม activation (นับในข้อจำกัด 2 จาก 3 Unit) และใช้ไม่ได้อีกเมื่อ activation จบ, Taunted (§14.3) บังคับแค่ Move และ Action จึงไม่ห้าม Camouflage [ใหม่ ticket 27; การเทียบผลกับ sim v4 (sim-equivalent) ยังใช้ Camouflage เป็น Action แบบ sim] | ความถี่ของ Camouflage, "ยิงแล้วซ่อน" ของ Quillfox |
 | D-29 | Inspiration หลังทอยโดน | v1, v2, D-10: เสนอทุกครั้งที่ฝั่งตัวเองทอย d20 แม้ผลดี; playtest v0.1.5: 6 จาก 7 คำถามมาหลังทอยโดนเอง ผู้เล่นต้องตอบคำถามที่ไม่มีเหตุให้ใช้ | เสนอเฉพาะ attack roll ที่พลาดและ save ที่ไม่ผ่าน; initiative ฝั่งที่แพ้เหมือนเดิม; ไม่ถามซ้ำกับผลที่ทอยใหม่ | จำนวนจุดหยุดรอใน Replay ลดลง; ผู้เล่นทอยใหม่หา critical หลังโดนไม่ได้ |
+| D-30 | ผู้เล่นเปลี่ยนใจกลาง Turn | playtest v0.1.5: Move แล้วเปลี่ยนใจไม่ได้ ต้องเริ่ม Battle ใหม่; ทอยลูกเต๋าแล้วย้อนไม่ได้ (กันเลือกผล) | Undo ถึงจุดปลอดภัย = ต้น Turn หรือหลัง action ล่าสุดที่ทอยลูกเต๋าหรือตอบการทอย แล้วแต่อันไหนมาทีหลัง เฉพาะฝั่งที่เล่นอยู่ใน Turn ตัวเอง | ผู้เล่นลองเดินได้ แต่ลูกเต๋าที่ทอยแล้วถาวร; Replay เก็บ Undo (ticket 06) |
 
 ---
 

@@ -8,11 +8,21 @@ corepack pnpm sim run --scenario scenario_1 --board crossroads --a sim:greedy --
   [--games 1000] [--seed 0] [--sim-equivalent] [--format md|json] [--out file]
 corepack pnpm sim parity   [--games 2000] [--other-games 1000] [--seed 0] [--out docs/balance/sim-v4-parity]
 corepack pnpm sim baseline [--games 1000] [--seed 0] [--out docs/balance/phase-1-baseline]
+corepack pnpm sim ranges   [--games 2000] [--seed 0] [--workers n] [--out docs/balance/ticket-08-range-experiments]
 ```
 - โปรไฟล์ AI: `sim:<mode>` = `SIM_PROFILES` (port ของ sim.py), `game:<mode>` = `GAME_PROFILES` (AI ในเกม), mode = `greedy` | `tamer_rush` | `neutral`
 - `--seed` = Dice Seed ฐาน (hex 1–16 หลัก) Battle ที่ i (นับจาก 0) ใช้ seed = ฐาน + (i+1)·0x9e3779b97f4a7c15 mod 2^64 (ฐาน 0 = `seedOf(i + 1)` ของ packages/ai/test/play.ts) ใส่ค่าเดิมได้ตัวเลขเดิมทุกตัว
 - `run` พิมพ์ Markdown หรือ JSON (`{ config, overrides, metrics }`); `parity` และ `baseline` เขียน `<out>.md` + `<out>.json`
 - ความเร็ว ~0.1–0.15 วินาทีต่อ Battle (thread เดียว)
+
+## Range experiments (phase 1.x ticket 08)
+`sim ranges` วัด variant ของระยะ skill ทุกแบบบนทุกชุด (Scenario 1/2 × Crossroads/Shallows) ด้วย AI ของเกม (`game:greedy`) ทั้งสองฝั่ง กระจายไปหลาย worker thread (`--workers`, ค่าเริ่มต้น = จำนวน CPU) และเขียน `<out>.md` (ตาราง) + `<out>.json` `run --variant <id>` เล่น variant เดียว Variant ไม่แตะ `data/` และกติกาของเกม มีอยู่แค่ในการรันนี้ (`src/variants.ts`):
+- `a` ระยะสั้นลงใน data: Long Shot, Element Bolt, Pin 4 → 3, Mark 5 → 4
+- `b` attack roll ที่ระยะ 4 ขึ้นไปได้ disadvantage (สวิตช์ `VariantRules.longRangeDisadvantageFrom` ของ engine)
+- `c` ภูเขาบัง line of sight (สวิตช์ `VariantRules.sightBlockedBy`) พร้อมภูเขาเพิ่ม 4 ช่องต่อ Board เป็นคู่ที่หมุน 180° แล้วเหมือนเดิม (`EXTRA_MOUNTAINS`)
+- `ab`, `ac`, `bc`, `abc` = ผสม; `baseline` = วันนี้
+- ตัวชี้วัดใหม่ `turnsBeforeFirstAttack` (ใน `GameRecord` และ `Metrics`): จำนวน Turn (ของสองฝั่ง) ที่จบไปก่อน Turn ที่มี attack roll ครั้งแรก, 0 = โจมตีใน Turn แรก, Battle ที่ไม่มี attack roll เลยนับทุก Turn ที่มี
+- เป้าหมาย (spec story 41): ทีม A ชนะ 40–60%, turn limit ไม่เกิน 15% ทุกชุด, Turn ก่อนโจมตีครั้งแรกสูงกว่า baseline
 
 ## Library (`src/index.ts`)
 - `loadRepoData()` = data/ ผ่าน `loadGameData` แบบที่เกมใช้
