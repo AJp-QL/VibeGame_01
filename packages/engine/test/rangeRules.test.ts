@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { tileFromName } from '@mt/shared'
-import { applyAction, GAME_RANGE_RULES, legalActions, NO_RANGE_RULES, previewAction, type Action, type AttackPreview, type BattleState } from '../src/index.ts'
+import { applyAction, GAME_RANGE_RULES, LINE_OF_SIGHT_FROM, legalActions, NO_RANGE_RULES, previewAction, type Action, type AttackPreview, type BattleState } from '../src/index.ts'
 import { arena, gameData, NEUTRAL_ELEMENTS, scenario1Battle } from './fixtures.ts'
 
 // Experiment switches of phase 1.x ticket 08: a long-range disadvantage and terrain that
@@ -86,7 +86,29 @@ describe('terrain that blocks sight (variant c)', () => {
     if (!result.ok) {
       expect(result.rejection.code).toBe('no-line-of-sight')
       expect(result.rejection.blockedBy).toEqual([])
+      // The mountain on b2 is named, so the UI need not guess that "no Unit" means terrain.
+      expect(result.rejection.blockedByTerrain).toEqual([tileFromName('b2')])
     }
+  })
+
+  it('when a Unit and a mountain both stand on the line, the rejection names both', () => {
+    // A.m2 stands on the mountain b2, which is the only tile between c3 and a1.
+    const both = { A: ['g1', 'a1', 'b2'], B: ['g7', 'g6', 'c3'] } as const
+    const state = scenario1Battle({ tiles: both, elements: NEUTRAL_ELEMENTS, firstSide: 'B', rangeRules: { sightBlockedBy: ['mountain'] } })
+    const result = previewAction(state, longShot('A.m1'))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.rejection).toMatchObject({ code: 'no-line-of-sight', blockedBy: ['A.m2'], blockedByTerrain: [tileFromName('b2')] })
+  })
+
+  it('a Unit-only block names no terrain', () => {
+    const unitOnly = { A: ['g1', 'a1', 'b2'], B: ['g7', 'g6', 'c3'] } as const
+    const state = scenario1Battle({ tiles: unitOnly, elements: NEUTRAL_ELEMENTS, firstSide: 'B' })
+    const result = previewAction(state, longShot('A.m1'))
+    expect(result.ok === false && result.rejection.blockedByTerrain).toEqual([])
+  })
+
+  it('line of sight is checked from distance 2, a value the engine exports', () => {
+    expect(LINE_OF_SIGHT_FROM).toBe(2)
   })
 
   it('other terrain on the line does not block when only mountain does', () => {
