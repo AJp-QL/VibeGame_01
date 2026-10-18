@@ -133,6 +133,7 @@ export function createReplayPlayer(initial: BattleState, steps: readonly ReplayS
       pendingTile: null,
       area: [],
       chosenTargets: [],
+      movePreview: null,
       step,
       total: steps.length,
       action: last?.action ?? null,

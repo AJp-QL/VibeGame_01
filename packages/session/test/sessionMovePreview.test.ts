@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { loadGameData, sameTile, tileFromName, type Side, type Tile } from '@mt/shared'
 import { createBattle, type BattleSetup, type BattleState, type UnitId } from '@mt/engine'
-import { createBattleSession, type BattleSession, type MoveReach } from '../src/index.ts'
+import { createBattleSession, createReplayPlayer, type BattleSession, type BattleSessionPort, type MoveReach } from '../src/index.ts'
 
 // Move preview (phase 1.x ticket 03, spec stories 1-13): the session looks at a
 // reachable tile, or a Blink destination, as if the Unit stood there. The engine
@@ -296,5 +296,83 @@ describe('BattleSession: Blink uses the same preview', () => {
       const expectedTargets = snapshot.mode === 'attack' ? sorted(snapshot.targets.flatMap((t) => unitAt(snapshot.state, t) ?? [])) : []
       expect(sorted(basic.targets), `Blink to ${destination.x},${destination.y}`).toEqual(expectedTargets)
     }
+  })
+})
+
+describe('BattleSession: tapping the selected Unit while a preview is shown (ticket 18, spec story 3)', () => {
+  for (const [name, tap] of [
+    ['selectUnit', (session: BattleSession, unit: UnitId) => session.selectUnit(unit)],
+    ['input tapUnit', (session: BattleSession, unit: UnitId) => session.input({ type: 'tapUnit', unit })],
+  ] as const) {
+    it(`${name}: a Move preview is dropped, the Unit stays selected and the lit tiles stay`, () => {
+      const session = newSession()
+      session.selectUnit('A.m1')
+      const reachable = session.getSnapshot().reachable
+      session.previewMove(reachable[1]!)
+      expect(session.getSnapshot().movePreview).not.toBeNull()
+      tap(session, 'A.m1')
+      const snapshot = session.getSnapshot()
+      expect(snapshot.movePreviewTile).toBeNull()
+      expect(snapshot.movePreview).toBeNull()
+      expect(snapshot.selectedUnit).toBe('A.m1')
+      expect(snapshot.mode).toBe('move')
+      expect(snapshot.reachable).toEqual(reachable)
+      expect(snapshot.actions).toEqual([])
+      // No preview any more: the next tap clears the selection, as before.
+      tap(session, 'A.m1')
+      expect(session.getSnapshot().selectedUnit).toBeNull()
+    })
+
+    it(`${name}: a Blink preview is dropped, Blink is still being aimed with no destination`, () => {
+      const session = newSession()
+      session.selectUnit('A.m2')
+      session.chooseSkill('blink')
+      const choices = session.getSnapshot().tileChoices
+      session.input({ type: 'tapTile', tile: choices[0]! })
+      expect(session.getSnapshot().movePreview).toMatchObject({ skill: 'blink' })
+      tap(session, 'A.m2')
+      const snapshot = session.getSnapshot()
+      expect(snapshot.movePreview).toBeNull()
+      expect(snapshot.pendingTile).toBeNull()
+      expect(snapshot.selectedUnit).toBe('A.m2')
+      expect(snapshot.mode).toBe('skill')
+      expect(snapshot.pendingSkill).toBe('blink')
+      expect(snapshot.tileChoices).toEqual(choices)
+      expect(snapshot.actions).toEqual([])
+      // Aiming with nothing picked: the next tap clears the selection, as before.
+      tap(session, 'A.m2')
+      expect(session.getSnapshot().selectedUnit).toBeNull()
+    })
+  }
+
+  it('works for team B in Hotseat too', () => {
+    const session = newSession(MIDDLE, 'B')
+    session.selectUnit('B.m1')
+    session.previewMove(session.getSnapshot().reachable[0]!)
+    session.input({ type: 'tapUnit', unit: 'B.m1' })
+    expect(session.getSnapshot()).toMatchObject({ selectedUnit: 'B.m1', movePreviewTile: null, mode: 'move' })
+    expect(session.getSnapshot().reachable.length).toBeGreaterThan(0)
+  })
+
+  it('without a preview a tap on the selected Unit still clears the selection', () => {
+    const session = newSession()
+    session.selectUnit('A.m1')
+    session.input({ type: 'tapUnit', unit: 'A.m1' })
+    expect(session.getSnapshot().selectedUnit).toBeNull()
+  })
+})
+
+describe('BattleSnapshot carries movePreview through the port (ticket 18)', () => {
+  it('the session fills it, readable without a cast; the Replay player gives null', () => {
+    const session = newSession()
+    const port: BattleSessionPort = session
+    expect(port.getSnapshot().movePreview).toBeNull()
+    session.selectUnit('A.m1')
+    session.previewMove(session.getSnapshot().reachable[0]!)
+    const preview = port.getSnapshot().movePreview
+    expect(preview).toBe(session.getSnapshot().movePreview)
+    expect(preview).toMatchObject({ unit: 'A.m1' })
+    const player = createReplayPlayer(session.getSnapshot().state, [])
+    expect((player as BattleSessionPort).getSnapshot().movePreview).toBeNull()
   })
 })
