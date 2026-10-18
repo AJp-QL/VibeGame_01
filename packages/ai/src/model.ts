@@ -161,7 +161,7 @@ export class Ctx {
   preview(st: BattleState, attacker: UnitState, target: UnitState, skillId: string): AttackPreview {
     const d = distance(attacker.tile, target.tile)
     // Distance class: melee, near or (variant rules, ticket 08) far enough for the long-range disadvantage.
-    const far = st.variantRules?.longRangeDisadvantageFrom
+    const far = st.rangeRules?.longRangeDisadvantageFrom
     const reach = d <= 1 ? d : far !== undefined && d >= far ? 3 : 2
     const key = `${attacker.id}@${attacker.tile.x},${attacker.tile.y}>${target.id}:${reach}:${skillId}:${protectedNow(st, target) ? 1 : 0}`
     let p = this.previews.get(key)

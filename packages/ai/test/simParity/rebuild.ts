@@ -3,7 +3,7 @@
  * BattleState, for the decision-parity test. Test-only: it writes state
  * fields directly, which play never does.
  */
-import { createBattle, type BattleState, type UnitState, type UnitStatus } from '@mt/engine'
+import { createBattle, NO_RANGE_RULES, type BattleState, type UnitState, type UnitStatus } from '@mt/engine'
 import type { Element, Side, Stats, Terrain, Tile } from '@mt/shared'
 import { gameData } from '../play.ts'
 
@@ -103,10 +103,21 @@ function withSimNumbers(d: SimDecision) {
   }
 }
 
+/**
+ * sim.py's ranges and Crossroads (ticket 09, D-31): the game shortened Long Shot, Element Bolt,
+ * Pin (4 to 3) and Mark (5 to 4), put four mountains on Crossroads and added the range rules.
+ * sim.py has none of it, so the decisions are compared under its conditions.
+ */
+const SIM_RANGES: Readonly<Record<string, number>> = { long_shot: 4, element_bolt: 4, pin: 4, mark: 5 }
+const EXTRA_MOUNTAINS: readonly (readonly [number, number])[] = [[2, 2], [4, 4], [4, 2], [2, 4]]
+
 export function rebuild(d: SimDecision): BattleState {
   const { scenario, species } = withSimNumbers(d)
-  const board = gameData.boards.crossroads
-  if (board === undefined) throw new Error('missing data')
+  const gameBoard = gameData.boards.crossroads
+  if (gameBoard === undefined) throw new Error('missing data')
+  const plain = gameBoard.terrain.map((row) => [...row])
+  for (const [x, y] of EXTRA_MOUNTAINS) plain[y]![x] = 'normal'
+  const board = { ...gameBoard, terrain: plain }
   const byId = new Map(d.units.map((u) => [u.id, u]))
   // Preset needs every Unit on the Board: fallen Units go on spare tiles first, then leave.
   const spare: Tile[] = []
@@ -122,9 +133,10 @@ export function rebuild(d: SimDecision): BattleState {
   // sim.py uses Camouflage as the Action: the game's free skills (D-28, ticket 27) are not free here.
   const simSkills = Object.fromEntries(
     Object.entries(gameData.skills).map(([id, skill]) => {
-      if (skill.effects?.free !== true) return [id, skill]
-      const { free: _free, ...effects } = skill.effects
-      return [id, { ...skill, effects }]
+      const ranged = SIM_RANGES[id] === undefined ? skill : { ...skill, range: SIM_RANGES[id] }
+      if (ranged.effects?.free !== true) return [id, ranged]
+      const { free: _free, ...effects } = ranged.effects
+      return [id, { ...ranged, effects }]
     }),
   )
   const created = createBattle({
@@ -135,6 +147,7 @@ export function rebuild(d: SimDecision): BattleState {
     statuses: gameData.statuses,
     elementWheel: gameData.elementWheel,
     dice: { seed: '0000000000000001' },
+    rangeRules: NO_RANGE_RULES,
     preset: { tiles: { A: tiles('A'), B: tiles('B') }, firstSide: d.first },
   })
   const units: UnitState[] = []

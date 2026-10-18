@@ -16,7 +16,7 @@ import {
   type UnitId,
   type UnitStatus,
 } from '../src/index.ts'
-import { gameData, NEUTRAL_ELEMENTS, scenario1Battle, type BattleOptions } from './fixtures.ts'
+import { gameData, kitGameData, NEUTRAL_ELEMENTS, scenario1Battle, type BattleOptions } from './fixtures.ts'
 
 // Scenario 1, every Monster forest (neutral to each other; NEUTRAL_ELEMENTS).
 // Tamer (both sides): HP 25, Guard 11, attack +3, proficiency 2, SPI 12 (mod +1): Save DC (SPI) 11, Move 3.
@@ -688,7 +688,7 @@ describe('Tamer actions through the whole interface', () => {
       diceSeed: '0123456789abcdef',
       preset: { tiles: { A: tiles('A'), B: tiles('B') }, firstSide: 'A' },
     } as const
-    const start = replayBattle(recordReplay(header, gameData, []), gameData)
+    const start = replayBattle(recordReplay(header, kitGameData, []), kitGameData)
     if (!start.ok) throw new Error('replay failed')
     const actions: Action[] = []
     let state = start.final
@@ -711,9 +711,9 @@ describe('Tamer actions through the whole interface', () => {
     play({ type: 'endTurn' })
     play(move('A.tamer', 'd4'))
     play(useSkill('A.tamer', 'distract', { target: 'B.m2' }))
-    const replay = recordReplay(header, gameData, actions)
-    const first = replayBattle(replay, gameData)
-    const second = replayBattle(JSON.parse(JSON.stringify(replay)), gameData)
+    const replay = recordReplay(header, kitGameData, actions)
+    const first = replayBattle(replay, kitGameData)
+    const second = replayBattle(JSON.parse(JSON.stringify(replay)), kitGameData)
     if (!first.ok || !second.ok) throw new Error('replay failed')
     expect(first.final).toEqual(state)
     expect(second.final).toEqual(first.final)

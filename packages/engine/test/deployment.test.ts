@@ -9,7 +9,7 @@ import {
   type BattleState,
   type UnitId,
 } from '../src/index.ts'
-import { gameData, scenario1Deployment } from './fixtures.ts'
+import { kitGameData, scenario1Deployment } from './fixtures.ts'
 
 function ok(result: ApplyResult) {
   if (!result.ok) throw new Error(result.rejection.message)
@@ -48,7 +48,7 @@ describe('a Battle starts in deployment (rules §17.1)', () => {
   it('shows the whole Board, has no Unit on it yet, and team A places first', () => {
     const state = scenario1Deployment()
     expect(state.phase).toBe('deployment')
-    expect(state.terrain).toEqual(gameData.boards.crossroads!.terrain)
+    expect(state.terrain).toEqual(kitGameData.boards.crossroads!.terrain)
     expect(state.units).toEqual([])
     expect(state.sideToAct).toBe('A')
     expect(state).toMatchObject({ round: 0, turnNumber: { A: 0, B: 0 }, firstSide: null, initiative: null })

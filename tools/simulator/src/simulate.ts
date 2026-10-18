@@ -5,7 +5,7 @@
  */
 import { applyAction, createBattle, decidingSide, type Action, type BattleEvent, type BattleState } from '@mt/engine'
 import { chooseAction, createAi, type AiProfile, type AiState } from '@mt/ai'
-import type { VariantRules } from '@mt/engine'
+import type { RangeRules } from '@mt/engine'
 import type { GameData, Side } from '@mt/shared'
 
 /** Name of what a Unit is: "Tamer" or the species name ("Tidewall"). */
@@ -51,7 +51,7 @@ export interface Matchup {
   readonly board: string
   readonly profiles: Readonly<Record<Side, AiProfile>>
   /** Experiment switches of the engine (phase 1.x ticket 08); absent = the game's rules. */
-  readonly variantRules?: VariantRules
+  readonly rangeRules?: RangeRules
 }
 
 const MASK64 = (1n << 64n) - 1n
@@ -95,7 +95,7 @@ export function playBattle(data: GameData, matchup: Matchup, seed: string, maxAc
     statuses: data.statuses,
     elementWheel: data.elementWheel,
     dice: { seed },
-    ...(matchup.variantRules === undefined ? {} : { variantRules: matchup.variantRules }),
+    ...(matchup.rangeRules === undefined ? {} : { rangeRules: matchup.rangeRules }),
   })
   const ais: Record<Side, AiState> = {
     A: createAi(state, 'A', matchup.profiles.A),

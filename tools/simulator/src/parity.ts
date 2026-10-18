@@ -6,6 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { SIM_PROFILES, type AiMode } from '@mt/ai'
+import { NO_RANGE_RULES } from '@mt/engine'
 import type { GameData } from '@mt/shared'
 import { REPO_ROOT } from './data.ts'
 import type { Metrics } from './metrics.ts'
@@ -106,7 +107,8 @@ export function compareWithSimV4(config: ParityConfig, ours: Metrics, sim: SimV4
 }
 
 export function parityMatchup(config: ParityConfig): Matchup {
-  return { scenario: config.scenario, board: PARITY_BOARD, profiles: { A: SIM_PROFILES[config.modes.A], B: SIM_PROFILES[config.modes.B] } }
+  // sim v4 had no range rules (D-31): parity plays without them, on the data `simEquivalentData` gives.
+  return { scenario: config.scenario, board: PARITY_BOARD, profiles: { A: SIM_PROFILES[config.modes.A], B: SIM_PROFILES[config.modes.B] }, rangeRules: NO_RANGE_RULES }
 }
 
 export interface ParityResult {

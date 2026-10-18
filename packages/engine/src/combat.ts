@@ -20,7 +20,7 @@ import { loseHp } from './damage.ts'
 import { derive } from './derived.ts'
 import { rollDice } from './dice.ts'
 import { unitsOnLine } from './lineOfSight.ts'
-import { longRangeFrom, sightBlockingTiles } from './variantRules.ts'
+import { longRangeFrom, sightBlockingTiles } from './rangeRules.ts'
 import { distance } from './movement.ts'
 import { emit, rollD20, type Resolution } from './resolution.ts'
 import { combineRollMode, commandSources, rollModeSources, type RollMode, type RollModeSource } from './rollMode.ts'
@@ -241,7 +241,7 @@ export interface AttackPreview {
   readonly rollMode: RollMode
   /** Every source of advantage or disadvantage on this roll, before cancelling (rules §5.1). */
   readonly rollModeSources: readonly RollModeSource[]
-  /** Present when the variant rules' long-range disadvantage applies to this roll (phase 1.x ticket 08); never in the game. */
+  /** Present when the long-range disadvantage applies to this roll (rules §5.1, D-31): a roll from the distance in `RangeRules.longRangeDisadvantageFrom` or more. */
   readonly longRangeDisadvantage?: true
   /** Everything added to the d20: SEN mod + proficiency, plus `statusAttackBonuses`. */
   readonly attackBonus: number

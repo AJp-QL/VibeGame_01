@@ -20,7 +20,7 @@ import { BOARD_SIZE, isOnBoard, sameTile, tileName, type Skill, type Tile } from
 import type { ActionPreview, Rejection, RejectionCode } from './battle.ts'
 import { isFlying, previewAttack, spendAttackRoll } from './combat.ts'
 import { unitsOnLine } from './lineOfSight.ts'
-import { sightBlockingTiles } from './variantRules.ts'
+import { sightBlockingTiles } from './rangeRules.ts'
 import { distance } from './movement.ts'
 import { emit } from './resolution.ts'
 import { GENERIC, type SkillHandler, type SkillHandlers, type SkillResolution, type SkillUse } from './skillHandler.ts'

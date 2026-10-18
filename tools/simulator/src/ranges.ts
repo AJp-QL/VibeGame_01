@@ -37,7 +37,7 @@ export function runRangeSet(data: GameData, job: RangeJob): RangeSetResult {
     scenario: job.scenario,
     board: job.board,
     profiles: { A: profile, B: profile },
-    ...(applied.rules === undefined ? {} : { variantRules: applied.rules }),
+    rangeRules: applied.rules,
   }
   return { ...job, metrics: aggregate(simulateGames(applied.data, matchup, job.games, job.seed)) }
 }

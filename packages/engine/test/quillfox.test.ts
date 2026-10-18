@@ -15,7 +15,7 @@ import {
   type UnitId,
   type UnitStatus,
 } from '../src/index.ts'
-import { gameData, scenario1Battle, type BattleOptions } from './fixtures.ts'
+import { gameData, kitGameData, scenario1Battle, type BattleOptions } from './fixtures.ts'
 
 // Quillfox (B.m2, 1 Star) on e7 (forest): attack +3 (SEN mod +2, proficiency 1),
 // damage + SEN mod +2 from distance 2 (POW mod +1 at 1), Save DC (SEN) 11, Guard 11, HP 19.
@@ -539,7 +539,7 @@ describe('Replay records and replays Quillfox skills', () => {
       diceSeed: '0123456789abcdef',
       preset: { tiles: { A: tiles('A'), B: tiles('B') }, firstSide: 'B' },
     } as const
-    const start = replayBattle(recordReplay(header, gameData, []), gameData)
+    const start = replayBattle(recordReplay(header, kitGameData, []), kitGameData)
     if (!start.ok) throw new Error('replay failed')
     const actions: Action[] = []
     let state = start.final
@@ -559,9 +559,9 @@ describe('Replay records and replays Quillfox skills', () => {
     play({ type: 'endTurn' })
     play({ type: 'endTurn' })
     play(skill('B.m2', 'long_shot', 'A.m2'))
-    const replay = recordReplay(header, gameData, actions)
-    const first = replayBattle(replay, gameData)
-    const second = replayBattle(JSON.parse(JSON.stringify(replay)), gameData)
+    const replay = recordReplay(header, kitGameData, actions)
+    const first = replayBattle(replay, kitGameData)
+    const second = replayBattle(JSON.parse(JSON.stringify(replay)), kitGameData)
     if (!first.ok || !second.ok) throw new Error('replay failed')
     expect(first.final).toEqual(state)
     expect(second.final).toEqual(first.final)

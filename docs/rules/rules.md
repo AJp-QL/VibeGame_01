@@ -43,12 +43,14 @@ decision log แถววันที่ 2026-10-14 > PRD > rules v4 > v3 > v2 >
           a  b  c  d  e  f  g
 แถว 1:    .  .  F  .  W  .  .
 แถว 2:    .  M  .  .  .  D  .
-แถว 3:    W  .  .  L  .  .  F
+แถว 3:    W  .  M  L  M  .  F
 แถว 4:    .  F  .  K  .  F  .
-แถว 5:    F  .  .  L  .  .  W
+แถว 5:    F  .  M  L  M  .  W
 แถว 6:    .  D  .  .  .  M  .
 แถว 7:    .  .  W  .  F  .  .
 ```
+
+ภูเขา 4 ช่องบนแถว 3 และ 5 (c3, e3, c5, e5) เพิ่มใน phase 1.x ticket 09 (D-31) เพราะภูเขาบัง line of sight (§7.2) Shallows ก็ได้ภูเขาเพิ่ม 4 ช่องเป็นคู่ที่หมุน 180° แล้วเหมือนเดิม (d3, d5, b4, f4)
 
 Board ที่ 2 ของ phase 1 ยังไม่ได้ออกแบบ (ต้องสมมาตรเมื่อหมุน 180 องศาและต่างจาก Crossroads ชัดเจน) จะอยู่ใน `data/boards/`
 
@@ -147,6 +149,9 @@ engine คำนวณค่าเหล่านี้จาก stat, species, 
 | ผู้โจมตีติด Off-balance | disadvantage |
 | Command แบบ advantage (§16) | advantage (ยกเว้นกรณี §5.3) |
 | เป้าเป็น Tamer ที่ได้รับการป้องกัน (§9) | disadvantage |
+| ระยะจากผู้โจมตีถึงเป้าตั้งแต่ 4 ช่อง (D-31) | disadvantage |
+
+ระยะ 4 ขึ้นไปวัดจากผู้โจมตีถึงเป้าแต่ละตัว (Burst นับทีละเป้า เป้าที่อยู่ขอบพื้นที่ 3x3 อาจไกลถึง 4) ใช้กับ attack roll เท่านั้น skill แบบ save ไม่มี attack roll จึงไม่โดน
 
 ### 5.2 กฎการซ้อน [v1, PRD]
 - advantage = ทอย d20 2 ลูกเอาค่าสูง, disadvantage = ทอย 2 ลูกเอาค่าต่ำ
@@ -205,7 +210,7 @@ engine คำนวณค่าเหล่านี้จาก stat, species, 
 
 ### 7.2 สิ่งที่บัง
 - Unit ทุกตัว (ทั้งพวกเดียวกันและศัตรู) ที่ยืนบนช่องที่เส้นผ่าน โดยไม่นับช่องของผู้ใช้และช่องของเป้า
-- terrain ไม่บัง
+- terrain ภูเขา (mountain) บัง: ช่องภูเขาที่เส้นผ่าน (ไม่นับช่องของผู้ใช้และช่องของเป้า) บังเหมือน Unit ผู้ใช้ที่ยืนบนภูเขาและเป้าที่ยืนบนภูเขาจึงไม่ถูกบังด้วยช่องของตัวเอง terrain อื่นไม่บัง [D-31] ผู้โจมตีที่ Flying มองข้ามทั้ง Unit และภูเขา (§7.1) ข้อความปฏิเสธเป็น `no-line-of-sight` โดยไม่มี Unit ที่บัง
 
 ### 7.3 อัลกอริทึมเส้น (ต้องตรงกับ sim.py และ docs/playtest/board.py)
 ใช้ Bresenham แบบ integer ล้วน คำนวณ **จากช่องของผู้ใช้ (start) ไปช่องของเป้า (end)** เสมอ เส้นนี้ไม่สมมาตร ผลของ A → B อาจต่างจาก B → A (ดู D-01)
@@ -433,13 +438,13 @@ Tamer ที่ได้รับการป้องกันยังถู�
 | Shield Bash | Tidewall (Guardian) | Minor | 1 | กายภาพ | 2d6 และผลักเป้า 1 ช่องเมื่อโดน |
 | Counter | Tidewall (Guardian) | Minor | ตัวเอง | ไม่ทอย | Countering |
 | Pincer Guard | Tidewall | Passive | - | - | counterattack ใช้ 2d8 แทน 1d8 |
-| Element Bolt | Wispling (Caster) | Minor | 4 | ธาตุ | 1d8 |
+| Element Bolt | Wispling (Caster) | Minor | 3 | ธาตุ | 1d8 |
 | Burst | Wispling (Caster) | Major | 3 (ช่องกลางของพื้นที่ 3x3) | ธาตุ ทอยแยกทุกเป้า | 1d6 ศัตรูสูงสุด 2 ตัวที่ผู้ใช้เลือก ไม่โดนพวกเดียวกัน |
 | Hex | Wispling (Caster) | Major | 3 | save SPI | Weakened 2 |
 | Blink | Wispling | Minor | 2 | ไม่ทอย | ใช้แทน Move: เทเลพอร์ต ไม่ใช้ Action |
-| Long Shot | Quillfox (Ranger) | Minor | 4 | กายภาพ | 1d8 |
-| Pin | Quillfox (Ranger) | Major | 4 | กายภาพ | 1d6 + Pin (save VIT) |
-| Mark | Quillfox (Ranger) | Minor | 5 | กายภาพ (ไม่มี damage) | Marked 1 เมื่อโดน |
+| Long Shot | Quillfox (Ranger) | Minor | 3 | กายภาพ | 1d8 |
+| Pin | Quillfox (Ranger) | Major | 3 | กายภาพ | 1d6 + Pin (save VIT) |
+| Mark | Quillfox (Ranger) | Minor | 4 | กายภาพ (ไม่มี damage) | Marked 1 เมื่อโดน |
 | Camouflage | Quillfox | Minor | ตัวเอง | ไม่ทอย | Hidden ขณะยืนในช่องป่า ไม่ใช้ Action และ Move (1 ครั้งต่อ activation) |
 
 รายละเอียดและ ruling ราย skill:
@@ -462,7 +467,7 @@ Tamer ที่ได้รับการป้องกันยังถู�
   - ต้องมีเป้าอย่างน้อย 1 ตัวจึงใช้ได้
 - **Hex**: Weakened 2 ใช้ §8.1
 - **Blink** [v1, PRD, sim; ดู D-13]: ใช้แทน Move ของ activation นั้น (ใช้แล้ว Move ไม่ได้ และถ้าใช้ Move แล้ว Blink ไม่ได้) ไม่ใช้ Action เทเลพอร์ตไปช่องว่างใดก็ได้ที่ระยะ 1 ถึง 2 จากช่องเดิม ไม่สนใจ Unit ที่ขวาง ระยะ Blink คงที่ 2 ไม่ได้รับ +1 จาก Command หรือ Aquatic ใช้ได้แม้ติด Pin
-- **Long Shot**: 1d8 + SEN mod ที่ระยะ 2 ขึ้นไป (POW mod ถ้าใช้ที่ระยะ 1) ระยะ 4 [v2, v4, DL]
+- **Long Shot**: 1d8 + SEN mod ที่ระยะ 2 ขึ้นไป (POW mod ถ้าใช้ที่ระยะ 1) ระยะ 3 [v2, v4, DL; เดิม 4, D-31]
 - **Pin**: 1d6 + damage mod ตามระยะ แล้ว Pin ตาม §10.5 ข้อ 4
 - **Mark** [v1, sim; ดู D-22]: เป็น attack roll กายภาพเทียบ Guard ไม่ทำ damage โดนแล้วเป้าติด Marked 1 เพราะเป็น attack roll จึงทำให้ Hidden ของผู้ใช้หลุด, ใช้ Off-balance และผล Command, ทำให้เป้าที่ Countering ในระยะ 1 counter ได้ และได้ disadvantage จากการป้องกัน Tamer
 - **Camouflage** [v1, PRD; เปลี่ยน 2026-10-16 ticket 27, ดู D-18 และ D-28]: skill ฟรี ไม่ใช้ Action และไม่ใช้ Move Unit ใช้ได้ไม่เกิน 1 ครั้งต่อ activation ณ จุดใดก็ได้ใน activation (ก่อนหรือหลัง Move, ก่อนหรือหลัง Action, หลังขั้นถอยของ Hit and Run) ขณะยืนบนช่องป่า ได้ Hidden (§8.2) กติกาอื่นของ Camouflage และ Hidden คงเดิม: ใช้ได้เฉพาะบนช่องป่า, Hidden หลุดเมื่อ Unit ทอย attack roll ใดๆ หรืออยู่บนช่องที่ไม่ใช่ป่า และตรวจตอนจบทุก Turn เพราะ attack roll ทำให้ Hidden หลุด ลำดับที่คุ้มคือทำ Action (Long Shot, Pin หรือ Mark) ก่อนแล้วจึง Camouflage
@@ -741,6 +746,7 @@ sim.py ใช้ `random.Random` ดึงลูกเต๋าให้ AI ต�
 - **D-28**: ตัดสิน 2026-10-16 (ticket 27, ผู้ใช้เลือกทางเลือก A ของ ticket 19): Camouflage ไม่ใช้ Action และ Move (§15.1) ผลต่อ simulator: docs/balance/ticket-27-camouflage.md
 - **D-29**: ตัดสิน 2026-10-17 (playtest v0.1.5, ticket 01 ของ phase 1.x): Inspiration เสนอเฉพาะเมื่อ attack roll ของฝั่งตัวเองพลาด (รวม Mark, ทุกเป้าของ Burst, counterattack) หรือ save ของฝั่งตัวเองไม่ผ่าน; initiative ตามเดิม (§18) ผลต่อ simulator: ไม่มี (ผู้เล่นเท่านั้นที่ถูกถาม AI ตัดสินจากผลที่เห็น) ENGINE_VERSION 0.9.0 → 0.10.0
 - **D-30**: ตัดสิน 2026-10-17 (playtest v0.1.5, ticket 05 ของ phase 1.x): Undo ถึงจุดปลอดภัยของ Turn ตัวเอง (§17.5) ผลต่อ simulator: ไม่มี (AI ไม่ใช้ Undo) ไม่ขยับ ENGINE_VERSION (session ล้วน)
+- **D-31**: ตัดสิน 2026-10-18 (phase 1.x ticket 08/09, ผู้ใช้เลือกชุด a+b+c หลังรายงาน docs/balance/ticket-08-range-experiments.md): (a) ระยะ Long Shot, Element Bolt, Pin 4 → 3 และ Mark 5 → 4 (data); (b) attack roll จากระยะ 4 ขึ้นไปได้ disadvantage (§5.1); (c) ภูเขาบัง line of sight (§7.2) และ Board เพิ่มภูเขาอย่างละ 4 ช่อง (§2.2) ผลต่อ simulator: อยู่นอก sim-equivalent layer (sim v4 ไม่มี) ENGINE_VERSION 0.10.0 → 0.11.0 รายงาน: docs/balance/ticket-09-range-rules.md
 
 | รหัส | ประเด็น | แหล่งที่กำกวมหรือขัด | ที่ตัดสิน | ผลกระทบ |
 |---|---|---|---|---|
@@ -774,6 +780,7 @@ sim.py ใช้ `random.Random` ดึงลูกเต๋าให้ AI ต�
 | D-28 | Camouflage ใช้ Action ไหม | v1, PRD ให้ Camouflage เป็น skill Minor ที่ใช้เป็น Action (sim v4 ก็เช่นกัน); ticket 19 พบว่า Camouflage แทบไม่ถูกใช้ (≤ 0.015 ครั้งต่อ Battle) เพราะต้องเสีย Long Shot ของ Quillfox | skill ฟรี: ไม่ใช้ Action และ Move, ไม่เกิน 1 ครั้งต่อ activation ณ จุดใดก็ได้ใน activation, ยังเป็น Minor (ไม่มี cooldown จึงใช้ได้ทุก activation), ใช้แล้วนับเป็นการเริ่ม activation (นับในข้อจำกัด 2 จาก 3 Unit) และใช้ไม่ได้อีกเมื่อ activation จบ, Taunted (§14.3) บังคับแค่ Move และ Action จึงไม่ห้าม Camouflage [ใหม่ ticket 27; การเทียบผลกับ sim v4 (sim-equivalent) ยังใช้ Camouflage เป็น Action แบบ sim] | ความถี่ของ Camouflage, "ยิงแล้วซ่อน" ของ Quillfox |
 | D-29 | Inspiration หลังทอยโดน | v1, v2, D-10: เสนอทุกครั้งที่ฝั่งตัวเองทอย d20 แม้ผลดี; playtest v0.1.5: 6 จาก 7 คำถามมาหลังทอยโดนเอง ผู้เล่นต้องตอบคำถามที่ไม่มีเหตุให้ใช้ | เสนอเฉพาะ attack roll ที่พลาดและ save ที่ไม่ผ่าน; initiative ฝั่งที่แพ้เหมือนเดิม; ไม่ถามซ้ำกับผลที่ทอยใหม่ | จำนวนจุดหยุดรอใน Replay ลดลง; ผู้เล่นทอยใหม่หา critical หลังโดนไม่ได้ |
 | D-30 | ผู้เล่นเปลี่ยนใจกลาง Turn | playtest v0.1.5: Move แล้วเปลี่ยนใจไม่ได้ ต้องเริ่ม Battle ใหม่; ทอยลูกเต๋าแล้วย้อนไม่ได้ (กันเลือกผล) | Undo ถึงจุดปลอดภัย = ต้น Turn หรือหลัง action ล่าสุดที่ทอยลูกเต๋าหรือตอบการทอย แล้วแต่อันไหนมาทีหลัง เฉพาะฝั่งที่เล่นอยู่ใน Turn ตัวเอง | ผู้เล่นลองเดินได้ แต่ลูกเต๋าที่ทอยแล้วถาวร; Replay เก็บ Undo (ticket 06) |
+| D-31 | ระยะ skill ไม่เข้ากับขนาด Board 7x7 | playtest v0.1.5: ระยะ 4 ถึงเกือบทุกช่อง ตำแหน่งไม่มีผล; ticket 08 วัด 3 ทางแยกกันและผสม (สุดท้ายผู้ใช้เลือกใช้ทั้งสาม) | ระยะสั้นลง (Long Shot, Element Bolt, Pin 3; Mark 4); disadvantage ที่ระยะ 4 ขึ้นไป; ภูเขาบัง line of sight พร้อมภูเขาเพิ่ม 4 ช่องต่อ Board | Turn ก่อนโจมตีครั้งแรกสูงขึ้นเล็กน้อยเฉพาะ Crossroads; Burst ที่ขอบพื้นที่อาจโดน disadvantage |
 
 ---
 
