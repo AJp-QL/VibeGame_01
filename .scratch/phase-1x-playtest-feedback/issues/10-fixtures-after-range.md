@@ -11,3 +11,7 @@
 - [ ] visual fixtures บันทึกใหม่ด้วย engine และ data ปัจจุบัน baseline ตรวจด้วยตาทุกภาพ ภาพที่เปลี่ยนมีภาพก่อน/หลังใน PR
 - [ ] ข้อความของกติกาใหม่ (ถ้ามี) อยู่ใน strings ของ web มี text test; terrain ใหม่ (ถ้ามี) มีสีและสัญลักษณ์บน Board และใน legend
 - [ ] CI เขียวทั้งสาม job ไม่มีคำเตือน fixtures stale
+
+## Comments
+
+- จาก review PR #34 (2026-10-18): disadvantage ระยะไกล (ระยะ 4 ขึ้นไป, D-31) **ไม่อยู่ใน** `AttackPreview.rollModeSources` แต่อยู่ใน flag แยก `AttackPreview.longRangeDisadvantage?: true` (`rollMode` คิดรวมแล้ว) UI ที่แสดงเหตุผลของ advantage/disadvantage ต้องอ่าน flag นี้ด้วย ไม่งั้นการทอยที่เสีย disadvantage จะแสดงเหตุผลไม่ครบ ภูเขาที่บัง line of sight มาทาง `blockedTargets` ตามเดิม Unit ที่บินมองข้ามภูเขาได้ ticket 27 แก้ doc ของ engine ให้ตรง
