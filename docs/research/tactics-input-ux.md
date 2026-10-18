@@ -17,8 +17,8 @@
 
 ## Summary
 
-- **ทุกเกมที่ตรวจไม่ให้การแตะบน Board ครั้งเดียวทำ action ที่ย้อนไม่ได้** ยกเว้นการลากของ FEH ที่ปล่อยนิ้วแล้วโจมตีเลย และแหล่งปี 2017 บอกว่าเกมมี setting ให้ถามยืนยันได้ XCOM: Enemy Unknown บน iPad ใช้แตะซ้ำหรือปุ่มยืนยัน และผู้วิจารณ์ยังเล่าว่าเคยส่งทหารผิดช่องตอนนิ้วเลื่อนไปหาปุ่ม หลักที่ใช้ได้กับเราคือแตะเลือกได้กี่ครั้งก็ได้ แต่การทำจริงต้องผ่านปุ่มยืนยันที่อยู่นอก Board
-- **Target-first เป็นทางลัดที่เกมหลักใช้กันมาก**: FEH ลาก Unit ไปวางบนศัตรู Fire Emblem ตั้งแต่ Shadow Dragon (DS) "วาง Unit บนศัตรูที่โจมตีได้" แล้วข้ามการเลือกอาวุธไปที่ combat forecast เลย ผู้เล่นเลือกเป้า แล้วเกมหาช่องที่จะยืนโจมตีให้ เป็นวิธีที่ใช้การแตะน้อยที่สุด (ประมาณ 3 ครั้ง)
+- **เกมที่แหล่งบรรยายขั้นยืนยันไว้ (FEH, Fire Emblem, XCOM 2, XCOM: EU บน iPad) ไม่ให้การแตะบน Board ครั้งเดียวทำ action ที่ย้อนไม่ได้** ยกเว้นการลากของ FEH ที่ปล่อยนิ้วแล้วโจมตีเลย และแหล่งปี 2017 บอกว่าเกมมี setting ให้ถามยืนยันได้ (Advance Wars, Into the Breach, Sword of Convallaria, Langrisser: ขั้นยืนยัน **unconfirmed**) XCOM: Enemy Unknown บน iPad ใช้แตะซ้ำหรือปุ่มยืนยัน และผู้วิจารณ์ยังเล่าว่าเคยส่งทหารผิดช่องตอนนิ้วเลื่อนไปหาปุ่ม หลักที่ใช้ได้กับเราคือแตะเลือกได้กี่ครั้งก็ได้ แต่การทำจริงต้องผ่านปุ่มยืนยันที่อยู่นอก Board
+- **Target-first เป็นทางลัดที่เกมหลักใช้กันมาก**: FEH ลาก Unit ไปวางบนศัตรู Fire Emblem ตั้งแต่ Shadow Dragon (DS) "วาง Unit บนศัตรูที่โจมตีได้" แล้วข้ามการเลือกอาวุธไปที่ combat forecast เลย ผู้เล่นชี้เป้าแทนการเลือกคำสั่ง เป็นวิธีที่ใช้การแตะน้อยที่สุด (ประมาณ 3 ครั้ง) ส่วนว่าเกมเลือกช่องที่จะยืนโจมตีให้อย่างไรยัง **unconfirmed** (แหล่งบอกแค่ว่าข้ามการเลือกอาวุธ)
 - **Menu-after-move ยังเป็นพื้นฐาน** (Advance Wars: Fire/Wait/Capt, Fire Emblem: Attack/Item/Wait, Triangle Strategy, Tactics Ogre) แต่ใช้การกดราว 4–6 ครั้ง เกมมือถือรุ่นใหม่ (Sword of Convallaria, Langrisser Mobile) ย้ายเมนูนี้ไปเป็นแถบปุ่มถาวร (ability bar) คล้าย XCOM 2 ซึ่งตรงกับ TurnPanel ของเรา
 - **ระบายสีช่องตามสิ่งที่ทำได้เป็นมาตรฐาน**: ช่องเดินได้สีน้ำเงิน ระยะโจมตีสีแดง (Langrisser, Sword of Convallaria) Triangle Strategy เพิ่มสีม่วงให้ช่องที่อยู่ในระยะศัตรู และเส้นแดงจากศัตรูที่ตีช่องนั้นได้ Langrisser ติดไอคอนดาบที่ศัตรูที่โจมตีได้ คำถามของผู้ใช้จึงต้องการสองส่วน คือป้ายบน Board บอกว่าจากช่องนี้ทำอะไรได้ และทางลัดให้สั่งจากป้ายนั้น
 - **Forecast ขึ้นก่อนยืนยันเสมอเมื่อเลือกเป้าแล้ว** (FEH, Fire Emblem, XCOM 2, Triangle Strategy) การรวม Move + Action เป็นการยืนยันครั้งเดียวจึงต้องแสดงผลของ action หลังเดินก่อนกดยืนยัน
@@ -51,11 +51,12 @@
 | เกม | รายละเอียด | การกด (ประมาณ) | แหล่ง |
 |---|---|---|---|
 | XCOM 2 (PC) | คลิกขวาที่ช่องเพื่อเดิน (ขอบน้ำเงิน 1 action point, เหลือง dash) แถบ Actions แสดงทุก action ของทหาร คลิกไอคอนครั้งแรกเพื่อดูผล action ที่ทำไม่ได้เป็นสีเทาพร้อมตัวเลข cooldown และมีไอคอนแดง/เหลือง/เทาบอกจำนวนศัตรูในสายตา ใน shot HUD เห็นโอกาสโดน damage และ crit มีปุ่ม confirm กับ Tab เพื่อเปลี่ยนเป้า | (ทหารถูกเลือกอยู่แล้ว) ช่อง → ไอคอน → (Tab) → ยืนยัน = 3–4 | P [XCOM 2 manual (Feral)](https://www.feralinteractive.com/en/manuals/xcom2/latest/steam/) |
-| XCOM: Enemy Unknown (iPad) | สั่งเดินด้วยการแตะ แล้วยืนยันด้วยแตะซ้ำหรือปุ่มบนจอ เล็งด้วยการแตะเป้า ผู้วิจารณ์เล่าว่านิ้วที่เลื่อนไปหาปุ่มยืนยันทำให้ปลายทางเปลี่ยนจนทหารไปยืนที่โล่ง และอีกแหล่งบอกว่าการยืนยันขั้นที่สองช่วยลดคำสั่งพลาด | ช่อง → ยืนยัน → เป้า → ยืนยัน ≈ 4–5 (ลำดับยืนยันการยิง **unconfirmed**) | S [Shacknews](https://www.shacknews.com/article/79824/mobile-review-xcom-enemy-unknown), S [Digital Trends †](https://uat4.www.digitaltrends.com/?p=447242), S [GameBanshee †](https://gamebanshee.com/d9w) |
+| XCOM: Enemy Unknown (iPad) | สั่งเดินด้วยการแตะ แล้วยืนยันด้วยแตะซ้ำหรือปุ่มบนจอ เล็งด้วยการแตะเป้า ผู้วิจารณ์เล่าว่านิ้วที่เลื่อนไปหาปุ่มยืนยันทำให้ปลายทางเปลี่ยนจนทหารไปยืนที่โล่ง และอีกแหล่งบอกว่าการยืนยันขั้นที่สองช่วยลดคำสั่งพลาด | ช่อง → ยืนยัน → เป้า → ยืนยัน ≈ 4–5 (ลำดับยืนยันการยิง **unconfirmed**) | S [Shacknews](https://www.shacknews.com/article/79824/mobile-review-xcom-enemy-unknown), S [GameBanshee †](https://gamebanshee.com/d9w) |
 | Into the Breach | เดินแล้วกด Undo Move ได้จนกว่าจะยิง (ดู benchmark §2) แล้วเลือกอาวุธ → เลือกช่องเป้า เวอร์ชันมือถือ (Netflix, 2022) ออกแบบ touch interface ใหม่ให้ใช้บนมือถือได้ ขยายปุ่มและพับแผงข้อมูล ส่วนว่าแตะเป้าครั้งเดียวยิงเลยหรือต้องแตะยืนยันซ้ำยัง **unconfirmed** | mech → ช่อง → อาวุธ → เป้า (→ ยืนยัน?) ≈ 4–5 | S [Wikipedia](https://en.wikipedia.org/wiki/Into_the_Breach), S [TouchArcade: interview †](https://toucharcade.com/2022/08/08/into-the-breach-mobile-interview-subset-games-ftl-nintendo-switch-netflix-games-ipad-iphone/) |
 | Sword of Convallaria (มือถือ) | แถบปุ่มของตัวละคร: "Move" (เข้าหน้าเลือกช่อง), "Basic Attack/Skills" (แสดง cost), "Standby" (จบ action หลังเลือกช่องปลายทาง) ช่องเดินได้สีน้ำเงิน ระยะโจมตีไกลสุดสีแดง | Move → ช่อง → skill → เป้า (→ ยืนยัน?) ≈ 4–5 **unconfirmed** | S [GameWith](https://gamewith.net/sword-of-convallaria/69373) |
-| Langrisser Mobile | แตะ hero แล้วเห็นช่องเดิน (น้ำเงิน) กับระยะโจมตี (แดง) แตะเพื่อเดิน แตะช่องเดิมเพื่อย้อนการเดินได้ฟรี ศัตรูที่โจมตีได้มีไอคอนดาบ skill อยู่ที่ปุ่มมุมขวาล่าง | hero → ช่อง → ศัตรู (→ ยืนยัน?) ≈ 3–4 **unconfirmed** | P [Langrisser Encyclopedia](https://us-news.zlongame.com/game/888.jhtml), S [TouchArcade guide †](https://toucharcade.com/2019/01/25/langrisser-guide-tips-cheats-strategies-and-how-to-play-free-longer/) |
+| Langrisser Mobile | แตะ hero แล้วเห็นช่องเดิน (น้ำเงิน) กับระยะโจมตี (แดง) แตะเพื่อเดิน แตะช่องเดิมเพื่อย้อนการเดินได้ฟรี ศัตรูที่โจมตีได้มีไอคอนดาบ skill อยู่ที่ปุ่มมุมขวาล่าง | hero → ช่อง → ศัตรู (→ ยืนยัน?) ≈ 3–4 **unconfirmed** | P [Langrisser Encyclopedia](https://us-news.zlongame.com/game/888.jhtml) (ช่องน้ำเงิน/แดง), S beginner guide ในผลค้นหา † (แตะช่องเดิมเพื่อย้อน, ไอคอนดาบ, ปุ่ม skill มุมขวาล่าง; ไม่รู้แน่ว่ามาจากหน้าไหนในรายการ เช่น [TouchArcade guide](https://toucharcade.com/2019/01/25/langrisser-guide-tips-cheats-strategies-and-how-to-play-free-longer/), [Pocket Gamer](https://www.pocketgamer.com/langrisser-mobile/quick-beginner-tips-for-langrisser-mobile/)) |
 | War of the Visions FFBE | แตะช่องหรือลากเพื่อเดินในช่องสีน้ำเงิน ขั้นเลือก action/เป้า/ทิศ **unconfirmed** | **unconfirmed** | S [TouchTapPlay †](https://www.touchtapplay.com/war-of-the-visions-ffbe-guide-tips-tricks-for-beginners/) |
+| Mario + Rabbids Sparks of Hope | เดินอิสระในรัศมี ไม่มี grid ระหว่างเดินทำ dash ชนศัตรูและ team jump บนพวกได้ (action ที่สอดอยู่ในการเดิน) แล้วจึงใช้อาวุธ/ability เป็นเกม controller ไม่ใช่จอสัมผัส | n/a (controller) | S [Gamepressure](https://gamepressure.com/editorials/reviews/mario-rabbids-sparks-of-hope-review/z05d7), S [Retro Dodo †](https://retrododo.com/mario-rabbids-sparks-of-hope-battle-guide/) |
 
 **บนมือถือ**
 - ข้อดี: ปุ่มอยู่ที่เดิมทุกครั้ง หาเจอง่าย ทำงานเหมือนกันทั้ง desktop และมือถือ ไม่บังช่องบน Board ปุ่มที่ปิดใช้บอกเหตุผล (cooldown) ได้ ตรงกับ `SkillButtons.tsx`
@@ -147,6 +148,7 @@ FEH เป็นตัวอย่างหลัก (§3) ข้อดีคื
 | ข้อเสนอ: target-first + เปลี่ยนช่อง/skill | + แตะช่องอื่นที่ใช้ได้ และ/หรือ + แตะ chip skill | 4–5 | — |
 | **ข้อเสนอ: tile-first** | Unit → ช่อง (เงา + ป้าย) → ศัตรู/ปุ่ม action → ยืนยัน | **4** | — |
 | ข้อเสนอ: Act-then-Move | Unit → ศัตรูในระยะ (ช่องที่แนะนำ = ช่องเดิม) → ยืนยัน → ช่อง → "เดิน" | 5 | — |
+| ทางสำรอง ถ้าคงคำตัดสิน Out of Scope แบบเคร่ง (ไม่แสดง % ก่อนเดินจริง) | Unit → ศัตรูที่ติดป้าย (เงา, ไม่มี %) → "เดิน" → (เล็งต่อให้อัตโนมัติ, เห็น %) → ยืนยัน | 4 | — |
 
 Monster Tactics ตอนนี้ช้ากว่าเกม menu-after-move ทั่วไป 1–2 แตะ เพราะ Move preview เพิ่มขั้น "เดิน" และ action เลือกได้หลังเดินจริงเท่านั้น ข้อเสนอนี้ใช้การแตะเท่ากับ FEH แตะและ Fire Emblem วางบนศัตรู โดยยังคงขั้น preview ไว้
 
@@ -174,7 +176,7 @@ Monster Tactics ตอนนี้ช้ากว่าเกม menu-after-move
 
 ### 8.3 Tile-first: แตะช่องใน Move preview
 1. แตะช่องที่สว่างแล้วได้ Move preview เหมือนเดิม (เงา, Threat zone, ปุ่ม "เดิน")
-2. รายการ `reach` ในแผงเปลี่ยนจากข้อความเป็นปุ่ม: แต่ละศัตรูที่ถึงเป็นปุ่ม, Defend และ skill ที่ไม่ต้องมีเป้าศัตรู (Pack Howl, Counter, Cover/First Aid ที่เล็งพวก) เป็นปุ่มด้วยถ้าใช้ได้หลังเดิน
+2. รายการ `reach` ในแผงเปลี่ยนจากข้อความเป็นปุ่ม: แต่ละศัตรูที่ถึงเป็นปุ่ม ส่วน Defend และ skill ที่ไม่ใช่การโจมตี (Pack Howl, Counter, Cover/First Aid ที่เล็งพวก) เป็นปุ่มด้วยถ้าใช้ได้หลังเดิน **ข้อนี้ต้องมีข้อมูลเพิ่ม**: `MoveReach` วันนี้มีแค่ Basic Attack กับ skill โจมตีที่พร้อม ticket 23 ต้องเพิ่ม field แบบ additive ที่บอก action อื่นที่ถูกกติกาจากช่องเงา (คิดบนสำเนาเดียวกัน)
 3. **แตะศัตรูที่ติดป้ายบน Board ขณะมีเงา** = target-first โดยใช้ช่องเงาเป็นช่องที่จะโจมตีจาก (ถ้าตีจากช่องเงาไม่ได้ ใช้กฎ 8.2 ข้อ 1)
 4. ยืนยันเหมือน 8.2 ข้อ 4 ปุ่ม "เดิน" (เดินอย่างเดียว) ยังอยู่
 
@@ -182,6 +184,7 @@ Monster Tactics ตอนนี้ช้ากว่าเกม menu-after-move
 - session ส่ง action ของ engine ที่มีอยู่แล้วต่อกัน 2 ตัว คือ `move` (หรือ Blink) แล้วตามด้วย action ไม่มี action ใหม่ใน engine จึงไม่ขยับ ENGINE_VERSION Replay จึงมี 2 action เหมือนกับการเล่นทีละขั้น
 - ต้องผ่าน guard เปลี่ยน Unit ของ ticket 02 เหมือน `confirmMove`/`confirmAttack`
 - **Undo**: Move ไม่ทอยลูกเต๋า แต่การโจมตีทอย ดังนั้นหลังยืนยันรวมที่มีการโจมตี จุดปลอดภัยจะอยู่หลังการทอย และย้อนกลับไป "หลังเดิน" ไม่ได้ (§17.5) แผงยืนยันต้องบอกสั้นๆ ว่า "ทอยแล้วย้อนไม่ได้" ส่วน Move + Defend (ไม่ทอย) ยัง Undo ได้ทั้งคู่
+- **animation**: `BattleSnapshot.events` เก็บแค่ events ของ action ล่าสุด และ `revision` เพิ่มทีละ 1 ต่อ action (`dispatch` ใน `session.ts`) ถ้าส่ง Move กับโจมตีติดกันในรอบเดียว view อาจเห็นแค่ events ของการโจมตีและ Unit จะกระโดดไปช่องใหม่ ticket 23 ต้องทำให้ events ของทั้งสอง action ถึง view ตามลำดับ (field ใหม่แบบ additive หรือ snapshot ทีละขั้น) โดยไม่เปลี่ยนความหมายของ `events`
 - ถ้า engine ปฏิเสธ action ตัวที่สองหลังเดินแล้ว (ไม่ควรเกิด เพราะคิดจากสำเนาเดียวกัน) session ต้องย้อน Move นั้นเอง หรือ test ต้องพิสูจน์ว่าเกิดไม่ได้
 
 ### 8.5 กรณีตามกฎ
@@ -226,7 +229,9 @@ Monster Tactics ตอนนี้ช้ากว่าเกม menu-after-move
 1. **23 — Attack plans ใน session: target-first และยืนยัน Move + Action รวม** (`Owner: claude`, `Blocked by: 18`)
    ทุกอย่างเพิ่มแบบ additive ไม่เปลี่ยนความหมายของ `input` หรือคำสั่งเดิม (contract rule):
    - snapshot: `attackable` (ศัตรูที่ Unit ที่เลือกโจมตีได้ใน activation นี้ พร้อมบอกว่าต้องเดินหรือไม่), `attackFromTiles` (ช่องที่เดินได้ซึ่งโจมตีใครได้อย่างน้อย 1 ตัว), ต่อช่องบอก via Move/Blink และช่องที่ทำให้เสีย Action เพราะ Taunted
-   - คำสั่ง: `aimTarget(unit)` (target-first ใช้กฎ 8.2 กับช่องเงาถ้ามี), `chooseOrigin(tile)`, `choosePlanAttack(skill | null)`, `confirmPlan()` (ส่ง Move/Blink แล้วตามด้วย action)
+   - snapshot ของ Move preview: field ใหม่ที่บอก action ที่ไม่ใช่การโจมตีซึ่งถูกกติกาจากช่องเงา (Defend, Pack Howl, Counter, Cover, First Aid ฯลฯ) เพราะ `MoveReach` มีแค่การโจมตี
+   - คำสั่ง: `aimTarget(unit)` (target-first ใช้กฎ 8.2 กับช่องเงาถ้ามี), `chooseOrigin(tile)`, `choosePlanAction(…)` (เลือก action ใดก็ได้ของแผน ทั้งการโจมตีและ Defend/skill อื่น ไม่ใช่แค่การโจมตี), `confirmPlan()` (ส่ง Move/Blink แล้วตามด้วย action)
+   - events ของ Move และ action ถึง view ครบตามลำดับ (ดู 8.4 animation) ไม่เปลี่ยนความหมายของ `events`/`revision`
    - snapshot ของแผน: ช่องที่จะโจมตีจาก, ช่องอื่นที่เลือกได้, การโจมตีที่ถึง, `preview` (โอกาสโดน/damage จาก `previewAction` บนสำเนาหลังเดิน) และลำดับ action ที่จะส่ง
    - เกณฑ์: test เทียบแผนกับการเล่นจริงทุกช่องและทุกเป้า (แบบ test ของ ticket 03) รวม line of sight/Hidden, Taunted ทั้งสองกรณี, Pin, Blink, Command +1 และ Burst (ถ้าทำ); กฎเลือกช่องให้ผลเดิมทุกครั้ง; Undo หลัง Move + Defend ย้อนได้ทั้งคู่ หลัง Move + โจมตีย้อนข้ามการทอยไม่ได้; Replay มี 2 action; Hotseat ฝั่ง B; ไม่มีผลระหว่าง pending/Turn ของ AI; ENGINE_VERSION ไม่เปลี่ยน; README ของ session อัปเดต
    - helper ใน engine ที่ช่วยเรื่องความเร็วทำได้ ถ้าไม่เปลี่ยนผลของ action ใดก็ไม่ต้อง bump
@@ -239,7 +244,7 @@ Monster Tactics ตอนนี้ช้ากว่าเกม menu-after-move
 
 ## Open questions
 
-1. **ผู้ใช้ยืนยันได้ไหมว่า % ที่ขึ้นหลังเลือกเป้าจากช่องเงาไม่ขัดกับคำตัดสิน Out of Scope 2026-10-18**
+1. **ผู้ใช้ยืนยันได้ไหมว่า % ที่ขึ้นหลังเลือกเป้าจากช่องเงาไม่ขัดกับคำตัดสิน Out of Scope 2026-10-18** ("hit chance is shown when aiming an attack, not while previewing a move") ถ้าคงคำตัดสินแบบเคร่ง การยืนยันรวมจะแสดง % ก่อนยืนยันไม่ได้ ซึ่งขัดกับหลัก "forecast ก่อนยืนยัน" (Summary ข้อ 5) ทางสำรองคือเดินก่อนแล้วเล็งต่อ: Unit → ศัตรู → "เดิน" → ยืนยัน = 4 แตะสำหรับ target-first (แทน 3) และ tile-first = 5 (แทน 4) ยังเร็วกว่า main (6)
 2. **ช่องที่แนะนำของ target-first**: "เดินน้อยก้าวที่สุด" อาจพา Unit ไปยืนช่องอันตราย ก่อนมี ticket 11 จะมีแค่เงาให้ผู้เล่นตรวจเอง ต้อง playtest
 3. **FEH เลือกช่องโจมตีอย่างไรเมื่อลาก/แตะศัตรู** และชื่อ setting ยืนยันปัจจุบัน ยังไม่มีแหล่ง ถ้าจะลอกพฤติกรรมให้ตรง ควรหาแหล่งที่ใหม่กว่า 2017
 4. **Into the Breach, Sword of Convallaria และ Langrisser บนมือถือมีขั้นยืนยันการโจมตีหรือไม่** ยัง unconfirmed ทั้งหมด จำนวนแตะในตาราง §7 จึงเป็นค่าประมาณ
@@ -250,7 +255,7 @@ Monster Tactics ตอนนี้ช้ากว่าเกม menu-after-move
 **Primary**
 - Fire Emblem Heroes, Learn with Sharena (Nintendo): [Combat forecast 3460](https://new-guide.fire-emblem-heroes.com/en-GB/feh-3460.html)
 - Nintendo, [Shadow Dragon (NES) eManual](https://csassets.nintendo.com/noaext/image/private/t_KA_PDF/FESD_BL_NES_eManual_ENG) †
-- Advance Wars (GBA) manual via regvault: [manual](https://api.regvault.org/api/v1/game/gba/f4c2b2fda444dcec1274844b9a764d64/manual) †
+- Advance Wars (GBA) manual (Nintendo) ผ่าน mirror ของบุคคลที่สาม regvault: [manual](https://api.regvault.org/api/v1/game/gba/f4c2b2fda444dcec1274844b9a764d64/manual) †
 - Nintendo, [Tips for getting started with TRIANGLE STRATEGY](https://www.nintendo.com/us/whatsnew/tips-for-getting-started-with-triangle-strategy); [Debut Demo survey results](https://www.nintendo.com/us/whatsnew/triangle-strategy-debut-demo-survey-results-nintendo-switch)
 - Feral Interactive, [XCOM 2 manual](https://www.feralinteractive.com/en/manuals/xcom2/latest/steam/) (Action points, Actions, Controls)
 - Zlongame, [Langrisser Mobile Encyclopedia: Battle Rules](https://us-news.zlongame.com/game/888.jhtml)
@@ -262,10 +267,11 @@ Monster Tactics ตอนนี้ช้ากว่าเกม menu-after-move
 - Fire Emblem Wiki, [Combat forecast](https://www.fireemblemwiki.org/wiki/Combat_forecast)
 - Perfectly Nintendo, [Fire Emblem Heroes: plenty of details (อ้าง 4Gamer/IGN, 2017-01-31)](https://www.perfectly-nintendo.com/?p=185934); Time, [Fire Emblem Heroes preview (2017)](https://time.com/4638567/fire-emblem-heroes/) †; Twinfinite, [How to attack in FEH](https://twinfinite.net/guides/fire-emblem-heroes-attack-how-to/) † (403)
 - Gamer Guides, [Fire Emblem Fates: Chapter 1](https://www.gamerguides.com/fire-emblem-fates-birthright/guide/main-campaign/chapters-1-5/chapter-1-nohr) †
-- Shacknews, [Mobile review: XCOM: Enemy Unknown](https://www.shacknews.com/article/79824/mobile-review-xcom-enemy-unknown); Digital Trends, [XCOM: EU iOS review](https://uat4.www.digitaltrends.com/?p=447242) †; GameBanshee, [XCOM: EU iOS preview and interview](https://gamebanshee.com/d9w) †; AppSpy, [XCOM: EU iPad review](https://www.appspy.com/review/7551/xcom-enemy-unknown) †
+- Shacknews, [Mobile review: XCOM: Enemy Unknown](https://www.shacknews.com/article/79824/mobile-review-xcom-enemy-unknown); GameBanshee, [XCOM: EU iOS preview and interview](https://gamebanshee.com/d9w) †; AppSpy, [XCOM: EU iPad review](https://www.appspy.com/review/7551/xcom-enemy-unknown) †
 - Wikipedia, [Into the Breach](https://en.wikipedia.org/wiki/Into_the_Breach); TouchArcade, [Into the Breach mobile interview](https://toucharcade.com/2022/08/08/into-the-breach-mobile-interview-subset-games-ftl-nintendo-switch-netflix-games-ipad-iphone/) † (403)
 - GameWith, [Sword of Convallaria Battle System and UI Guide](https://gamewith.net/sword-of-convallaria/69373)
-- TouchArcade, [Langrisser guide](https://toucharcade.com/2019/01/25/langrisser-guide-tips-cheats-strategies-and-how-to-play-free-longer/) †
+- Langrisser Mobile beginner guides จากผลค้นหา (ไม่รู้แน่ว่าข้อความไหนมาจากหน้าไหน): TouchArcade, [Langrisser guide](https://toucharcade.com/2019/01/25/langrisser-guide-tips-cheats-strategies-and-how-to-play-free-longer/) †; Pocket Gamer, [Quick beginner tips](https://www.pocketgamer.com/langrisser-mobile/quick-beginner-tips-for-langrisser-mobile/) †
+- Gamepressure, [Mario + Rabbids Sparks of Hope review](https://gamepressure.com/editorials/reviews/mario-rabbids-sparks-of-hope-review/z05d7); Retro Dodo, [Sparks of Hope battle guide](https://retrododo.com/mario-rabbids-sparks-of-hope-battle-guide/) †
 - TouchTapPlay, [War of the Visions beginner guide](https://www.touchtapplay.com/war-of-the-visions-ffbe-guide-tips-tricks-for-beginners/) †
 - Nielsen Norman Group: [Touch Targets on Touchscreens](https://www.nngroup.com/articles/touch-target-size/), [Confirmation Dialogs Can Prevent User Errors](https://www.nngroup.com/articles/confirmation-dialog/), [Contextual Swipe](https://www.nngroup.com/articles/contextual-swipe/)
 - Steven Hoober, UXmatters, [How Do Users Really Hold Mobile Devices?](https://www.uxmatters.com/mt/archives/2013/02/how-do-users-really-hold-mobile-devices.php)
