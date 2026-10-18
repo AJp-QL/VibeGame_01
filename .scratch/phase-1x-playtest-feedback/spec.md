@@ -85,6 +85,10 @@
 46. As a player, I want the AI to play sensibly on 9x9 Boards, so that larger Boards are not trivially easy.
 47. As a designer, I want the simulator to report 9x9 next to 7x7 with the same metrics, so that I can compare Board sizes.
 
+### Threat zone overlay (added 2026-10-18)
+53. As a player, I want a button that shows the Threat zone on the whole Board, so that I can see at a glance where enemies can reach next Turn.
+54. As a player, I want to tap an enemy and see its move and attack range, so that I can plan around one dangerous enemy.
+
 ### Replay and analysis
 48. As a playtest analyst, I want the Replay to record Undo actions, so that I can see where players changed their mind.
 49. As a playtest analyst, I want Replay playback to skip undone actions by default with a toggle to show them, so that I can watch either the clean game or the full story.
@@ -104,11 +108,11 @@
 
 **Move preview (session, additive).** A new selection step between choosing a reachable tile and moving: the session holds a previewed tile (UI state, not game state) and the snapshot exposes it with, per skill that is ready, the enemies reachable from that tile and those blocked by line of sight, computed by the engine as if the Unit stood there (no state change, no dice). A confirm command performs the Move (or Blink) to the previewed tile. Tapping another reachable tile replaces the preview; tapping the Unit cancels it. The snapshot also carries the Threat zone count for the previewed tile (story 7) once ticket 5 lands; before that the field is absent.
 
-**Threat zone (engine helper + session field).** Rough estimate by agreement: for each enemy Unit still on the Board, it threatens a tile if Chebyshev distance from the enemy to the tile ≤ the enemy's walk range plus the longest range among its attack or save skills. Ignores cooldown, line of sight, Command, Taunt, Pin and other Units blocking. Shown only at the previewed tile, as a count. Built after the range experiments (its value depends on the ranges).
+**Threat zone (engine helper + session field).** Rough estimate by agreement: for each enemy Unit still on the Board, it threatens a tile if Chebyshev distance from the enemy to the tile ≤ the enemy's walk range plus the longest range among its attack or save skills. Ignores cooldown, line of sight, Command, Taunt, Pin and other Units blocking. Shown at the previewed tile as a count, and (decided 2026-10-18 after docs/research/tactics-benchmark.md) as a full-Board overlay the player can toggle, off by default. Tapping an enemy to see its own move and attack range is a separate, low-priority pair of tickets (21, 22). Built after the range experiments (its value depends on the ranges).
 
 **Switching Unit / end of Turn (session, additive).** The snapshot tells the UI whether starting another Unit would end a current activation that still has a legal Action (and which Unit), and lists Units that moved but have not used their Action, for the end-of-Turn warning. The dialog itself is UI.
 
-**Undo (engine + session).** Safe point = the later of the start of the current Turn and the last action whose events include a dice roll (attack roll, save, damage, heal, Bleed tick, initiative, Inspiration reroll), plus any decision that answered a roll (Inspiration use/decline). Undo is available only to the side whose Turn it is, only within that Turn, and only if at least one action lies after the safe point; it is hidden during the AI's Turn. Undoing removes the actions after the safe point and rebuilds state deterministically from the Replay (actions without dice do not consume the dice stream, so the rebuilt state is identical). The engine owns the meaning of an undo action inside a Replay; the session exposes whether Undo is available, what it would return to (start of Turn / after last roll), and the command.
+**Undo (engine + session).** Why Undo never crosses a roll: the Dice Seed fixes the whole dice sequence, so after a roll is undone the player would already know the next result and could replay the Turn to steer around bad rolls (commercial games treat rewinds past dice the same way: the sequence does not change; docs/research/tactics-benchmark.md). Safe point = the later of the start of the current Turn and the last action whose events include a dice roll (attack roll, save, damage, heal, Bleed tick, initiative, Inspiration reroll), plus any decision that answered a roll (Inspiration use/decline). Undo is available only to the side whose Turn it is, only within that Turn, and only if at least one action lies after the safe point; it is hidden during the AI's Turn. Undoing removes the actions after the safe point and rebuilds state deterministically from the Replay (actions without dice do not consume the dice stream, so the rebuilt state is identical). The engine owns the meaning of an undo action inside a Replay; the session exposes whether Undo is available, what it would return to (start of Turn / after last roll), and the command.
 
 **Replay format v2 (shared + engine).** formatVersion 2 adds an undo action recording that the actions since the safe point were withdrawn. Playback of a v2 file applies undo actions; the playback snapshot can skip undone actions (default) or show them. Format 1 files still open and play unchanged. Play stats gain an Undo count per Battle and an abandoned flag (additive to play-stats format).
 
@@ -131,13 +135,17 @@
 ## Out of Scope
 
 - Undo across a dice roll, into the opponent's Turn, or restarting with the same Dice Seed.
-- An AI-suggested best move, a full-Board Threat zone overlay, or an exact Threat zone (cooldown, line of sight).
+- An AI-suggested best move, or an exact Threat zone (cooldown, line of sight).
+- Showing hit % per target inside the Move preview (decided 2026-10-18: hit chance is shown when aiming an attack, not while previewing a move).
+- An automatic end-of-Turn option (decided 2026-10-18: conflicts with Undo; revisit after playtest).
 - Planning several Units at once before playing them.
 - Replacing 7x7 Boards; changing deployment rules other than scaling start zones.
 - Phase 2 features (campaign, ranch, Combine/Hybrid, Hall of Fame).
 - Blink balance (nearly unused; wait for playtest feedback).
 
 ## Further Notes
+
+- 2026-10-18: benchmark of commercial tactics games in docs/research/tactics-benchmark.md led to: ticket 20 (distance-rule variants, ranges 2–3, safe/threatened-tile metric; ticket 08 was already in progress), the full-Board Threat zone overlay (tickets 11, 12), tickets 21–22 (tap an enemy to see its range, low priority), and the Undo-reason text (ticket 07). Hit % in Move preview and auto end-of-Turn were declined.
 
 - Glossary updated in CONTEXT.md: Move preview, Threat zone, Undo, Start over; Board (size per Board) and Replay (includes undone actions).
 - The Threat zone is meaningful only after the range fix; with today's ranges almost every tile on a 7x7 Board shows every enemy.
