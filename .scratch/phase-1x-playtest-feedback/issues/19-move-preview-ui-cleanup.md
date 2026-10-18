@@ -4,7 +4,7 @@
 
 **What to build:** เก็บงานของ ticket 04 ตามที่ review PR #26 พบ หลังจาก session มี `BattleSnapshot.movePreview` และแตะ Unit ยกเลิกแค่ preview (ticket 18): Board อ่าน `snapshot.movePreview` ตรงจาก port แทนการ cast, ตรวจว่าแตะ Unit ขณะมีเงาแล้วเงาหายแต่ Unit ยังเลือกอยู่และช่องยังสว่าง (spec user story 3) และ hint "แตะ Unit เพื่อยกเลิก" ตรงกับพฤติกรรมนี้ รวมถึงเรื่องเล็กจาก review: ชื่อ field ใน BattleScene ใช้คำตาม CONTEXT.md (Move preview ไม่ใช่ "ghost move"), และ `packages/web/visual/README.md` อธิบาย flag `--disable-lcd-text` กับหน้า `move-preview` (ขนาดภาพ, threshold, รายการ capture `preview-*`)
 
-**Blocked by:** 18 — Move preview ใน session: แตะ Unit ยกเลิกแค่ preview และ movePreview ใน BattleSnapshot; ticket 23 (แก้ test re-select) ควร merge ก่อน
+**Blocked by:** 18 — Move preview ใน session: แตะ Unit ยกเลิกแค่ preview และ movePreview ใน BattleSnapshot; ticket 25 (แก้ test re-select) ควร merge ก่อน
 
 **Status:** ready-for-agent
 
