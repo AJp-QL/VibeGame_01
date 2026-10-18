@@ -60,10 +60,14 @@ for (const width of [1280, 360]) {
       })
       await tapTile(page, original)
       await expect(panel).toHaveCount(0)
+      expect(await page.evaluate(() => window.previewSession.getSnapshot().movePreview)).toBeNull()
       expect(await page.evaluate(() => window.previewSession.getSnapshot().revision)).toBe(before.revision)
-      // Re-select and confirm through the real controls.
-      await tapTile(page, original)
-      if (mode === 'blink') await page.getByRole('button', { name: /^Blink/ }).click()
+      // Older sessions also deselect the Unit; ticket 18 keeps it selected (and Blink aimed).
+      if (await page.evaluate(() => window.previewSession.getSnapshot().selectedUnit === null)) {
+        await tapTile(page, original)
+        if (mode === 'blink') await page.getByRole('button', { name: /^Blink/ }).click()
+      }
+      // Confirm through the real controls with either session behaviour.
       await tapTile(page, destination)
       await panel.getByRole('button', { name: mode === 'blink' ? 'Blink' : 'เดิน', exact: true }).click()
       expect(await page.evaluate(() => window.previewSession.getSnapshot().revision)).toBe(before.revision + 1)

@@ -4,7 +4,7 @@
 
 **What to build:** เกมจริงใช้ชุดแก้ระยะที่ผู้ใช้เลือกจากรายงานของ ticket 08: ตัวเลขใน data และ/หรือกติกาใหม่ (disadvantage ระยะไกล, terrain บัง line of sight) ตำแหน่งจึงมีผลต่อการเล่น และ balance ยังอยู่ในเป้า (spec: Range experiments, user stories 38, 41–43)
 
-**Blocked by:** 08 — ทดลองระยะ skill ใน simulator, 20 — ทดลองวิธีวัดระยะและระยะ 2–3 เพิ่ม และการเลือกชุดของผู้ใช้ (บันทึกใน decision log)
+**Blocked by:** 08 — ทดลองระยะ skill ใน simulator และการเลือกชุดของผู้ใช้ (บันทึกใน decision log) (2026-10-18: ไม่รอ ticket 20 แล้ว; 20 เป็นรอบปรับต่อบนชุดนี้)
 
 **Status:** in progress (PR open; one target open, see Comments)
 
@@ -19,4 +19,4 @@
 - The user chose **a+b+c** on 2026-10-18 (decision log). Applied: skill ranges in data, four extra mountains per Board in data, `RangeRules` on by default in the engine (`GAME_RANGE_RULES`), `ENGINE_VERSION` 0.11.0, rules §2.2, §5.1, §7.2, §15.1, D-31.
 - sim-equivalent layer: old ranges, plain Boards and `NO_RANGE_RULES` (`simEquivalentData`, `packages/ai/test/simParity/rebuild.ts`), so sim-v4 parity and the decision parity with sim.py still hold. Engine and session rule tests run on the kit as before ticket 09 (`fixtures.ts`, `kit.ts`); the new data and rules have their own tests.
 - **Open: the third target** (Turns before the first attack higher than before in *every* set) is met on Crossroads (S1 0.32 -> 0.44, S2 0.00 -> 0.20) but not on Shallows (S1 0.000 -> 0.002, S2 0.000), as the ticket 08 report said. The checkbox stays open; options are in `docs/balance/ticket-09-range-rules.md` (more sight blockers on Shallows as a measured variant, or the 9x9 Boards).
-- Blocked on Codex ticket 26 (one web unit test fails with the new mountains) before the PR can merge green. Ticket 10 refreshes the visual fixtures and explains the new rules in the UI.
+- Codex ticket 26 (the one web unit test the new mountains broke) landed in PR #42; ticket 10 refreshes the visual fixtures and explains the new rules in the UI.

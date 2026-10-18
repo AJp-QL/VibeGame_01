@@ -1,4 +1,4 @@
-# 23 — test เทียบภาพ Move preview: ขั้น "re-select" ต้องไม่พึ่งว่าแตะ Unit แล้วเลิกเลือกด้วย
+# 25 — test เทียบภาพ Move preview: ขั้น "re-select" ต้องไม่พึ่งว่าแตะ Unit แล้วเลิกเลือกด้วย
 
 **Owner:** codex
 
@@ -8,8 +8,15 @@
 
 **Blocked by:** None — ทำก่อนแล้วจึง merge ticket 18 (PR #29)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `move-preview.visual.ts` ผ่านทั้ง 6 กรณีกับ session ปัจจุบัน (main) และกับ session หลัง PR #29 (merge PR #29 เข้า branch ทดสอบ หรือรอ CI ของ PR #29 เขียวหลัง rebase)
-- [ ] ไม่แก้ภาพ baseline; `pnpm --filter @mt/web test:visual` ผ่านบน Linux
-- [ ] CI เขียวทั้งสาม job
+- [x] `move-preview.visual.ts` ผ่านทั้ง 6 กรณีกับ session ปัจจุบัน (main) และกับ session หลัง PR #29 (merge PR #29 เข้า branch ทดสอบ หรือรอ CI ของ PR #29 เขียวหลัง rebase)
+- [x] ไม่แก้ภาพ baseline; `pnpm --filter @mt/web test:visual` ผ่านบน Linux
+- [x] CI เขียวทั้งสาม job
+
+## Verification
+
+- Current `main`: all six Move preview cases passed without baseline changes.
+- Local integration of PR #29 (`06b6a65`, ticket 18): typecheck and all six Move preview cases passed against the same baselines. The integration merge is not included in this PR.
+- Full Linux visual suite: 27/27 passed with pinned Chromium; baseline images unchanged.
+- All three CI jobs passed: https://github.com/AJp-QL/VibeGame_01/actions/runs/39100657065
