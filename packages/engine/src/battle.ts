@@ -412,6 +412,12 @@ export interface Rejection {
   readonly message: string
   /** With `no-line-of-sight`: the Units on the line, in the order the line meets them. */
   readonly blockedBy?: readonly UnitId[]
+  /**
+   * With `no-line-of-sight`: the tiles on the line whose terrain blocks sight (rules §7.2),
+   * in line order; empty when no terrain does. Both this and `blockedBy` are set when
+   * Units and terrain stand in the way.
+   */
+  readonly blockedByTerrain?: readonly Tile[]
 }
 
 export type ApplyResult =

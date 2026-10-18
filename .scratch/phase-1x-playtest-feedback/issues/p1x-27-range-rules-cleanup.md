@@ -8,7 +8,7 @@
 
 **Blocked by:** None — P1X-09 merged แล้ว (PR #34)
 
-**Status:** done (PR pending). The `combat.ts` comment is fixed in P1X-28 (same lines); the rest is here.
+**Status:** done (PR #53). The `combat.ts` comment is fixed in P1X-28 (same lines); the rest is here.
 
 - [x] contract: engine export `type VariantRules = RangeRules` (มี `@deprecated` ชี้ไป `RangeRules`) และแถว decision log ว่า field `BattleSetup.variantRules` / `BattleState.variantRules` เปลี่ยนชื่อโดยไม่มี alias เพราะใช้แค่ tools ของ ticket 08 (ไม่มี consumer ใน session/battle/web) หรือเพิ่ม alias field ถ้าทำได้โดยไม่ซับซ้อน
 - [x] doc ของ `AttackPreview.rollMode` / `rollModeSources` บอกว่า net roll mode รวม `longRangeDisadvantage` ด้วย (ไม่เพิ่ม member ใหม่ใน union `RollModeSource` เพราะ switch ที่ครบทุกกรณีใน web จะพัง); README ของ engine และ session บอก flag นี้ (ticket 10 มี comment แล้วว่า UI ต้องแสดง flag นี้)

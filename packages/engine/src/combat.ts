@@ -19,7 +19,7 @@ import type { BattleEvent, Rejection } from './battle.ts'
 import { loseHp } from './damage.ts'
 import { derive } from './derived.ts'
 import { rollDice } from './dice.ts'
-import { unitsOnLine } from './lineOfSight.ts'
+import { LINE_OF_SIGHT_FROM, unitsOnLine } from './lineOfSight.ts'
 import { longRangeFrom, sightBlockingTiles } from './rangeRules.ts'
 import { distance } from './movement.ts'
 import { emit, rollD20, type Resolution } from './resolution.ts'
@@ -95,19 +95,20 @@ export function checkEnemyTarget(state: BattleState, user: UnitState, skill: Ski
     return { code: 'target-hidden', message: `${targetId} is Hidden and ${d} tiles from ${user.id}` }
   }
   // Rules §7.1: checked from distance 2; a Flying user sees over Units (a Flying target can still be blocked).
-  if (d >= 2 && !isFlying(user)) {
-    const blockers = unitsOnLine(state, user.tile, target.tile)
-    if (blockers.length > 0) {
-      const ids = blockers.map((u) => u.id)
+  if (d >= LINE_OF_SIGHT_FROM && !isFlying(user)) {
+    const ids = unitsOnLine(state, user.tile, target.tile).map((u) => u.id)
+    // Rules §7.2: terrain that blocks sight stops the line too (needs `rangeRules.sightBlockedBy`).
+    const terrain = sightBlockingTiles(state, user.tile, target.tile)
+    if (ids.length > 0) {
       return {
         code: 'no-line-of-sight',
         message: `${ids.join(', ')} ${ids.length === 1 ? 'stands' : 'stand'} between ${user.id} and ${targetId}`,
         blockedBy: ids,
+        blockedByTerrain: terrain,
       }
     }
-    // Variant rules (ticket 08): terrain on the line blocks it too; no Unit to name.
-    if (sightBlockingTiles(state, user.tile, target.tile).length > 0) {
-      return { code: 'no-line-of-sight', message: `Terrain blocks the line between ${user.id} and ${targetId}`, blockedBy: [] }
+    if (terrain.length > 0) {
+      return { code: 'no-line-of-sight', message: `Terrain blocks the line between ${user.id} and ${targetId}`, blockedBy: [], blockedByTerrain: terrain }
     }
   }
   return target
