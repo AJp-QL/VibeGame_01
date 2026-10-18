@@ -26,6 +26,7 @@ import {
   type BattleState,
   type DiceSource,
   type ReplayHeader,
+  type VariantRules,
 } from '../src/index.ts'
 
 const DATA_DIR = fileURLToPath(new URL('../../../data/', import.meta.url))
@@ -120,6 +121,8 @@ export interface BattleOptions {
   readonly elementWheel?: ElementWheel
   /** Board to play on instead of Crossroads (e.g. `arena`, 9x9). */
   readonly board?: Board
+  /** Experiment switches (phase 1.x ticket 08). */
+  readonly variantRules?: VariantRules
   readonly dice?: DiceSource
   /**
    * Which sides start with Inspiration. Default: neither, so tests about
@@ -158,6 +161,7 @@ function setup(dice: DiceSource | undefined, options: BattleOptions = {}) {
       teams: { A: withEdits(base.teams.A, 'A', options), B: withEdits(base.teams.B, 'B', options) },
     },
     board: options.board ?? gameData.boards.crossroads!,
+    ...(options.variantRules === undefined ? {} : { variantRules: options.variantRules }),
     species: gameData.species,
     skills: Object.fromEntries(
       Object.entries(gameData.skills).map(([id, skill]) => [id, { ...skill, ...options.skills?.[id] }]),

@@ -20,6 +20,7 @@ import { BOARD_SIZE, isOnBoard, sameTile, tileName, type Skill, type Tile } from
 import type { ActionPreview, Rejection, RejectionCode } from './battle.ts'
 import { isFlying, previewAttack, spendAttackRoll } from './combat.ts'
 import { unitsOnLine } from './lineOfSight.ts'
+import { sightBlockingTiles } from './variantRules.ts'
 import { distance } from './movement.ts'
 import { emit } from './resolution.ts'
 import { GENERIC, type SkillHandler, type SkillHandlers, type SkillResolution, type SkillUse } from './skillHandler.ts'
@@ -63,6 +64,9 @@ function checkCentre(state: BattleState, user: UnitState, skill: Skill, centre: 
         `${ids.join(', ')} ${ids.length === 1 ? 'stands' : 'stand'} between ${user.id} and ${tileName(centre)}`,
         ids,
       )
+    }
+    if (sightBlockingTiles(state, user.tile, centre).length > 0) {
+      return rejection('no-line-of-sight', `Terrain blocks the line between ${user.id} and ${tileName(centre)}`, [])
     }
   }
   return null

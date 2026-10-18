@@ -20,6 +20,7 @@ import { loseHp } from './damage.ts'
 import { derive } from './derived.ts'
 import { rollDice } from './dice.ts'
 import { unitsOnLine } from './lineOfSight.ts'
+import { longRangeFrom, sightBlockingTiles } from './variantRules.ts'
 import { distance } from './movement.ts'
 import { emit, rollD20, type Resolution } from './resolution.ts'
 import { combineRollMode, commandSources, rollModeSources, type RollMode, type RollModeSource } from './rollMode.ts'
@@ -103,6 +104,10 @@ export function checkEnemyTarget(state: BattleState, user: UnitState, skill: Ski
         message: `${ids.join(', ')} ${ids.length === 1 ? 'stands' : 'stand'} between ${user.id} and ${targetId}`,
         blockedBy: ids,
       }
+    }
+    // Variant rules (ticket 08): terrain on the line blocks it too; no Unit to name.
+    if (sightBlockingTiles(state, user.tile, target.tile).length > 0) {
+      return { code: 'no-line-of-sight', message: `Terrain blocks the line between ${user.id} and ${targetId}`, blockedBy: [] }
     }
   }
   return target
@@ -236,6 +241,8 @@ export interface AttackPreview {
   readonly rollMode: RollMode
   /** Every source of advantage or disadvantage on this roll, before cancelling (rules §5.1). */
   readonly rollModeSources: readonly RollModeSource[]
+  /** Present when the variant rules' long-range disadvantage applies to this roll (phase 1.x ticket 08); never in the game. */
+  readonly longRangeDisadvantage?: true
   /** Everything added to the d20: SEN mod + proficiency, plus `statusAttackBonuses`. */
   readonly attackBonus: number
   /** The part of `attackBonus` that statuses give (Rallied +1, rules §10.2). */
@@ -304,11 +311,13 @@ function criticalChanceOf(mode: RollMode): Chance {
 export function previewAttack(state: BattleState, plan: AttackPlan, isCounterattack = false): AttackPreview {
   const { attacker, target, skill } = plan
   const sources = rollModeSources(state, attacker, target, isCounterattack)
-  const mode = combineRollMode(sources)
+  const atDistance = distance(attacker.tile, target.tile)
+  const farFrom = longRangeFrom(state)
+  const longRange = farFrom !== undefined && atDistance >= farFrom
+  const mode = combineRollMode(sources, longRange)
   const bonuses = attackRollBonuses(state, attacker)
   const attackBonus = derive(attacker).attackBonus + bonuses.reduce((sum, b) => sum + b.bonus, 0)
   const defence = defenceOf(state, skill, target)
-  const atDistance = distance(attacker.tile, target.tile)
   const dice = damageDice(skill, attacker)
   const statusModifiers = damageDealtModifiers(state, attacker)
   const modifier = damageModifier(skill, attacker, atDistance) + statusModifiers.reduce((sum, m) => sum + m.bonus, 0)
@@ -320,6 +329,7 @@ export function previewAttack(state: BattleState, plan: AttackPlan, isCounteratt
     distance: atDistance,
     rollMode: mode,
     rollModeSources: sources,
+    ...(longRange ? { longRangeDisadvantage: true as const } : {}),
     attackBonus,
     statusAttackBonuses: bonuses,
     defence: defence.value,

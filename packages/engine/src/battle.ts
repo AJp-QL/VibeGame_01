@@ -81,6 +81,7 @@ import {
 import { countDownAttunedTiles, endCovers, type HealPreview, type TerrainPreview } from './tamerSkills.ts'
 import { tauntCheck } from './taunt.ts'
 import { activate, activationBlocker, NO_ACTIVATIONS, startTurn } from './turns.ts'
+import type { VariantRules } from './variantRules.ts'
 
 // ----------------------------------------------------------------- actions
 
@@ -438,6 +439,8 @@ export interface BattleSetup {
    * default). For rules tests about something else and tools; play leaves it out.
    */
   readonly inspiration?: Readonly<Record<Side, boolean>>
+  /** Experiment switches for the simulator (phase 1.x ticket 08). Off in play: leave it out. */
+  readonly variantRules?: VariantRules
   /**
    * Skip deployment and initiative: start Round 1 with the Units already on
    * these tiles (Tamer, Monster 1, Monster 2 per side; anywhere on the Board)
@@ -509,6 +512,7 @@ export function createBattle(setup: BattleSetup): BattleState {
   const roster = templates.map((unit) => ({ ...unit, hp: derive(unit).maxHp }))
 
   const deploying: BattleState = {
+    ...(setup.variantRules === undefined ? {} : { variantRules: setup.variantRules }),
     scenarioId: scenario.id,
     boardId: board.id,
     terrain: board.terrain,

@@ -186,10 +186,11 @@ export function commandCancelledOut(sources: readonly RollModeSource[]): boolean
  * out when a source with `cancellableByCommand: false` is present (rules
  * §5.3); other advantages (terrain, Marked) still cancel it.
  */
-export function combineRollMode(sources: readonly RollModeSource[]): RollMode {
+export function combineRollMode(sources: readonly RollModeSource[], longRange = false): RollMode {
   const counted = commandCancelledOut(sources) ? sources.filter((s) => s.kind !== 'command') : sources
   const advantage = counted.some((s) => s.effect === 'advantage')
-  const disadvantage = counted.some((s) => s.effect === 'disadvantage')
+  // `longRange`: the long-range disadvantage of the variant rules (ticket 08), one more disadvantage.
+  const disadvantage = longRange || counted.some((s) => s.effect === 'disadvantage')
   if (advantage === disadvantage) return 'normal'
   return advantage ? 'advantage' : 'disadvantage'
 }
