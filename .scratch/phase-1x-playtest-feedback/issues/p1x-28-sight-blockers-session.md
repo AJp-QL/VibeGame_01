@@ -10,7 +10,7 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** done (PR pending)
+**Status:** done (PR #49)
 
 - [x] rejection `no-line-of-sight` และ `BlockedTarget` มีช่อง terrain ที่บัง (ว่างเมื่อไม่มี); เมื่อ Unit และภูเขาขวางพร้อมกัน ได้ทั้งสองอย่าง; Flying ผู้โจมตีไม่ถูกบังเหมือนเดิม; test ใน engine และ session (Move preview ด้วย)
 - [x] code ของ rejection และผลรับ/ไม่รับของทุก action เหมือนเดิม (test เดิมผ่านโดยไม่แก้); `check-replays` ผ่าน; ENGINE_VERSION ไม่เปลี่ยน
