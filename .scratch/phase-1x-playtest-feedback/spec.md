@@ -89,6 +89,15 @@
 53. As a player, I want a button that shows the Threat zone on the whole Board, so that I can see at a glance where enemies can reach next Turn.
 54. As a player, I want to tap an enemy and see its move and attack range, so that I can plan around one dangerous enemy.
 
+### Action plan: move and act in fewer taps (added 2026-10-18)
+55. As a player, I want enemies my selected Unit can attack this activation (from its tile or after moving) marked with a sword badge, so that I see my options at a glance.
+56. As a player, I want to tap a badged enemy and have the game pick a tile to attack it from, with the ghost Unit there and the attack preview (hit chance, damage), so that move-and-attack takes 3 taps.
+57. As a player, I want the suggested tile to be my current tile when the enemy is already in range, so that attacking first and moving after (and Hit and Run) still work.
+58. As a player, I want to switch the attack-from tile or the skill before confirming, so that the suggestion never decides for me.
+59. As a player, I want to tap an enemy in the Move preview panel to attack it from the ghost tile, so that tile-first planning takes 4 taps.
+60. As a player, I want one confirm button to do the Move and then the Action, labelled that the result cannot be undone once dice are rolled, so that I commit knowingly.
+61. As a player, I want a tap on the Board never to commit anything, so that a mis-tap on a small tile is harmless.
+
 ### Replay and analysis
 48. As a playtest analyst, I want the Replay to record Undo actions, so that I can see where players changed their mind.
 49. As a playtest analyst, I want Replay playback to skip undone actions by default with a toggle to show them, so that I can watch either the clean game or the full story.
@@ -122,6 +131,8 @@
 
 **9x9 Boards (data, engine, AI, simulator, UI).** Board size becomes a property of each Board, not a game constant; start zones scale to the Board. New 9x9 Boards are added alongside 7x7 (players choose in the menu). AI and simulator handle any square size; the simulator report covers 9x9 next to 7x7. UI fits 9x9 in 375 px wide (tiles about 37 px) and needs new art/baselines (Codex).
 
+**Action plan (session, additive; decided 2026-10-18 from docs/research/tactics-input-ux.md).** With a Unit selected, the snapshot marks enemies it can attack this activation (from its tile or after a legal Move/Blink) and the tiles it could attack each from. Tapping such an enemy forms an Action plan: attack-from tile chosen by the session (current tile if in range; else fewest steps; then lowest Threat zone once ticket 11 is in; then tile order), the skill, and the attack preview (hit chance and damage; this is aiming an attack, so it does not conflict with "no hit % while browsing tiles"). The player may change tile or skill. Confirm sends the existing Move or Blink action and then the existing Action (no new engine action, ENGINE_VERSION unchanged), goes through the switch-Unit guard of ticket 02, and the view must receive the Move's events as well as the Action's so the Unit walks before it attacks. Non-attack actions reachable from a tile (Defend, support skills) are listed too. A tap on the Board never commits. Tickets 23 (session) and 24 (UI).
+
 **Text.** All new player-facing text lives in the web package's strings; the session carries no Thai text (ADR 0004). Camouflage description adds that adjacent enemies can still target a Hidden Unit.
 
 ## Testing Decisions
@@ -136,7 +147,7 @@
 
 - Undo across a dice roll, into the opponent's Turn, or restarting with the same Dice Seed.
 - An AI-suggested best move, or an exact Threat zone (cooldown, line of sight).
-- Showing hit % per target inside the Move preview (decided 2026-10-18: hit chance is shown when aiming an attack, not while previewing a move).
+- Showing hit % per target inside the Move preview while browsing tiles (decided 2026-10-18: hit chance is shown when aiming an attack, which includes the Action plan confirm card, not while previewing a move).
 - An automatic end-of-Turn option (decided 2026-10-18: conflicts with Undo; revisit after playtest).
 - Planning several Units at once before playing them.
 - Replacing 7x7 Boards; changing deployment rules other than scaling start zones.
@@ -144,6 +155,8 @@
 - Blink balance (nearly unused; wait for playtest feedback).
 
 ## Further Notes
+
+- 2026-10-18: touch input research in docs/research/tactics-input-ux.md led to the Action plan (enemy-first 3 taps, tile-first 4 taps, down from 6): tickets 23–24, a Threat zone tie-break in 11, badge-safe colours in 12, and the enemy-tap meaning in 22 (badged = target, unbadged = show range).
 
 - 2026-10-18: benchmark of commercial tactics games in docs/research/tactics-benchmark.md led to: ticket 20 (distance-rule variants, ranges 2–3, safe/threatened-tile metric; ticket 08 was already in progress), the full-Board Threat zone overlay (tickets 11, 12), tickets 21–22 (tap an enemy to see its range, low priority), and the Undo-reason text (ticket 07). Hit % in Move preview and auto end-of-Turn were declined.
 
