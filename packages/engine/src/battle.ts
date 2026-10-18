@@ -412,6 +412,12 @@ export interface Rejection {
   readonly message: string
   /** With `no-line-of-sight`: the Units on the line, in the order the line meets them. */
   readonly blockedBy?: readonly UnitId[]
+  /**
+   * With `no-line-of-sight`: the tiles on the line whose terrain blocks sight (rules §7.2),
+   * in line order; empty when no terrain does. Both this and `blockedBy` are set when
+   * Units and terrain stand in the way.
+   */
+  readonly blockedByTerrain?: readonly Tile[]
 }
 
 export type ApplyResult =
@@ -439,7 +445,7 @@ export interface BattleSetup {
    * default). For rules tests about something else and tools; play leaves it out.
    */
   readonly inspiration?: Readonly<Record<Side, boolean>>
-  /** The range rules (rules §5.1, §7.3, D-31). Leave it out to play with `GAME_RANGE_RULES`; the simulator gives `NO_RANGE_RULES` to measure the old rules. */
+  /** The range rules (rules §5.1, §7.2, D-31). Leave it out to play with `GAME_RANGE_RULES`; the simulator gives `NO_RANGE_RULES` to measure the old rules. */
   readonly rangeRules?: RangeRules
   /**
    * Skip deployment and initiative: start Round 1 with the Units already on

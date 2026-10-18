@@ -51,7 +51,7 @@ export {
   type UseSkillAction,
 } from './skills.ts'
 export type { SaveOdds, StatusBonus, StatusOdds } from './statuses.ts'
-export { lineOfSightTiles } from './lineOfSight.ts'
+export { LINE_OF_SIGHT_FROM, lineOfSightTiles } from './lineOfSight.ts'
 export { areaTiles } from './wisplingSkills.ts'
 export { COMMAND_RANGE, type CommandAction } from './command.ts'
 export type { HealPreview, TerrainPreview } from './tamerSkills.ts'
@@ -60,7 +60,7 @@ export type { DerivedValues } from './derived.ts'
 export { isInStartZone, START_ZONE_ROWS, startZoneRows, unitsVisibleTo } from './deployment.ts'
 export { distance, moveRangeNow } from './movement.ts'
 export { drewDice, undoPoint, type UndoLabel, type UndoPoint } from './undo.ts'
-export { GAME_RANGE_RULES, NO_RANGE_RULES, type RangeRules } from './rangeRules.ts'
+export { GAME_RANGE_RULES, NO_RANGE_RULES, type RangeRules, type VariantRules } from './rangeRules.ts'
 export { boardSizeOf, COMMAND_OPTIONS, ROUND_LIMIT } from './state.ts'
 export type {
   Activations,

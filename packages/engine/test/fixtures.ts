@@ -147,8 +147,8 @@ export interface BattleOptions {
   readonly board?: Board
   /** The range rules (default none: the kit as it was before ticket 09). */
   readonly rangeRules?: RangeRules
-  /** Play on the real data/ as shipped: its skill ranges, its Boards and the rules of the game (D-31), instead of the kit. */
-  readonly realRules?: true
+  /** Play on data/ as shipped, all three at once: its skill ranges, its Boards (with the extra mountains) and `GAME_RANGE_RULES` (D-31), instead of the kit. Each can still be overridden (`skills`, `board`, `rangeRules`). */
+  readonly shippedData?: true
   readonly dice?: DiceSource
   /**
    * Which sides start with Inspiration. Default: neither, so tests about
@@ -186,11 +186,11 @@ function setup(dice: DiceSource | undefined, options: BattleOptions = {}) {
       ...base,
       teams: { A: withEdits(base.teams.A, 'A', options), B: withEdits(base.teams.B, 'B', options) },
     },
-    board: options.board ?? (options.realRules === true ? gameData.boards.crossroads! : kitBoards.crossroads!),
-    rangeRules: options.rangeRules ?? (options.realRules === true ? GAME_RANGE_RULES : NO_RANGE_RULES),
+    board: options.board ?? (options.shippedData === true ? gameData.boards.crossroads! : kitBoards.crossroads!),
+    rangeRules: options.rangeRules ?? (options.shippedData === true ? GAME_RANGE_RULES : NO_RANGE_RULES),
     species: gameData.species,
     skills: Object.fromEntries(
-      Object.entries(options.realRules === true ? gameData.skills : kitSkills).map(([id, skill]) => [id, { ...skill, ...options.skills?.[id] }]),
+      Object.entries(options.shippedData === true ? gameData.skills : kitSkills).map(([id, skill]) => [id, { ...skill, ...options.skills?.[id] }]),
     ),
     statuses: Object.fromEntries(
       Object.entries(gameData.statuses).map(([id, status]) => [id, { ...status, ...options.statuses?.[id] }]),

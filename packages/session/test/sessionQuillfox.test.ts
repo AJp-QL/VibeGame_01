@@ -121,7 +121,7 @@ describe('BattleSession: Quillfox (ticket 10)', () => {
     s.input({ type: 'tapUnit', unit: 'A.m2' })
     s.chooseSkill('element_bolt')
     const snapshot = s.getSnapshot()
-    expect(snapshot.blocked).toEqual([{ unit: 'B.m2', tile: tileFromName('e7'), reason: 'target-hidden', blockedBy: [] }])
+    expect(snapshot.blocked).toEqual([{ unit: 'B.m2', tile: tileFromName('e7'), reason: 'target-hidden', blockedBy: [], blockedByTerrain: [] }])
     expect(snapshot.blockedTargets).toEqual([tileFromName('e7')])
     expect(snapshot.targets).not.toContainEqual(tileFromName('e7'))
     // Tapping it says why instead of dropping the selection.
@@ -142,7 +142,7 @@ describe('BattleSession: Quillfox (ticket 10)', () => {
     if (centre === undefined) throw new Error('expected a Burst centre next to e7')
     s.input({ type: 'tapTile', tile: centre })
     const snapshot = s.getSnapshot()
-    expect(snapshot.blocked).toContainEqual({ unit: 'B.m2', tile: e7, reason: 'target-hidden', blockedBy: [] })
+    expect(snapshot.blocked).toContainEqual({ unit: 'B.m2', tile: e7, reason: 'target-hidden', blockedBy: [], blockedByTerrain: [] })
     expect(snapshot.blockedTargets).toContainEqual(e7)
     expect(snapshot.targets).not.toContainEqual(e7)
     // Tapping it says why and keeps the centre.

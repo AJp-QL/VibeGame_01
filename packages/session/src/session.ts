@@ -58,6 +58,7 @@ import {
   type BattleReplayEntry,
   type BattleState,
   type CommandOption,
+  type Rejection,
   type RejectionCode,
   type SkillAvailability,
   type UndoLabel,
@@ -88,8 +89,15 @@ export interface BlockedTarget {
   readonly tile: Tile
   /** Why, from the engine's rejection. */
   readonly reason: 'no-line-of-sight' | 'target-hidden'
-  /** The Units on the line, from the engine's rejection (empty when Hidden). */
+  /** The Units on the line, from the engine's rejection (empty when Hidden or only terrain blocks). */
   readonly blockedBy: readonly UnitId[]
+  /**
+   * The tiles on the line whose terrain blocks sight (rules §7.2), from the engine's
+   * rejection; empty when none does (also when Hidden). Set together with `blockedBy`
+   * when both Units and terrain stand in the way. The session always sets it; the field
+   * is optional only so that code that builds a `BlockedTarget` itself keeps compiling.
+   */
+  readonly blockedByTerrain?: readonly Tile[]
 }
 
 /** What one attack option could reach from a previewed tile (Move preview). */
@@ -366,8 +374,19 @@ function blockedTargets(state: BattleState, unit: UnitId | null, skill: string |
     if (result.ok) return []
     const reason = result.rejection.code
     if (reason !== 'no-line-of-sight' && reason !== 'target-hidden') return []
-    return [{ unit: target.id, tile: target.tile, reason, blockedBy: result.rejection.blockedBy ?? [] }]
+    return [blockedTarget(target, reason, result.rejection)]
   })
+}
+
+/** One `BlockedTarget` out of the engine's rejection. */
+function blockedTarget(target: { readonly id: UnitId; readonly tile: Tile }, reason: BlockedTarget['reason'], rejection: Rejection): BlockedTarget {
+  return {
+    unit: target.id,
+    tile: target.tile,
+    reason,
+    blockedBy: rejection.blockedBy ?? [],
+    blockedByTerrain: rejection.blockedByTerrain ?? [],
+  }
 }
 
 /**
@@ -390,7 +409,7 @@ function blockedAreaTargets(
     if (result.ok) return []
     const reason = result.rejection.code
     if (reason !== 'no-line-of-sight' && reason !== 'target-hidden') return []
-    return [{ unit: target.id, tile: target.tile, reason, blockedBy: result.rejection.blockedBy ?? [] }]
+    return [blockedTarget(target, reason, result.rejection)]
   })
 }
 
