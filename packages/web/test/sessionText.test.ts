@@ -127,6 +127,8 @@ describe('Camouflage free skill text (ticket 28)', () => {
       elementWheel: data.elementWheel, dice: { seed: '0123456789abcdef' },
       preset: { tiles: { A: [t('a1')!, t('e4')!, t('c3')!], B: [t('g7')!, t('f3')!, t(quillfoxTile)!] }, firstSide: 'B' },
       inspiration: { A: false, B: false },
+      // Disable ticket 09's range rules for text tests; spread also accepts pre-09 BattleSetup.
+      ...{ rangeRules: {} },
     }))
   }
 
