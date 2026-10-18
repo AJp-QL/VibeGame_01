@@ -37,11 +37,12 @@ The engine's public interface, the types in `packages/shared`, and the `@mt/sess
 
 ## Workflow
 
-- Branches: Claude works on `claude/<ticket>-<slug>`, Codex on `codex/<…>`. Any other branch name fails the path check. Never push to `main` directly.
+- Ticket IDs carry the phase code: `P1X-24` in titles, `Blocked by:` lines, PR titles (`[P1X-24] …`) and commit messages; paths are lower case. Codes and file naming: `docs/agents/issue-tracker.md`.
+- Branches: ticket work is `claude/<code>-<NN>-<slug>` or `codex/<code>-<NN>-<slug>` (e.g. `claude/p1x-23-action-plan`), and the ticket file must exist; other Claude work is `claude/<research|spec|docs|chore>-<slug>` (status-only or close-ticket PRs are `chore`). The path check fails any other name. Never push to `main` directly.
 - Every change goes through a PR to `main`. **Do not merge unless CI is green** (all three jobs: build, path check, and Board visual regression). If the visual job shows the warning "Visual fixtures are stale", it is still green: the screenshots were not compared; the `Owner: codex` refresh ticket (see ENGINE_VERSION) covers it. The repo is GitHub Free + private, so there is no branch protection — this is an agreement, and whoever merges checks CI first.
 - Who merges: Claude merges its own PRs after green CI. Codex PRs are reviewed by Claude (`/code-review`) and merged by the human for now.
 - Cross-side work is two tickets: the engine/session ticket (`Owner: claude`) and the UI ticket (`Owner: codex`, `Blocked by:` the engine ticket).
-- Concurrency: several Claude sessions and Codex tasks may run in parallel, one ticket each. Every Claude session works in its **own git worktree** on its own `claude/<ticket>-<slug>` branch created from `origin/main` — never edit, switch branches or pull in the main checkout while others may be using it, and never commit with `git commit -a` there. Only start a ticket whose `Blocked by:` tickets are merged. Before starting, check which paths the in-progress tickets touch; when two tickets change the same files (e.g. the engine's attack resolution), the one that merges second merges `origin/main` into its branch and re-runs all checks before its PR. Avoid `pnpm-lock.yaml` changes in parallel. A session that spawns subagents still runs them one at a time.
+- Concurrency: several Claude sessions and Codex tasks may run in parallel, one ticket each. Every Claude session works in its **own git worktree** on its own ticket branch (see Branches) created from `origin/main` — never edit, switch branches or pull in the main checkout while others may be using it, and never commit with `git commit -a` there. Only start a ticket whose `Blocked by:` tickets are merged. Before starting, check which paths the in-progress tickets touch; when two tickets change the same files (e.g. the engine's attack resolution), the one that merges second merges `origin/main` into its branch and re-runs all checks before its PR. Avoid `pnpm-lock.yaml` changes in parallel. A session that spawns subagents still runs them one at a time.
 
 ## Commands
 
@@ -69,7 +70,7 @@ Run all of these before opening a PR and list them in the PR description.
 
 `ENGINE_VERSION` (`packages/engine/src/version.ts`) is bumped (0.x: minor, e.g. 0.8.0 → 0.9.0) in the same commit as any change that makes the same data + Dice Seed + actions produce a different result (state, events, dice order, accepted/rejected actions), including new actions and every rules ticket. Details: `packages/engine/README.md`. Only Claude touches it.
 
-Visual-test fixtures (`packages/web/visual/fixtures/`) pin `engineVersion` and `dataHash`, so a bump or a `data/` change makes them stale. In the same PR as the bump, the Claude ticket lists a follow-up `Owner: codex` ticket "refresh visual fixtures and baselines" (`Blocked by:` the rules ticket; model: ticket 29, done inside ticket 28). Codex regenerates with `visual:fixtures`, updates baselines on Linux with the pinned Chromium, and inspects every image.
+Visual-test fixtures (`packages/web/visual/fixtures/`) pin `engineVersion` and `dataHash`, so a bump or a `data/` change makes them stale. In the same PR as the bump, the Claude ticket lists a follow-up `Owner: codex` ticket "refresh visual fixtures and baselines" (`Blocked by:` the rules ticket; model: P1-29, done inside P1-28). Codex regenerates with `visual:fixtures`, updates baselines on Linux with the pinned Chromium, and inspects every image.
 
 ## Release
 

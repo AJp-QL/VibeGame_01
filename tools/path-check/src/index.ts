@@ -116,6 +116,74 @@ export function checkPaths(
   return { status: 'pass', owner, checked: changed.length }
 }
 
+/** Kinds of Claude branch that are not tied to a ticket (decision log 2026-10-18). */
+export const CLAUDE_BRANCH_KINDS = ['research', 'spec', 'docs', 'chore'] as const
+
+/**
+ * Phase 1 tickets were named before phase codes existed and keep their `NN-slug.md`
+ * file names; P1-NN means `.scratch/phase-1-battle-slice/issues/NN-*.md`. Every
+ * later phase names its files `<code>-NN-slug.md` (docs/agents/issue-tracker.md).
+ */
+const LEGACY_TICKET_DIRS: Readonly<Record<string, string>> = { p1: '.scratch/phase-1-battle-slice/issues/' }
+
+const TICKET_BRANCH = /^(claude|codex)\/(p\d+[a-z]*)-(\d{2,})-[a-z0-9][a-z0-9-]*$/
+const KIND_BRANCH = new RegExp(`^claude\\/(?:${CLAUDE_BRANCH_KINDS.join('|')})-[a-z0-9][a-z0-9-]*$`)
+
+export type BranchNameResult =
+  | { status: 'skipped'; reason: string }
+  | { status: 'pass'; branch: string; ticket: string | null }
+  | { status: 'fail'; reason: string }
+
+/** The ticket file a phase code + number refers to, from the repo's tracked files. */
+export function findTicketFile(code: string, number: string, ticketFiles: readonly string[]): string | null {
+  const legacy = LEGACY_TICKET_DIRS[code]
+  const wanted = (file: string) => {
+    const f = file.replace(/\\/g, '/').toLowerCase()
+    if (legacy !== undefined) return f.startsWith(legacy) && f.slice(legacy.length).startsWith(`${number}-`) && f.endsWith('.md')
+    return /^\.scratch\/[^/]+\/issues\/[^/]+\.md$/.test(f) && f.split('/').at(-1)!.startsWith(`${code}-${number}-`)
+  }
+  return ticketFiles.find(wanted) ?? null
+}
+
+/**
+ * Branch naming rule (decision log 2026-10-18): ticket branches are
+ * `claude/<code>-<NN>-<slug>` or `codex/<code>-<NN>-<slug>` and the ticket file
+ * must exist; other Claude branches are `claude/<research|spec|docs|chore>-<slug>`.
+ * Compared in lower case.
+ */
+export function checkBranchName(branch: string, ticketFiles: readonly string[], options: { isTag?: boolean } = {}): BranchNameResult {
+  const ref = parseRef(branch.trim())
+  if (options.isTag || ref.kind === 'tag') return { status: 'skipped', reason: `tag ${ref.name}` }
+  if (ref.name === 'main') return { status: 'skipped', reason: 'main branch' }
+  const name = ref.name.toLowerCase()
+  const forms =
+    'expected claude/<code>-<NN>-<slug> or codex/<code>-<NN>-<slug> for a ticket (e.g. claude/p1x-24-action-plan), ' +
+    `or claude/<${CLAUDE_BRANCH_KINDS.join('|')}>-<slug>`
+  const ticket = TICKET_BRANCH.exec(name)
+  if (ticket) {
+    const [, , code, number] = ticket as unknown as [string, string, string, string]
+    const file = findTicketFile(code, number, ticketFiles)
+    if (file === null) {
+      const where = LEGACY_TICKET_DIRS[code] !== undefined ? `${LEGACY_TICKET_DIRS[code]}${number}-*.md` : `.scratch/*/issues/${code}-${number}-*.md`
+      return { status: 'fail', reason: `branch "${ref.name}" names ticket ${code.toUpperCase()}-${number}, but no ticket file ${where} exists` }
+    }
+    return { status: 'pass', branch: ref.name, ticket: file }
+  }
+  if (KIND_BRANCH.test(name)) return { status: 'pass', branch: ref.name, ticket: null }
+  return { status: 'fail', reason: `branch "${ref.name}" does not follow the naming rule: ${forms}` }
+}
+
+export function formatBranchResult(result: BranchNameResult): string {
+  switch (result.status) {
+    case 'skipped':
+      return `branch name check skipped: ${result.reason}`
+    case 'pass':
+      return `branch name check passed: ${result.branch}${result.ticket ? ` (ticket ${result.ticket})` : ''}`
+    case 'fail':
+      return `branch name check failed: ${result.reason}`
+  }
+}
+
 /** Human-readable report for the CI log. */
 export function formatResult(result: CheckResult): string {
   switch (result.status) {

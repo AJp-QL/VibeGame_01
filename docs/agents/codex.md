@@ -40,15 +40,17 @@ Codex อ่าน `AGENTS.md` ที่ root ของ repo เองก่อ�
 
 ### 3. ชื่อ branch `codex/`
 
-CI ตรวจ path ตาม prefix ของ branch: PR จาก branch ที่ไม่ขึ้นต้นด้วย `codex/` (หรือ `claude/`) ไม่ผ่าน
+CI ตรวจชื่อ branch: งานของ Codex ต้องเป็น `codex/<code>-<NN>-<slug>` ตาม ID ของ ticket (เช่น `codex/p1x-24-action-plan-ui` สำหรับ P1X-24) และต้องมีไฟล์ ticket นั้นใน repo ชื่ออื่นไม่ผ่าน (decision log 2026-10-18, `docs/agents/issue-tracker.md`)
 - เอกสารทางการไม่มี setting สำหรับตั้ง prefix ของ branch ใน Codex cloud (ค้นแล้วไม่พบ 2026-10-16) ผู้ใช้ใน community รายงานว่า Codex cloud ตั้งชื่อ `codex/<คำอธิบาย>` เองและเปลี่ยนไม่ได้ (ไม่ใช่เอกสารทางการ: https://community.openai.com/t/branch-naming-is-there-any-way-to-set-it/1315157) ซึ่งตรงกับที่ CI ต้องการ
-- กันไว้: ใส่ในทุก task ว่า `Use a branch named codex/<ticket number>-<slug>.` และก่อน merge ตรวจว่า head branch ของ PR ขึ้นต้นด้วย `codex/` ถ้าไม่ใช่ ให้ Codex เปิด PR ใหม่จาก branch `codex/…`
+- กันไว้: ใส่ในทุก task ว่า `Use a branch named codex/<code>-<NN>-<slug> exactly.` และก่อน merge ตรวจชื่อ head branch ของ PR ถ้าไม่ตรง ให้ Codex push commit เดิมไป branch ชื่อที่ถูกแล้วเปิด PR ใหม่
 
 ### 4. สั่งงาน Codex
 
-prompt ตัวอย่าง (ticket แรก):
+prompt ตัวอย่าง (ใส่ ID ของ ticket ทุกครั้ง):
 
-> Do ticket `.scratch/phase-1-battle-slice/issues/24-split-app-tsx.md`. Follow `AGENTS.md` and `docs/agents/codex.md`. Use a branch named `codex/24-split-app-tsx`, run all checks, then open a PR to `main`.
+> Do ticket P1X-24: `.scratch/phase-1x-playtest-feedback/issues/p1x-24-action-plan-ui.md`. Follow `AGENTS.md` and `docs/agents/codex.md`. Use a branch named `codex/p1x-24-action-plan-ui` exactly, put `[P1X-24]` at the start of the PR title, run all checks, then open a PR to `main`.
+
+(ticket แรกของ Codex คือ P1-24 `.scratch/phase-1-battle-slice/issues/24-split-app-tsx.md` บน branch `codex/24-split-app-tsx` ก่อนมีกฎ ID)
 
 ### 5. หลัง Codex เปิด PR
 

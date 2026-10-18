@@ -1,12 +1,13 @@
 /**
  * CI entry point: `node tools/path-check/src/bin.ts --branch <name> --base <ref> [--tag]`
- * Diffs `<base>...HEAD` (merge base with the base branch, renames split into
- * delete + add so both paths are checked) and checks the changed files against
- * `.github/ownership.json`. Exit code 1 on failure.
+ * Checks the branch name (ticket ID or allowed kind, against the ticket files
+ * tracked at HEAD), then diffs `<base>...HEAD` (merge base with the base branch,
+ * renames split into delete + add so both paths are checked) and checks the
+ * changed files against `.github/ownership.json`. Exit code 1 on failure.
  */
 import { execFileSync } from 'node:child_process'
 import { parseArgs } from 'node:util'
-import { checkPaths, formatResult, loadOwnership } from './index.ts'
+import { checkBranchName, checkPaths, formatBranchResult, formatResult, loadOwnership } from './index.ts'
 
 const { values } = parseArgs({
   options: {
@@ -23,9 +24,12 @@ try {
   const map = loadOwnership(root)
   const skip = values.tag || values.branch === 'main'
   const files = skip ? [] : git('diff', '--name-only', '--no-renames', '-z', `${values.base}...HEAD`).split('\0')
+  const ticketFiles = git('ls-files', '-z', '--', '.scratch').split('\0')
+  const name = checkBranchName(values.branch, ticketFiles, { isTag: values.tag })
+  console.log(formatBranchResult(name))
   const result = checkPaths(map, values.branch, files, { isTag: values.tag })
   console.log(formatResult(result))
-  if (result.status === 'fail') process.exitCode = 1
+  if (name.status === 'fail' || result.status === 'fail') process.exitCode = 1
 } catch (e) {
   process.stderr.write(`${e instanceof Error ? e.message : String(e)}\n`)
   process.exitCode = 1
