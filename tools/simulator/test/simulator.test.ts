@@ -188,7 +188,16 @@ describe('sim-equivalent conditions (test/tool only)', () => {
       ...['scenario_1', 'scenario_2'].flatMap((s) => [`${s} A Tamer`, `${s} B Tamer`, `${s} B tidewall`, `${s} B quillfox`]),
       'tidewall moveBonus (base move 2 → 3)',
       'camouflage free (uses no Action, D-28)',
+      ...['long_shot', 'element_bolt', 'pin', 'mark'].map((id) => `${id} range (D-31)`),
+      'crossroads: four extra mountain tiles (D-31)',
+      'shallows: four extra mountain tiles (D-31)',
+      'long-range disadvantage and mountains blocking sight (D-31)',
     ])
+    // Ticket 09 (D-31): sim v4 had the old ranges, plain Boards and neither range rule.
+    expect(['long_shot', 'element_bolt', 'pin', 'mark'].map((id) => sim.skills[id]?.range)).toEqual([4, 4, 4, 5])
+    expect(sim.boards.crossroads?.terrain[2]?.[2]).toBe('normal')
+    expect(data.boards.crossroads?.terrain[2]?.[2]).toBe('mountain')
+    expect(simEquivalentData(data).rangeRules).toEqual({})
     // sim.py uses Camouflage as the Action (ticket 27): not free under sim-equivalent conditions.
     expect(sim.skills.camouflage?.effects).toEqual({ requiresTerrain: 'forest' })
     const b = sim.scenarios.scenario_2?.teams.B.monsters

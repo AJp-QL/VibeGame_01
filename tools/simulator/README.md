@@ -16,7 +16,7 @@ corepack pnpm sim ranges   [--games 2000] [--seed 0] [--workers n] [--out docs/b
 - ความเร็ว ~0.1–0.15 วินาทีต่อ Battle (thread เดียว)
 
 ## Range experiments (phase 1.x ticket 08)
-`sim ranges` วัด variant ของระยะ skill ทุกแบบบนทุกชุด (Scenario 1/2 × Crossroads/Shallows) ด้วย AI ของเกม (`game:greedy`) ทั้งสองฝั่ง กระจายไปหลาย worker thread (`--workers`, ค่าเริ่มต้น = จำนวน CPU) และเขียน `<out>.md` (ตาราง) + `<out>.json` `run --variant <id>` เล่น variant เดียว Variant ไม่แตะ `data/` และกติกาของเกม มีอยู่แค่ในการรันนี้ (`src/variants.ts`):
+`sim ranges` (ticket 08; ตั้งแต่ ticket 09 เกมเล่น variant `abc`) วัด variant ของระยะ skill ทุกแบบบนทุกชุด (Scenario 1/2 × Crossroads/Shallows) ด้วย AI ของเกม (`game:greedy`) ทั้งสองฝั่ง กระจายไปหลาย worker thread (`--workers`, ค่าเริ่มต้น = จำนวน CPU) และเขียน `<out>.md` (ตาราง) + `<out>.json` `run --variant <id>` เล่น variant เดียว Variant ไม่แตะ `data/` และกติกาของเกม มีอยู่แค่ในการรันนี้ (`src/variants.ts`) และเขียนเป็นชุดเต็มของสามส่วน (เปิดหรือปิด) ไม่ว่า data/ มีอะไร: `baseline` ยังหมายถึงระยะ, Board และกติกาก่อน ticket 09 และ `abc` = เกมตอนนี้ (test ยืนยันว่าเล่นได้ตัวเลขเดียวกับ run ธรรมดา) ตัวเลือก `--only baseline,abc` วัดเฉพาะบาง variant:
 - `a` ระยะสั้นลงใน data: Long Shot, Element Bolt, Pin 4 → 3, Mark 5 → 4
 - `b` attack roll ที่ระยะ 4 ขึ้นไปได้ disadvantage (สวิตช์ `VariantRules.longRangeDisadvantageFrom` ของ engine)
 - `c` ภูเขาบัง line of sight (สวิตช์ `VariantRules.sightBlockedBy`) พร้อมภูเขาเพิ่ม 4 ช่องต่อ Board เป็นคู่ที่หมุน 180° แล้วเหมือนเดิม (`EXTRA_MOUNTAINS`)
@@ -40,6 +40,7 @@ corepack pnpm sim ranges   [--games 2000] [--seed 0] [--workers n] [--out docs/b
 ## เงื่อนไขเดียวกับ sim (test/tool เท่านั้น, decision log 2026-10-16, D-25)
 `simEquivalentData` คืนสำเนา GameData ที่แก้แล้ว ไม่แตะ data/ และไม่เปลี่ยนเกม:
 - stat ทุก Unit = `TEMPL` ของ sim.py v4 ตาม species + Star (Tamer ตาม Level) ที่ต่างจาก data จริงมีแค่ Scenario 2: Tidewall POW 20 → 16, Quillfox SPI 16 → 12
+- (ticket 09, D-31) ระยะ Long Shot, Element Bolt, Pin 4 และ Mark 5 กลับเป็นของ sim v4, Board ไม่มีภูเขาเพิ่ม 4 ช่อง และไม่ใช้กติการะยะ (`NO_RANGE_RULES`, `simEquivalentData(...).rangeRules`)
 - Tidewall เดิน 3 แบบ kit exception ของ sim.py ผ่าน field `moveBonus` ของ species (optional, ไม่มีใน data/ จึงไม่เปลี่ยน data hash, Replay และ ENGINE_VERSION; ถ้าไม่ตั้ง = 0)
 - ไม่ได้ปรับ (เทียบได้เชิงสถิติเท่านั้น, rules §21.7): ลูกเต๋าของ deployment (AI stream แทน `random.Random`), ลำดับเป้าของ Burst (ตามที่เลือก ไม่ใช่ลำดับ Unit), ลูกเต๋าทุกลูกมาจาก stream ของ engine
 

@@ -3,7 +3,7 @@
   "name": "Pin",
   "tier": "major",
   "target": "enemy",
-  "range": 4,
+  "range": 3,
   "attack": "physical",
   "damage": {
     "count": 1,

@@ -3,7 +3,7 @@
   "name": "Mark",
   "tier": "minor",
   "target": "enemy",
-  "range": 5,
+  "range": 4,
   "attack": "physical",
   "applies": [
     {

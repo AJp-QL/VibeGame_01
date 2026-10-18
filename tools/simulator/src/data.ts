@@ -6,7 +6,9 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { NO_RANGE_RULES, type RangeRules } from '@mt/engine'
 import { loadGameData, type GameData, type Stat } from '@mt/shared'
+import { EXTRA_MOUNTAINS, LEGACY_RANGES, withExtraMountains, withRanges } from './variants.ts'
 
 export const REPO_ROOT = fileURLToPath(new URL('../../../', import.meta.url))
 const DATA_DIR = join(REPO_ROOT, 'data')
@@ -60,7 +62,7 @@ const statText = (s: Stats) => `POW ${s.pow} AGI ${s.agi} VIT ${s.vit} INT ${s.i
  * (Camouflage, D-28) are used as the Action again, as in sim.py. Returns a patched copy
  * and the list of values that actually changed; `data` is not touched.
  */
-export function simEquivalentData(data: GameData): { data: GameData; overrides: DataOverride[] } {
+export function simEquivalentData(data: GameData): { data: GameData; overrides: DataOverride[]; rangeRules: RangeRules } {
   const overrides: DataOverride[] = []
   const simStats = (key: string, current: Stats, what: string): Stats => {
     const s = SIM_V4_STATS[key]
@@ -98,8 +100,21 @@ export function simEquivalentData(data: GameData): { data: GameData; overrides: 
       return [id, { ...skill, effects }]
     }),
   )
+  // Ticket 09 (D-31): the game shortened four ranges, put four mountains on each Board and made distance and mountains matter. sim v4 had none of it.
+  const legacy = withRanges(skills, false)
+  for (const id of Object.keys(LEGACY_RANGES)) {
+    const now = skills[id]?.range
+    if (now !== legacy[id]?.range) overrides.push({ what: `${id} range (D-31)`, from: String(now), to: `${String(legacy[id]?.range)} (sim v4)` })
+  }
+  const boards = Object.fromEntries(Object.entries(data.boards).map(([id, board]) => [id, withExtraMountains(board, false)]))
+  for (const id of Object.keys(EXTRA_MOUNTAINS)) {
+    overrides.push({ what: `${id}: four extra mountain tiles (D-31)`, from: 'mountain', to: 'plain (sim v4 terrain)' })
+  }
+  overrides.push({ what: 'long-range disadvantage and mountains blocking sight (D-31)', from: 'on', to: 'off (sim v4 rules)' })
   return {
-    data: { ...data, scenarios, skills, species: { ...data.species, tidewall: { ...tidewall, moveBonus: 1 } } },
+    data: { ...data, scenarios, skills: legacy, boards, species: { ...data.species, tidewall: { ...tidewall, moveBonus: 1 } } },
     overrides,
+    /** The sim-equivalent conditions play without the range rules. */
+    rangeRules: NO_RANGE_RULES,
   }
 }

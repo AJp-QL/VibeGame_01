@@ -3,7 +3,7 @@
   "name": "Element Bolt",
   "tier": "minor",
   "target": "enemy",
-  "range": 4,
+  "range": 3,
   "attack": "elemental",
   "damage": {
     "count": 1,

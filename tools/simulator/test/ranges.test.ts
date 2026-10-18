@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { GAME_PROFILES } from '@mt/ai'
-import type { BattleEvent } from '@mt/engine'
+import { GAME_RANGE_RULES, type BattleEvent } from '@mt/engine'
 import {
   aggregate,
   applyVariant,
@@ -55,63 +55,69 @@ describe('Turns before the first attack', () => {
 })
 
 describe('the variants', () => {
+  const ranges = (d: typeof data) => ['long_shot', 'element_bolt', 'pin', 'mark'].map((id) => d.skills[id]?.range)
+  const mountains = (d: typeof data, id: string) => d.boards[id]!.terrain.flat().filter((x) => x === 'mountain').length
+
   it('there are eight: today, a, b, c and their combinations', () => {
     expect(RANGE_VARIANTS.map((v) => v.id)).toEqual(['baseline', 'a', 'b', 'c', 'ab', 'ac', 'bc', 'abc'])
     expect(() => variantById('d')).toThrow(/unknown variant/)
   })
 
-  it('baseline is today: the same data, no switches', () => {
-    const applied = applyVariant(data, variantById('baseline'))
-    expect(applied.rules).toBeUndefined()
-    expect(applied.data.skills).toBe(data.skills)
-    expect(applied.data.boards).toBe(data.boards)
+  it('data/ has the ranges and mountains of variant abc since ticket 09 (D-31)', () => {
+    expect(ranges(data)).toEqual([3, 3, 3, 4])
+    expect(mountains(data, 'crossroads')).toBe(2 + 4)
+    expect(mountains(data, 'shallows')).toBe(2 + 4)
   })
 
-  it('a: Long Shot, Element Bolt and Pin reach 3, Mark 4, and data/ is untouched', () => {
+  it('baseline is how the game was before ticket 09: old ranges, plain Boards, neither rule', () => {
+    const applied = applyVariant(data, variantById('baseline'))
+    expect(applied.rules).toEqual({})
+    expect(ranges(applied.data)).toEqual([4, 4, 4, 5])
+    expect(mountains(applied.data, 'crossroads')).toBe(2)
+    expect(mountains(applied.data, 'shallows')).toBe(2)
+  })
+
+  it('a: Long Shot, Element Bolt and Pin reach 3, Mark 4; nothing else', () => {
     const applied = applyVariant(data, variantById('a'))
-    const ranges = (d: typeof data) => ['long_shot', 'element_bolt', 'pin', 'mark'].map((id) => d.skills[id]?.range)
     expect(ranges(applied.data)).toEqual([3, 3, 3, 4])
-    expect(ranges(data)).toEqual([4, 4, 4, 5])
-    expect(applied.rules).toBeUndefined()
-    // Nothing else changed.
+    expect(applied.rules).toEqual({})
+    expect(mountains(applied.data, 'crossroads')).toBe(2)
     expect(applied.data.skills.burst).toBe(data.skills.burst)
   })
 
-  it('b: attack rolls from distance 4 get disadvantage, nothing in data changes', () => {
+  it('b: attack rolls from distance 4 get disadvantage, ranges and Boards as before', () => {
     const applied = applyVariant(data, variantById('b'))
     expect(applied.rules).toEqual({ longRangeDisadvantageFrom: 4 })
-    expect(applied.data.skills).toBe(data.skills)
+    expect(ranges(applied.data)).toEqual([4, 4, 4, 5])
+    expect(mountains(applied.data, 'crossroads')).toBe(2)
   })
 
-  it('c: mountains block sight and each Board gets four more, still the same after a 180 degree turn', () => {
+  it('c: mountains block sight and each Board has four more, still the same after a 180 degree turn', () => {
     const applied = applyVariant(data, variantById('c'))
     expect(applied.rules).toEqual({ sightBlockedBy: ['mountain'] })
+    expect(ranges(applied.data)).toEqual([4, 4, 4, 5])
     for (const id of ['crossroads', 'shallows']) {
-      const before = data.boards[id]!.terrain
       const after = applied.data.boards[id]!.terrain
-      const mountains = (t: typeof before) => t.flat().filter((x) => x === 'mountain').length
-      expect(mountains(after)).toBe(mountains(before) + 4)
+      expect(mountains(applied.data, id)).toBe(2 + 4)
       const n = after.length
       for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) expect(after[y]![x], `${id} ${x},${y}`).toBe(after[n - 1 - y]![n - 1 - x])
     }
-    // data/ is untouched.
-    expect(data.boards.crossroads!.terrain[2]![2]).toBe('normal')
-    expect(applied.data.boards.crossroads!.terrain[2]![2]).toBe('mountain')
   })
 
-  it('combinations apply every part', () => {
+  it('abc is the game: the same ranges, Boards and rules as data/ and the engine have', () => {
     const abc = applyVariant(data, variantById('abc'))
-    expect(abc.rules).toEqual({ longRangeDisadvantageFrom: 4, sightBlockedBy: ['mountain'] })
-    expect(abc.data.skills.long_shot?.range).toBe(3)
-    expect(abc.data.boards.shallows!.terrain[4]![3]).toBe('mountain')
+    expect(abc.rules).toEqual(GAME_RANGE_RULES)
+    expect(ranges(abc.data)).toEqual(ranges(data))
+    expect(abc.data.boards.crossroads!.terrain).toEqual(data.boards.crossroads!.terrain)
+    expect(abc.data.boards.shallows!.terrain).toEqual(data.boards.shallows!.terrain)
   })
 })
 
 describe('running a set', () => {
   const job = { scenario: 'scenario_1', board: 'crossroads', games: 6, seed: '0000000000000007' }
 
-  it('baseline plays exactly as the game does: same numbers as a plain run', () => {
-    const set = runRangeSet(data, { ...job, variant: 'baseline' })
+  it('abc plays exactly as the game does: the same numbers as a plain run with the real data and rules', () => {
+    const set = runRangeSet(data, { ...job, variant: 'abc' })
     const profile = GAME_PROFILES.greedy
     const plain = aggregate(simulateGames(data, { scenario: job.scenario, board: job.board, profiles: { A: profile, B: profile } }, job.games, job.seed))
     expect(set.metrics).toEqual(plain)
@@ -125,7 +131,7 @@ describe('running a set', () => {
     }
   }, 120_000)
 
-  it('the variants really play differently from today', () => {
+  it('the variants really play differently from the baseline', () => {
     const big = { ...job, games: 30 }
     const baseline = runRangeSet(data, { ...big, variant: 'baseline' }).metrics
     for (const id of ['a', 'b', 'c']) {

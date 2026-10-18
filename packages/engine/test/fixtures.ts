@@ -26,7 +26,9 @@ import {
   type BattleState,
   type DiceSource,
   type ReplayHeader,
-  type VariantRules,
+  GAME_RANGE_RULES,
+  NO_RANGE_RULES,
+  type RangeRules,
 } from '../src/index.ts'
 
 const DATA_DIR = fileURLToPath(new URL('../../../data/', import.meta.url))
@@ -43,6 +45,28 @@ function readDataDir(): Record<string, unknown> {
 
 /** The real data/ folder, validated. */
 export const gameData = loadGameData(readDataDir())
+
+/**
+ * The rule tests play on the Prototype kit as it was before ticket 09 (D-31): the
+ * four skill ranges of sim v4, Boards without the extra mountains, and neither
+ * range rule. Tests of the new data and rules (`rangeRules.test.ts`) use `gameData`
+ * as it is, with the rules of the game.
+ */
+const KIT_RANGES: Readonly<Record<string, number>> = { long_shot: 4, element_bolt: 4, pin: 4, mark: 5 }
+const EXTRA_MOUNTAINS: Readonly<Record<string, readonly (readonly [number, number])[]>> = {
+  crossroads: [[2, 2], [4, 4], [4, 2], [2, 4]],
+  shallows: [[3, 2], [3, 4], [1, 3], [5, 3]],
+}
+const kitSkills = Object.fromEntries(
+  Object.entries(gameData.skills).map(([id, skill]) => [id, KIT_RANGES[id] === undefined ? skill : { ...skill, range: KIT_RANGES[id] }]),
+)
+const kitBoards = Object.fromEntries(
+  Object.entries(gameData.boards).map(([id, board]) => {
+    const terrain = board.terrain.map((row) => [...row])
+    for (const [x, y] of EXTRA_MOUNTAINS[id] ?? []) terrain[y]![x] = 'normal'
+    return [id, { ...board, terrain }]
+  }),
+)
 
 /**
  * A 9x9 Board for tests of other Board sizes (phase 1.x ticket 13). Not in data/:
@@ -93,7 +117,7 @@ export const scenario1: Scenario = {
 }
 
 /** data/ with Scenario 1 at the Prototype kit stats, for tests that go through Replays (which load Scenarios by id). */
-export const kitGameData = { ...gameData, scenarios: { ...gameData.scenarios, scenario_1: scenario1 } }
+export const kitGameData = { ...gameData, skills: kitSkills, boards: kitBoards, scenarios: { ...gameData.scenarios, scenario_1: scenario1 } }
 
 type Tiles = readonly [string, string, string]
 
@@ -121,8 +145,10 @@ export interface BattleOptions {
   readonly elementWheel?: ElementWheel
   /** Board to play on instead of Crossroads (e.g. `arena`, 9x9). */
   readonly board?: Board
-  /** Experiment switches (phase 1.x ticket 08). */
-  readonly variantRules?: VariantRules
+  /** The range rules (default none: the kit as it was before ticket 09). */
+  readonly rangeRules?: RangeRules
+  /** Play on the real data/ as shipped: its skill ranges, its Boards and the rules of the game (D-31), instead of the kit. */
+  readonly realRules?: true
   readonly dice?: DiceSource
   /**
    * Which sides start with Inspiration. Default: neither, so tests about
@@ -160,11 +186,11 @@ function setup(dice: DiceSource | undefined, options: BattleOptions = {}) {
       ...base,
       teams: { A: withEdits(base.teams.A, 'A', options), B: withEdits(base.teams.B, 'B', options) },
     },
-    board: options.board ?? gameData.boards.crossroads!,
-    ...(options.variantRules === undefined ? {} : { variantRules: options.variantRules }),
+    board: options.board ?? (options.realRules === true ? gameData.boards.crossroads! : kitBoards.crossroads!),
+    rangeRules: options.rangeRules ?? (options.realRules === true ? GAME_RANGE_RULES : NO_RANGE_RULES),
     species: gameData.species,
     skills: Object.fromEntries(
-      Object.entries(gameData.skills).map(([id, skill]) => [id, { ...skill, ...options.skills?.[id] }]),
+      Object.entries(options.realRules === true ? gameData.skills : kitSkills).map(([id, skill]) => [id, { ...skill, ...options.skills?.[id] }]),
     ),
     statuses: Object.fromEntries(
       Object.entries(gameData.statuses).map(([id, status]) => [id, { ...status, ...options.statuses?.[id] }]),

@@ -3,8 +3,9 @@ import { join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { loadGameData, tileFromName, type ScenarioTeam, type Side } from '@mt/shared'
-import { createBattle, type DiceSource } from '@mt/engine'
+import { createBattle, NO_RANGE_RULES, type DiceSource } from '@mt/engine'
 import { createBattleSession } from '../src/session.ts'
+import { kitCrossroads, kitSkills } from './kit.ts'
 
 const DATA_DIR = fileURLToPath(new URL('../../../data/', import.meta.url))
 
@@ -38,9 +39,10 @@ function session(dice: DiceSource) {
   return createBattleSession(
     createBattle({
       scenario: { ...scenario, teams: { A: mountain(scenario.teams.A), B: mountain(scenario.teams.B) } },
-      board: data.boards.crossroads!,
+      board: kitCrossroads(data.boards.crossroads!),
+      rangeRules: NO_RANGE_RULES,
       species: data.species,
-      skills: data.skills,
+      skills: kitSkills(data.skills),
       statuses: data.statuses,
       elementWheel: data.elementWheel,
       dice,

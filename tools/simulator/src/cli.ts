@@ -5,7 +5,7 @@
  *     [--games 1000] [--seed 0] [--sim-equivalent] [--format md|json] [--out file]
  *   corepack pnpm sim parity   [--games 2000] [--other-games 1000] [--seed 0] [--out docs/balance/sim-v4-parity]
  *   corepack pnpm sim baseline [--games 1000] [--seed 0] [--out docs/balance/phase-1-baseline]
- *   corepack pnpm sim ranges   [--games 2000] [--seed 0] [--workers n] [--out docs/balance/ticket-08-range-experiments]
+ *   corepack pnpm sim ranges   [--games 2000] [--seed 0] [--workers n] [--only baseline,abc] [--out docs/balance/ticket-08-range-experiments]
  *   `run --variant a|b|c|ab|ac|bc|abc` plays a range variant (phase 1.x ticket 08; data/ and the game are unchanged)
  *
  * Profiles: `sim:<mode>` (SIM_PROFILES, sim.py parity) or `game:<mode>`
@@ -16,7 +16,7 @@
 import { writeFileSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { AI_MODES, GAME_PROFILES, SIM_PROFILES, type AiMode, type AiProfile } from '@mt/ai'
-import { ENGINE_VERSION } from '@mt/engine'
+import { ENGINE_VERSION, NO_RANGE_RULES } from '@mt/engine'
 import { dataHash, type GameData } from '@mt/shared'
 import { loadRepoData, REPO_ROOT, simEquivalentData, type DataOverride } from './data.ts'
 import { aggregate, metricsTables, skillTable, type LabelledMetrics, type Metrics } from './metrics.ts'
@@ -42,11 +42,13 @@ export interface CliOptions {
   readonly variant: string | undefined
   /** `ranges`: worker threads. */
   readonly workers: number | undefined
+  /** `ranges`: only these variants (comma-separated ids), e.g. `baseline,abc`. */
+  readonly only: readonly string[] | undefined
   readonly format: 'md' | 'json'
   readonly out: string | undefined
 }
 
-const USAGE = 'usage: sim run|parity|baseline|ranges [--scenario id] [--board id] [--a sim:greedy] [--b sim:greedy] [--games n] [--other-games n] [--seed hex] [--sim-equivalent] [--variant id] [--workers n] [--format md|json] [--out path]'
+const USAGE = 'usage: sim run|parity|baseline|ranges [--scenario id] [--board id] [--a sim:greedy] [--b sim:greedy] [--games n] [--other-games n] [--seed hex] [--sim-equivalent] [--variant id] [--workers n] [--only ids] [--format md|json] [--out path]'
 
 /** Parse argv (without node and the script). Throws with a usage line on anything unknown. */
 export function parseArgs(argv: readonly string[]): CliOptions {
@@ -66,7 +68,7 @@ export function parseArgs(argv: readonly string[]): CliOptions {
     if (value === undefined || value.startsWith('--')) throw new Error(`--${key} needs a value\n${USAGE}`)
     opts[key] = value
   }
-  const known = ['scenario', 'board', 'a', 'b', 'games', 'other-games', 'seed', 'sim-equivalent', 'variant', 'workers', 'format', 'out']
+  const known = ['scenario', 'board', 'a', 'b', 'games', 'other-games', 'seed', 'sim-equivalent', 'variant', 'workers', 'only', 'format', 'out']
   for (const k of Object.keys(opts)) if (!known.includes(k)) throw new Error(`unknown option --${k}\n${USAGE}`)
   const str = (k: string, d: string) => (typeof opts[k] === 'string' ? opts[k] : d)
   const count = (k: string) => {
@@ -93,6 +95,7 @@ export function parseArgs(argv: readonly string[]): CliOptions {
     simEquivalent: opts['sim-equivalent'] === true,
     variant: typeof opts.variant === 'string' ? opts.variant : undefined,
     workers: count('workers'),
+    only: typeof opts.only === 'string' ? opts.only.split(',').map((id) => variantById(id).id) : undefined,
     format,
     out: typeof opts.out === 'string' ? opts.out : undefined,
   }
@@ -134,7 +137,8 @@ function runCommand(o: CliOptions, data0: GameData): string {
     scenario: o.scenario,
     board: o.board,
     profiles: { A: profileOf(o.a), B: profileOf(o.b) },
-    ...(variant?.rules === undefined ? {} : { variantRules: variant.rules }),
+    // A variant sets its own range rules; --sim-equivalent plays without them (sim v4 had none); otherwise the game's.
+    ...(variant !== undefined ? { rangeRules: variant.rules } : o.simEquivalent ? { rangeRules: NO_RANGE_RULES } : {}),
   }
   const metrics = aggregate(simulateGames(data, matchup, games, o.seed))
   const config = { scenario: o.scenario, board: o.board, a: o.a, b: o.b, games, seed: o.seed, simEquivalent: o.simEquivalent, ...(o.variant === undefined ? {} : { variant: o.variant }), engine: ENGINE_VERSION, dataHash: dataHash(data) }
@@ -244,7 +248,7 @@ function baselineCommand(o: CliOptions, data: GameData) {
 async function rangesCommand(o: CliOptions, data: GameData): Promise<void> {
   const games = o.games ?? 2000
   const workers = o.workers ?? cpus().length
-  const jobs = rangeJobs(games, o.seed)
+  const jobs = rangeJobs(games, o.seed).filter((j) => o.only === undefined || o.only.includes(j.variant))
   log(`ranges: ${jobs.length} sets of ${games} Battles (${jobs.length * games} in all) on up to ${workers} threads…`)
   const started = Date.now()
   const results = await runRangeJobs(jobs, workers, (r, done) =>
