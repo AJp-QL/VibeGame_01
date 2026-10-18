@@ -4,7 +4,7 @@
 
 **What to build:** เกมจริงใช้ชุดแก้ระยะที่ผู้ใช้เลือกจากรายงานของ ticket 08: ตัวเลขใน data และ/หรือกติกาใหม่ (disadvantage ระยะไกล, terrain บัง line of sight) ตำแหน่งจึงมีผลต่อการเล่น และ balance ยังอยู่ในเป้า (spec: Range experiments, user stories 38, 41–43)
 
-**Blocked by:** 08 — ทดลองระยะ skill ใน simulator, 20 — ทดลองวิธีวัดระยะและระยะ 2–3 เพิ่ม และการเลือกชุดของผู้ใช้ (บันทึกใน decision log)
+**Blocked by:** 08 — ทดลองระยะ skill ใน simulator และการเลือกชุดของผู้ใช้ (บันทึกใน decision log) (2026-10-18: ไม่รอ ticket 20 แล้ว; 20 เป็นรอบปรับต่อบนชุดนี้)
 
 **Status:** ready-for-agent
 
