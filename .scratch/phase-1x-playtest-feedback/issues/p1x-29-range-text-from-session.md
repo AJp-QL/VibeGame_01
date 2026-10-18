@@ -1,10 +1,10 @@
-# 29 — UI: ข้อความกติกาของระยะและแนวเล็งอ่านจาก session
+# P1X-29 — UI: ข้อความกติกาของระยะและแนวเล็งอ่านจาก session
 
 **Owner:** codex
 
 **What to build:** หลัง ticket 28 ให้ web เลิกคิดกติกาของระยะเอง (พบจาก review PR #45, ticket 10): ข้อความ "ขวางแนวเล็ง" บอกทั้ง Unit และภูเขาตามข้อมูลช่อง terrain ใหม่ของ `BlockedTarget` (เลิกใช้ "รายการ Unit ว่าง = ภูเขา" ใน `th.blockedBy`) และใน `skillText.ts` / `strings.ts` ระยะที่ได้ disadvantage ใช้ `GAME_RANGE_RULES.longRangeDisadvantageFrom` และระยะเริ่มตรวจแนวเล็งใช้ค่าที่ ticket 28 export แทนเลข 4 และ 2 ที่เขียนไว้ ข้อความที่มีเลขระยะรับเลขเป็นพารามิเตอร์ ผู้เล่นเห็นข้อความเหมือนเดิมยกเว้นกรณีที่ Unit และภูเขาขวางพร้อมกัน ซึ่งตอนนี้บอกครบ
 
-**Blocked by:** 28 — session บอกช่อง terrain ที่บังแนวเล็ง และระยะที่กติกาของระยะเริ่มใช้; 10 — refresh visual fixtures หลังแก้ระยะ (PR #45)
+**Blocked by:** P1X-28 — session บอกช่อง terrain ที่บังแนวเล็ง และระยะที่กติกาของระยะเริ่มใช้; P1X-10 — refresh visual fixtures หลังแก้ระยะ (PR #45)
 
 **Status:** ready-for-agent
 

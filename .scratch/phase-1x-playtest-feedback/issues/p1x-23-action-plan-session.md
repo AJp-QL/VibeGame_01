@@ -1,10 +1,10 @@
-# 23 — Action plan ใน session: เลือกเป้าก่อน แล้วเกมเลือกช่องที่จะยืนโจมตี
+# P1X-23 — Action plan ใน session: เลือกเป้าก่อน แล้วเกมเลือกช่องที่จะยืนโจมตี
 
 **Owner:** claude
 
 **What to build:** การเดินแล้วโจมตีลดจาก 6 แตะเหลือ 3 (เลือกเป้าก่อน) หรือ 4 (เลือกช่องก่อน) ตามผลวิจัย docs/research/tactics-input-ux.md และการตัดสิน 2026-10-18 (U1–U5): เมื่อเลือก Unit แล้ว snapshot บอกศัตรูที่ Unit โจมตีได้ใน activation นี้ (จากช่องเดิมหรือหลัง Move/Blink ที่ถูกกติกา) และช่องที่ยืนโจมตีแต่ละตัวได้ เมื่อผู้เล่นเลือกศัตรูตัวนั้น session สร้าง Action plan: ช่องที่จะยืนโจมตี (ช่องเดิมถ้าอยู่ในระยะ ไม่เช่นนั้นช่องที่ก้าวน้อยสุด แล้วตามลำดับช่อง; ticket 11 จะเพิ่ม Threat zone เป็นตัวตัดสินลำดับที่ 2), skill และ preview การโจมตี (โอกาสโดน, damage) ผู้เล่นเปลี่ยนช่องหรือ skill ได้ก่อนยืนยัน และจาก Move preview ผู้เล่นเลือกศัตรูในรายการเพื่อโจมตีจากช่องเงาได้ ยืนยันครั้งเดียวแล้ว session ส่ง action Move (หรือ Blink) เดิมตามด้วย action Action เดิม ไม่มี action ใหม่ใน engine ทุกอย่างเพิ่มเข้า API แบบเพิ่มเท่านั้น (spec: Action plan, user stories 55–61)
 
-**Blocked by:** 18 — Move preview ใน session: แตะ Unit ยกเลิกแค่ preview และ movePreview ใน BattleSnapshot (ไฟล์ session เดียวกัน)
+**Blocked by:** P1X-18 — Move preview ใน session: แตะ Unit ยกเลิกแค่ preview และ movePreview ใน BattleSnapshot (ไฟล์ session เดียวกัน)
 
 **Status:** ready-for-agent
 

@@ -1,4 +1,4 @@
-# 25 — test เทียบภาพ Move preview: ขั้น "re-select" ต้องไม่พึ่งว่าแตะ Unit แล้วเลิกเลือกด้วย
+# P1X-25 — test เทียบภาพ Move preview: ขั้น "re-select" ต้องไม่พึ่งว่าแตะ Unit แล้วเลิกเลือกด้วย
 
 **Owner:** codex
 
@@ -6,7 +6,7 @@
 
 แก้ test ให้ใช้ได้กับ session ทั้งก่อนและหลัง ticket 18 เพื่อ merge ได้ก่อน: หลังแตะ Unit เดิมเพื่อยกเลิก preview ให้ตรวจ `previewSession.getSnapshot().selectedUnit` ถ้ายังเลือกอยู่ (พฤติกรรมใหม่) ไม่ต้องแตะซ้ำ (Blink: ปุ่ม Blink ยังเล็งอยู่ ไม่ต้องกดซ้ำ) ถ้าไม่ได้เลือก (พฤติกรรมเดิม) ค่อยแตะ Unit และกด Blink เหมือนเดิม และ assert ว่า preview หาย, Battle ไม่เปลี่ยน (revision เท่าเดิม) ภาพ baseline ไม่เปลี่ยน ส่วนที่เหลือของ ticket 19 (อ่าน `movePreview` จาก port, ชื่อ field, README) ยังเป็นของ ticket 19
 
-**Blocked by:** None — ทำก่อนแล้วจึง merge ticket 18 (PR #29)
+**Blocked by:** None — ทำก่อนแล้วจึง merge P1X-18 (PR #29)
 
 **Status:** done
 

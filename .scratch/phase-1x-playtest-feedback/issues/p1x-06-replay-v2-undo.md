@@ -1,10 +1,10 @@
-# 06 — Replay format 2 บันทึก Undo, playback และ play stats
+# P1X-06 — Replay format 2 บันทึก Undo, playback และ play stats
 
 **Owner:** claude
 
 **What to build:** Replay บันทึกการ Undo ด้วย เพื่อให้ดูได้ว่าผู้เล่นเปลี่ยนใจตรงไหน: Replay format 2 มี action undo, เล่นซ้ำแล้วได้ผลเดิมทุกครั้ง, playback ข้าม action ที่ถูก Undo เป็นค่าเริ่มต้นและเปิดให้แสดงได้, Replay format 1 (v0.1.x) ยังเปิดได้เหมือนเดิม play stats นับจำนวน Undo ต่อ Battle และบันทึก Battle ที่ถูกทิ้ง (ใช้กับ Start over ใน ticket 07) (spec: Replay and analysis, user stories 26, 48–51)
 
-**Blocked by:** 05 — Undo ใน engine และ session
+**Blocked by:** P1X-05 — Undo ใน engine และ session
 
 **Status:** ready-for-agent
 

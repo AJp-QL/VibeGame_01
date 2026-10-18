@@ -1,10 +1,10 @@
-# 10 — UI: refresh visual fixtures และข้อความ skill หลังแก้ระยะ
+# P1X-10 — UI: refresh visual fixtures และข้อความ skill หลังแก้ระยะ
 
 **Owner:** codex
 
 **What to build:** หลัง ticket 09 เปลี่ยน data/กติกา Replay fixture ของ test ภาพล้าสมัย ต้องบันทึกใหม่และตรวจ baseline ทุกภาพตาม AGENTS.md และถ้ามีกติกาใหม่ที่ผู้เล่นต้องรู้ (เช่น disadvantage ที่ระยะไกล หรือ terrain ที่บัง line of sight) คำอธิบาย skill, preview และ legend ของ terrain ต้องบอกให้ครบ
 
-**Blocked by:** 09 — ใช้ชุดแก้ระยะ skill ที่ผู้ใช้เลือก
+**Blocked by:** P1X-09 — ใช้ชุดแก้ระยะ skill ที่ผู้ใช้เลือก
 
 **Status:** done
 

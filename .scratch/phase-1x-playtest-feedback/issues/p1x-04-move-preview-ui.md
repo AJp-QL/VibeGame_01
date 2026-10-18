@@ -1,10 +1,10 @@
-# 04 — UI: Move preview
+# P1X-04 — UI: Move preview
 
 **Owner:** codex
 
 **What to build:** แตะช่องที่สว่างแล้วเห็นเงาของ Unit บนช่องนั้นแทนการเดินทันที พร้อมแผงที่บอกว่าจากช่องนั้น skill ไหนถึงศัตรูตัวไหน (ตัวที่ line of sight บังแสดงว่าเล็งไม่ได้) กดปุ่ม "เดิน" จึงเดินจริง Wispling ใช้ปุ่ม "Blink" แตะช่องอื่นย้ายเงา แตะ Unit ยกเลิก hint อธิบาย flow ใหม่ ใช้ได้ทั้งจอ 360 px และ desktop (spec user stories 1–13)
 
-**Blocked by:** 03 — Move preview ใน session
+**Blocked by:** P1X-03 — Move preview ใน session
 
 **Status:** done
 

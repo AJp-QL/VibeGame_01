@@ -1,4 +1,4 @@
-# 27 — เก็บกวาดหลัง ticket 09 (กติกาของระยะ) ตาม review PR #34
+# P1X-27 — เก็บกวาดหลัง ticket 09 (กติกาของระยะ) ตาม review PR #34
 
 **Owner:** claude
 
@@ -6,7 +6,7 @@
 
 ไม่เปลี่ยนกติกาของเกม: ถ้าทุกข้อทำเฉพาะ type alias, doc, comment, ชื่อ test และ test ใหม่ ENGINE_VERSION ไม่ขยับ ถ้า test ข้อ AI พบว่า AI ไม่เลี่ยงระยะไกลและต้องแก้ AI ให้รัน simulator ใหม่ (ผลเทียบกับ `docs/balance/ticket-09-range-rules.md`) และ sim-v4 parity และบันทึกแถว decision log
 
-**Blocked by:** None — ticket 09 merged แล้ว (PR #34)
+**Blocked by:** None — P1X-09 merged แล้ว (PR #34)
 
 **Status:** ready-for-agent
 

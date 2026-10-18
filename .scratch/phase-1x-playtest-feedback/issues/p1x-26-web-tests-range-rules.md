@@ -1,4 +1,4 @@
-# 26 — test ของ web: Camouflage text test ต้องไม่พึ่งว่า Board ไม่มีภูเขา/กติการะยะ
+# P1X-26 — test ของ web: Camouflage text test ต้องไม่พึ่งว่า Board ไม่มีภูเขา/กติการะยะ
 
 **Owner:** codex
 
@@ -8,7 +8,7 @@
 
 หมายเหตุ: ticket 10 (refresh visual fixtures และข้อความกติกาใหม่) ยังเป็นงานของ Codex ต่างหาก
 
-**Blocked by:** None — ทำก่อนแล้ว merge PR ของ ticket 09
+**Blocked by:** None — ทำก่อนแล้ว merge PR ของ P1X-09
 
 **Status:** done
 
