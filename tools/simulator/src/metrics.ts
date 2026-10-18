@@ -35,6 +35,8 @@ export interface Metrics {
   readonly hitsTakenPerGame: Readonly<Record<string, number>>
   readonly tamerHitsPerGame: number
   readonly pushesPerGame: number
+  /** Mean Turns over before the Turn of the first attack roll (phase 1.x ticket 08). */
+  readonly turnsBeforeFirstAttack: number
   /** Uses per Battle by action name, most used first. */
   readonly skillsPerGame: Readonly<Record<string, number>>
   /** Standard errors: of the shares sqrt(p(1−p)/n), of the means sd/sqrt(n). */
@@ -44,6 +46,7 @@ export interface Metrics {
     readonly tamerFirstDown: number
     readonly turnsA: number
     readonly turnsB: number
+    readonly turnsBeforeFirstAttack: number
   }
 }
 
@@ -80,6 +83,7 @@ export function aggregate(records: readonly GameRecord[]): Metrics {
   const turnsA = records.map((r) => r.turns.A)
   const turnsB = records.map((r) => r.turns.B)
   const rounds = records.map((r) => Math.max(r.turns.A, r.turns.B))
+  const beforeAttack = records.map((r) => r.turnsBeforeFirstAttack)
   const firstDown: Record<string, number> = {}
   const decidedBySide: Record<string, number> = {}
   for (const w of ['A', 'B'] as const)
@@ -126,6 +130,7 @@ export function aggregate(records: readonly GameRecord[]): Metrics {
     hitsTakenPerGame: perGame(hitsTaken, n),
     tamerHitsPerGame: records.reduce((a, r) => a + r.tamerHits, 0) / n,
     pushesPerGame: records.reduce((a, r) => a + r.pushes, 0) / n,
+    turnsBeforeFirstAttack: mean(beforeAttack),
     skillsPerGame: perGame(skills, n),
     se: {
       winA: seShare(winA, n),
@@ -133,6 +138,7 @@ export function aggregate(records: readonly GameRecord[]): Metrics {
       tamerFirstDown: seShare(tamerFirstDown, n),
       turnsA: seMean(turnsA),
       turnsB: seMean(turnsB),
+      turnsBeforeFirstAttack: seMean(beforeAttack),
     },
   }
 }

@@ -5,6 +5,8 @@
  *     [--games 1000] [--seed 0] [--sim-equivalent] [--format md|json] [--out file]
  *   corepack pnpm sim parity   [--games 2000] [--other-games 1000] [--seed 0] [--out docs/balance/sim-v4-parity]
  *   corepack pnpm sim baseline [--games 1000] [--seed 0] [--out docs/balance/phase-1-baseline]
+ *   corepack pnpm sim ranges   [--games 2000] [--seed 0] [--workers n] [--out docs/balance/ticket-08-range-experiments]
+ *   `run --variant a|b|c|ab|ac|bc|abc` plays a range variant (phase 1.x ticket 08; data/ and the game are unchanged)
  *
  * Profiles: `sim:<mode>` (SIM_PROFILES, sim.py parity) or `game:<mode>`
  * (GAME_PROFILES, the web game), mode = greedy | tamer_rush | neutral.
@@ -19,9 +21,12 @@ import { dataHash, type GameData } from '@mt/shared'
 import { loadRepoData, REPO_ROOT, simEquivalentData, type DataOverride } from './data.ts'
 import { aggregate, metricsTables, skillTable, type LabelledMetrics, type Metrics } from './metrics.ts'
 import { loadSimV4, parityTable, runParity, type ParityResult } from './parity.ts'
+import { rangeJobs, rangeTables, runRangeJobs } from './ranges.ts'
 import { simulateGames } from './simulate.ts'
+import { applyVariant, RANGE_VARIANTS, variantById } from './variants.ts'
+import { cpus } from 'node:os'
 
-export type Command = 'run' | 'parity' | 'baseline'
+export type Command = 'run' | 'parity' | 'baseline' | 'ranges'
 
 export interface CliOptions {
   readonly command: Command
@@ -33,16 +38,20 @@ export interface CliOptions {
   readonly otherGames: number | undefined
   readonly seed: string
   readonly simEquivalent: boolean
+  /** `run`: a range variant (ticket 08). */
+  readonly variant: string | undefined
+  /** `ranges`: worker threads. */
+  readonly workers: number | undefined
   readonly format: 'md' | 'json'
   readonly out: string | undefined
 }
 
-const USAGE = 'usage: sim run|parity|baseline [--scenario id] [--board id] [--a sim:greedy] [--b sim:greedy] [--games n] [--other-games n] [--seed hex] [--sim-equivalent] [--format md|json] [--out path]'
+const USAGE = 'usage: sim run|parity|baseline|ranges [--scenario id] [--board id] [--a sim:greedy] [--b sim:greedy] [--games n] [--other-games n] [--seed hex] [--sim-equivalent] [--variant id] [--workers n] [--format md|json] [--out path]'
 
 /** Parse argv (without node and the script). Throws with a usage line on anything unknown. */
 export function parseArgs(argv: readonly string[]): CliOptions {
   const [command, ...rest] = argv
-  if (command !== 'run' && command !== 'parity' && command !== 'baseline') throw new Error(USAGE)
+  if (command !== 'run' && command !== 'parity' && command !== 'baseline' && command !== 'ranges') throw new Error(USAGE)
   const opts: Record<string, string | true> = {}
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i] ?? ''
@@ -57,7 +66,7 @@ export function parseArgs(argv: readonly string[]): CliOptions {
     if (value === undefined || value.startsWith('--')) throw new Error(`--${key} needs a value\n${USAGE}`)
     opts[key] = value
   }
-  const known = ['scenario', 'board', 'a', 'b', 'games', 'other-games', 'seed', 'sim-equivalent', 'format', 'out']
+  const known = ['scenario', 'board', 'a', 'b', 'games', 'other-games', 'seed', 'sim-equivalent', 'variant', 'workers', 'format', 'out']
   for (const k of Object.keys(opts)) if (!known.includes(k)) throw new Error(`unknown option --${k}\n${USAGE}`)
   const str = (k: string, d: string) => (typeof opts[k] === 'string' ? opts[k] : d)
   const count = (k: string) => {
@@ -71,6 +80,7 @@ export function parseArgs(argv: readonly string[]): CliOptions {
   const format = str('format', 'md')
   if (format !== 'md' && format !== 'json') throw new Error('--format must be md or json')
   for (const k of ['a', 'b']) if (opts[k] !== undefined) profileOf(str(k, ''))
+  if (typeof opts.variant === 'string') variantById(opts.variant)
   return {
     command,
     scenario: str('scenario', 'scenario_1'),
@@ -81,6 +91,8 @@ export function parseArgs(argv: readonly string[]): CliOptions {
     otherGames: count('other-games'),
     seed,
     simEquivalent: opts['sim-equivalent'] === true,
+    variant: typeof opts.variant === 'string' ? opts.variant : undefined,
+    workers: count('workers'),
     format,
     out: typeof opts.out === 'string' ? opts.out : undefined,
   }
@@ -112,13 +124,22 @@ function header(title: string, command: string, data: GameData, seed: string): s
 }
 
 function runCommand(o: CliOptions, data0: GameData): string {
-  const { data, overrides } = o.simEquivalent ? simEquivalentData(data0) : { data: data0, overrides: [] as DataOverride[] }
+  const base = o.simEquivalent ? simEquivalentData(data0) : { data: data0, overrides: [] as DataOverride[] }
+  const { overrides } = base
+  if (o.variant !== undefined && o.simEquivalent) throw new Error('--variant and --sim-equivalent do not go together')
+  const variant = o.variant === undefined ? undefined : applyVariant(base.data, variantById(o.variant))
+  const data = variant?.data ?? base.data
   const games = o.games ?? 1000
-  const matchup = { scenario: o.scenario, board: o.board, profiles: { A: profileOf(o.a), B: profileOf(o.b) } }
+  const matchup = {
+    scenario: o.scenario,
+    board: o.board,
+    profiles: { A: profileOf(o.a), B: profileOf(o.b) },
+    ...(variant?.rules === undefined ? {} : { variantRules: variant.rules }),
+  }
   const metrics = aggregate(simulateGames(data, matchup, games, o.seed))
-  const config = { scenario: o.scenario, board: o.board, a: o.a, b: o.b, games, seed: o.seed, simEquivalent: o.simEquivalent, engine: ENGINE_VERSION, dataHash: dataHash(data) }
+  const config = { scenario: o.scenario, board: o.board, a: o.a, b: o.b, games, seed: o.seed, simEquivalent: o.simEquivalent, ...(o.variant === undefined ? {} : { variant: o.variant }), engine: ENGINE_VERSION, dataHash: dataHash(data) }
   if (o.format === 'json') return `${JSON.stringify({ config, overrides, metrics }, null, 2)}\n`
-  const row: LabelledMetrics = { label: `${o.scenario} ${o.board} ${o.a} vs ${o.b}`, metrics }
+  const row: LabelledMetrics = { label: `${o.scenario} ${o.board} ${o.a} vs ${o.b}${o.variant === undefined ? '' : ` [${o.variant}]`}`, metrics }
   return `${metricsTables([row])}\n\n${skillTable([row])}\n`
 }
 
@@ -220,9 +241,33 @@ function baselineCommand(o: CliOptions, data: GameData) {
   writeReport(out, md, { command: cmd, engine: ENGINE_VERSION, dataHash: dataHash(data), seed: o.seed, games, rows })
 }
 
-export function main(argv: readonly string[]): void {
+async function rangesCommand(o: CliOptions, data: GameData): Promise<void> {
+  const games = o.games ?? 2000
+  const workers = o.workers ?? cpus().length
+  const jobs = rangeJobs(games, o.seed)
+  log(`ranges: ${jobs.length} sets of ${games} Battles (${jobs.length * games} in all) on up to ${workers} threads…`)
+  const started = Date.now()
+  const results = await runRangeJobs(jobs, workers, (r, done) =>
+    log(`ranges ${done}/${jobs.length} ${r.variant} ${r.scenario} ${r.board}: A ${(100 * r.metrics.winA).toFixed(1)}%, limit ${(100 * r.metrics.limit).toFixed(1)}%, first attack after ${r.metrics.turnsBeforeFirstAttack.toFixed(2)} Turns`),
+  )
+  const out = o.out ?? 'docs/balance/ticket-08-range-experiments'
+  const cmd = `corepack pnpm sim ranges --games ${games} --seed ${o.seed}`
+  const md = [
+    ...header('Range experiments (phase 1.x ticket 08): tables', cmd, data, o.seed),
+    `Variants: ${RANGE_VARIANTS.map((v) => `**${v.id}** ${v.label}`).join('; ')}. Game AI (\`game:greedy\`) on both sides, ${games} Battles per set, sets = Scenario 1/2 x Crossroads/Shallows. Variants never touch data/ or the rules of the game; they exist only inside this run (tools/simulator/src/variants.ts).`,
+    '',
+    rangeTables(results),
+  ].join('\n')
+  writeReport(out, md, { command: cmd, engine: ENGINE_VERSION, dataHash: dataHash(data), seed: o.seed, games, seconds: Math.round((Date.now() - started) / 1000), results })
+}
+
+export async function main(argv: readonly string[]): Promise<void> {
   const o = parseArgs(argv)
   const data = loadRepoData()
+  if (o.command === 'ranges') {
+    await rangesCommand(o, data)
+    return
+  }
   if (o.command === 'run') {
     const text = runCommand(o, data)
     if (o.out !== undefined) writeFileSync(resolveOut(o.out), text)

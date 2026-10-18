@@ -5,6 +5,7 @@
  */
 import { applyAction, createBattle, decidingSide, type Action, type BattleEvent, type BattleState } from '@mt/engine'
 import { chooseAction, createAi, type AiProfile, type AiState } from '@mt/ai'
+import type { VariantRules } from '@mt/engine'
 import type { GameData, Side } from '@mt/shared'
 
 /** Name of what a Unit is: "Tamer" or the species name ("Tidewall"). */
@@ -37,12 +38,20 @@ export interface GameRecord {
   readonly pushes: number
   /** Actions taken by name (skill names, "Command (advantage)", "(Counter triggered)"). */
   readonly skills: Readonly<Record<string, number>>
+  /**
+   * Turns (either side) that were over before the Turn of the first attack roll
+   * of the Battle: 0 when it comes in the very first Turn (phase 1.x ticket 08).
+   * A Battle with no attack roll at all counts every Turn it had.
+   */
+  readonly turnsBeforeFirstAttack: number
 }
 
 export interface Matchup {
   readonly scenario: string
   readonly board: string
   readonly profiles: Readonly<Record<Side, AiProfile>>
+  /** Experiment switches of the engine (phase 1.x ticket 08); absent = the game's rules. */
+  readonly variantRules?: VariantRules
 }
 
 const MASK64 = (1n << 64n) - 1n
@@ -86,6 +95,7 @@ export function playBattle(data: GameData, matchup: Matchup, seed: string, maxAc
     statuses: data.statuses,
     elementWheel: data.elementWheel,
     dice: { seed },
+    ...(matchup.variantRules === undefined ? {} : { variantRules: matchup.variantRules }),
   })
   const ais: Record<Side, AiState> = {
     A: createAi(state, 'A', matchup.profiles.A),
@@ -141,6 +151,8 @@ export function summarizeBattle(
   const tamerDown = { A: false, B: false }
   let tamerHits = 0
   let pushes = 0
+  let turnsStarted = 0
+  let turnsBeforeFirstAttack: number | null = null
   // Attack rolls: an Inspiration reroll replaces the roll it rerolled.
   const rolls: Extract<BattleEvent, { type: 'attackRolled' }>[] = []
   for (const e of events) {
@@ -148,7 +160,11 @@ export function summarizeBattle(
       case 'initiativeDecided':
         firstSide = e.firstSide
         break
+      case 'turnStarted':
+        turnsStarted++
+        break
       case 'attackRolled':
+        turnsBeforeFirstAttack ??= Math.max(0, turnsStarted - 1)
         if (e.rerolled === true) rolls.pop()
         rolls.push(e)
         break
@@ -200,6 +216,7 @@ export function summarizeBattle(
     tamerHits,
     pushes,
     skills,
+    turnsBeforeFirstAttack: turnsBeforeFirstAttack ?? turnsStarted,
   }
 }
 
