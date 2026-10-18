@@ -1,3 +1,4 @@
+import { GAME_RANGE_RULES, LINE_OF_SIGHT_FROM } from '@mt/session'
 import { GLYPH_ALPHA, glyphColour, TERRAIN_COLOURS, TERRAIN_GLYPHS } from '@mt/battle'
 import type { Terrain } from '@mt/shared'
 import { th } from './strings.ts'
@@ -38,8 +39,8 @@ export function TerrainLegend() {
           <li>{th.legendWheel}</li>
           <li>{th.legendTerrain}</li>
           <li>{th.legendProtection}</li>
-          <li>{th.legendLongRange}</li>
-          <li>{th.legendLineOfSight}</li>
+          <li>{GAME_RANGE_RULES.longRangeDisadvantageFrom !== undefined && th.legendLongRange(GAME_RANGE_RULES.longRangeDisadvantageFrom)}</li>
+          <li>{th.legendLineOfSight(LINE_OF_SIGHT_FROM)}</li>
         </ul>
       </details>
     </section>

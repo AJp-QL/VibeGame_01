@@ -5,7 +5,7 @@
  * string table.
  */
 import type { Dice, Skill, StatusType } from '@mt/shared'
-import type { UnitStatus } from '@mt/session'
+import { GAME_RANGE_RULES, LINE_OF_SIGHT_FROM, type UnitStatus } from '@mt/session'
 import { th } from './strings.ts'
 
 const diceText = (dice: Dice) => `${dice.count}d${dice.sides}`
@@ -75,8 +75,9 @@ export function skillSummary(skill: Skill, statuses: Readonly<Record<string, Sta
   }
   if (skill.effects?.free === true) parts.push(th.skillFree)
   if (skill.attack !== undefined) parts.push(th.skillAttack[skill.attack])
-  if (skill.attack !== undefined && (skill.range >= 4 || skill.target === 'area')) parts.push(th.skillLongRange)
-  if (skill.range >= 2 && (skill.target === 'enemy' || skill.target === 'area')) parts.push(th.skillLineOfSight)
+  const longRangeFrom = GAME_RANGE_RULES.longRangeDisadvantageFrom
+  if (longRangeFrom !== undefined && skill.attack !== undefined && (skill.range >= longRangeFrom || skill.target === 'area')) parts.push(th.skillLongRange(longRangeFrom))
+  if (skill.range >= LINE_OF_SIGHT_FROM && (skill.target === 'enemy' || skill.target === 'area')) parts.push(th.skillLineOfSight)
   if (skill.damage !== undefined) parts.push(th.skillDamage(diceText(skill.damage)))
   for (const application of skill.applies ?? []) {
     const name = statusName(statuses, application.status)

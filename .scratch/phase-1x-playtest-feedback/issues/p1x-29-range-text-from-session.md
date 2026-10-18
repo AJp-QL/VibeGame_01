@@ -8,6 +8,15 @@
 
 **Status:** ready-for-agent
 
-- [ ] ข้อความแนวเล็งที่ถูกบังมาจาก `blockedBy` + ช่อง terrain ของ session; กรณี Unit อย่างเดียว, ภูเขาอย่างเดียว, ทั้งสองอย่าง มี text test
-- [ ] `skillText.ts` และ `strings.ts` ไม่มีเลข 4 หรือ 2 ของกติการะยะเขียนตายตัว; อ่านจาก `@mt/session`; text test เดิมผ่าน
+- [x] ข้อความแนวเล็งที่ถูกบังมาจาก `blockedBy` + ช่อง terrain ของ session; กรณี Unit อย่างเดียว, ภูเขาอย่างเดียว, ทั้งสองอย่าง มี text test
+- [x] `skillText.ts` และ `strings.ts` ไม่มีเลข 4 หรือ 2 ของกติการะยะเขียนตายตัว; อ่านจาก `@mt/session`; text test เดิมผ่าน
 - [ ] ข้อความทั้งหมดอยู่ใน strings ของ web; screenshot ไม่เปลี่ยน (หรือ update baseline และตรวจทุกภาพถ้าเปลี่ยน); CI เขียวทั้งสาม job
+
+## Comments
+
+- Implemented range descriptions using `GAME_RANGE_RULES.longRangeDisadvantageFrom` and
+  `LINE_OF_SIGHT_FROM` from `@mt/session`. Both targeting panels use the Unit and
+  terrain blocker fields independently; combined blockers now name both.
+- [Desktop/mobile captures and local validation](../evidence/29-range-text-from-session/README.md).
+  934 tests passed, 1 skipped; all 27 screenshot comparisons passed without baseline
+  updates. Replay fixtures match the build. CI validation pending the PR.
