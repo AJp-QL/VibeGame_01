@@ -507,7 +507,8 @@ function bestStep(ctx: Ctx, st: BattleState, unit: UnitState, pv0: number): { ti
   let gain = 0
   for (const d of NEIGHBOURS) {
     const q = { x: unit.tile.x + d.x, y: unit.tile.y + d.y }
-    if (!isOnBoard(q, boardSizeOf(st)) || st.units.some((u) => sameTile(u.tile, q))) continue
+    // One step away under the distance metric in play (a diagonal is 2 away in the no-diagonal experiment).
+    if (!isOnBoard(q, boardSizeOf(st)) || distance(unit.tile, q) !== 1 || st.units.some((u) => sameTile(u.tile, q))) continue
     let value: number
     if (ctx.profile.simQuirks) value = posValue(ctx, st, unit, q)
     else {
@@ -569,7 +570,7 @@ function attuneCandidates(ctx: Ctx, st: BattleState, unit: UnitState, skill: Ski
   for (const d of NEIGHBOURS) {
     const q = { x: unit.tile.x + d.x, y: unit.tile.y + d.y }
     const occ = st.units.find((u) => sameTile(u.tile, q))
-    if (occ === undefined || occ.kind !== 'monster' || occ.movement === 'flying') continue
+    if (occ === undefined || distance(unit.tile, q) !== 1 || occ.kind !== 'monster' || occ.movement === 'flying') continue
     const old = ctx.terrainMod(st, occ, q)
     let element: Element | undefined
     let delta: number
