@@ -16,6 +16,7 @@ interaction model ของ Battle แบบไม่มี UI (ADR 0004): ส�
 
 ## แนวทาง/กฎการตั้งชื่อ
 - dependency: `@mt/shared`, `@mt/engine`, `@mt/ai` เท่านั้น ห้าม import battle, web, React, Phaser
+- กติกาของระยะ (P1X-09 และ P1X-27): `@mt/session` re-export `RangeRules`, `GAME_RANGE_RULES` (disadvantage ระยะไกลตั้งแต่ระยะ 4, ภูเขาบังแนวเล็ง) และ `NO_RANGE_RULES` (กติกาก่อน ticket 09 สำหรับ tools) `AttackPreview.rollMode` รวม disadvantage ระยะไกลแล้ว ซึ่งอยู่ใน flag `AttackPreview.longRangeDisadvantage` ไม่ใช่ `rollModeSources` UI ต้องอ่านทั้งสองอย่างเพื่ออธิบายเหตุผลของการทอย
 - ไม่มีข้อความที่ผู้เล่นเห็น (ไม่มีภาษาไทยใน `src/`): session ให้ข้อมูล (event, action, enum เช่น `rejection`, `blocked[].reason`) แล้ว web แปลงเป็นข้อความด้วย `strings.ts` / `skillText.ts` / `describeAction`
 - ไม่แตะ DOM, เวลาจริง, timer หรือการสุ่ม: delay ระหว่าง action ของ AI อยู่ใน web (`App.tsx`), นาฬิกาของ playStats ส่งเข้ามา (`Date` ใช้เป็น type ได้ แต่สร้างเวลาเองไม่ได้)
 - `test/boundaries.test.ts` ตรวจทั้งหมดนี้ (แบบเดียวกับ engine)

@@ -237,11 +237,18 @@ export interface AttackPreview {
   readonly attacker: UnitId
   readonly target: UnitId
   readonly distance: number
-  /** Net effect of `rollModeSources` after cancelling (rules §5.2). */
+  /**
+   * Net effect of every source after cancelling (rules §5.2): `rollModeSources` and, when
+   * `longRangeDisadvantage` is set, that disadvantage as well.
+   */
   readonly rollMode: RollMode
-  /** Every source of advantage or disadvantage on this roll, before cancelling (rules §5.1). */
+  /**
+   * The sources of advantage or disadvantage on this roll, before cancelling (rules §5.1),
+   * except the long-range disadvantage, which is not a `RollModeSource` (the type is
+   * matched exhaustively by the UI) and is in `longRangeDisadvantage`. Read both to explain `rollMode`.
+   */
   readonly rollModeSources: readonly RollModeSource[]
-  /** Present when the long-range disadvantage applies to this roll (rules §5.1, D-31): a roll from the distance in `RangeRules.longRangeDisadvantageFrom` or more. */
+  /** Present when the long-range disadvantage applies to this roll (rules §5.1, D-31): a roll from the distance in `RangeRules.longRangeDisadvantageFrom` or more; part of `rollMode`, not of `rollModeSources`. */
   readonly longRangeDisadvantage?: true
   /** Everything added to the d20: SEN mod + proficiency, plus `statusAttackBonuses`. */
   readonly attackBonus: number

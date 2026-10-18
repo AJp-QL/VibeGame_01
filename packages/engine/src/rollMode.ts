@@ -189,7 +189,7 @@ export function commandCancelledOut(sources: readonly RollModeSource[]): boolean
 export function combineRollMode(sources: readonly RollModeSource[], longRange = false): RollMode {
   const counted = commandCancelledOut(sources) ? sources.filter((s) => s.kind !== 'command') : sources
   const advantage = counted.some((s) => s.effect === 'advantage')
-  // `longRange`: the long-range disadvantage of the variant rules (ticket 08), one more disadvantage.
+  // `longRange`: the long-range disadvantage of the range rules (rules §5.1, D-31), one more disadvantage.
   const disadvantage = longRange || counted.some((s) => s.effect === 'disadvantage')
   if (advantage === disadvantage) return 'normal'
   return advantage ? 'advantage' : 'disadvantage'
