@@ -6,11 +6,11 @@
 
 **Blocked by:** 09 — ใช้ชุดแก้ระยะ skill ที่ผู้ใช้เลือก
 
-**Status:** in progress
+**Status:** done
 
 - [x] visual fixtures บันทึกใหม่ด้วย engine และ data ปัจจุบัน baseline ตรวจด้วยตาทุกภาพ ภาพที่เปลี่ยนมีภาพก่อน/หลังใน PR
 - [x] ข้อความของกติกาใหม่ (ถ้ามี) อยู่ใน strings ของ web มี text test; terrain ใหม่ (ถ้ามี) มีสีและสัญลักษณ์บน Board และใน legend
-- [ ] CI เขียวทั้งสาม job ไม่มีคำเตือน fixtures stale
+- [x] CI เขียวทั้งสาม job ไม่มีคำเตือน fixtures stale
 
 ## Comments
 
@@ -23,3 +23,12 @@
   disadvantage, mountain sight blockers and the Flying exception. Empty blocker
   lists for terrain now say mountain in both targeting and Move preview panels.
 - [Before/after review of every baseline](../evidence/10-fixtures-after-range/README.md).
+
+- Validation: frozen install, typecheck, build and path ownership check passed;
+  `pnpm test --maxWorkers=2 --testTimeout=60000`: 912 passed, 1 skipped.
+  The default five-second timeout expired in four simulator cases on the cloud
+  worker; the longer timeout changes no repository configuration.
+- Linux pinned-Chromium baseline update: 27/27 passed. CI ran the normal test
+  command and the normal screenshot comparisons; all three jobs passed and
+  `check-replays` reported that all Replay files match this build, with no stale
+  warning: https://github.com/AJp-QL/VibeGame_01/actions/runs/39131738991
