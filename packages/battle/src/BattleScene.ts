@@ -16,7 +16,7 @@
 import * as Phaser from 'phaser'
 import type { Tile } from '@mt/shared'
 import { boardPixels, tileAtPoint, tileCentre, TILE_SIZE } from './boardGeometry.ts'
-import { derivedValues, type MovePreview, type BattleSessionPort, type BattleSnapshot, type BattleState, type UnitId, type UnitState } from '@mt/session'
+import { derivedValues, type BattleSessionPort, type BattleSnapshot, type BattleState, type UnitId, type UnitState } from '@mt/session'
 import {
   AREA,
   ATTUNED,
@@ -90,7 +90,7 @@ export class BattleScene extends Phaser.Scene {
   private session!: BattleSessionPort
   private labels!: BoardLabels
   private highlights!: Phaser.GameObjects.Graphics
-  private ghost!: Phaser.GameObjects.Graphics
+  private movePreview!: Phaser.GameObjects.Graphics
   private terrainLayer!: Phaser.GameObjects.Graphics
   /** What the terrain layer shows, to redraw it only when Attune changed something. */
   private terrainKey = ''
@@ -113,7 +113,7 @@ export class BattleScene extends Phaser.Scene {
     this.terrainLayer = this.add.graphics()
     this.drawBoard(snapshot.state)
     this.highlights = this.add.graphics()
-    this.ghost = this.add.graphics().setDepth(5).setAlpha(0.5)
+    this.movePreview = this.add.graphics().setDepth(5).setAlpha(0.5)
     this.shownRevision = snapshot.revision
     this.render()
 
@@ -164,16 +164,15 @@ export class BattleScene extends Phaser.Scene {
     const snapshot = this.session.getSnapshot()
     this.drawBoard(snapshot.state)
     this.drawHighlights(snapshot)
-    // Replay snapshots omit movePreview; live sessions provide it additively.
-    const preview = (snapshot as BattleSnapshot & { readonly movePreview?: MovePreview | null }).movePreview
-    this.ghost.clear()
+    const preview = snapshot.movePreview
+    this.movePreview.clear()
     const previewUnit = preview == null ? undefined : snapshot.units.find(unit => unit.id === preview.unit)
     if (preview != null && previewUnit !== undefined) {
       const centre = tileCentre(preview.tile)
-      this.ghost.setPosition(centre.x, centre.y)
-      drawUnit(this.ghost, previewUnit)
-      this.ghost.lineStyle(2, SELECTED, 1)
-      this.ghost.strokeRect(-TILE_SIZE / 2 + 2, -TILE_SIZE / 2 + 2, TILE_SIZE - 3, TILE_SIZE - 3)
+      this.movePreview.setPosition(centre.x, centre.y)
+      drawUnit(this.movePreview, previewUnit)
+      this.movePreview.lineStyle(2, SELECTED, 1)
+      this.movePreview.strokeRect(-TILE_SIZE / 2 + 2, -TILE_SIZE / 2 + 2, TILE_SIZE - 3, TILE_SIZE - 3)
     }
     if (snapshot.revision !== this.shownRevision) {
       this.shownRevision = snapshot.revision
