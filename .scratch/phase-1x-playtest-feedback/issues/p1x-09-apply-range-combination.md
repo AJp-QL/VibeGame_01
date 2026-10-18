@@ -1,16 +1,16 @@
-# 09 — ใช้ชุดแก้ระยะ skill ที่ผู้ใช้เลือก
+# P1X-09 — ใช้ชุดแก้ระยะ skill ที่ผู้ใช้เลือก
 
 **Owner:** claude
 
 **What to build:** เกมจริงใช้ชุดแก้ระยะที่ผู้ใช้เลือกจากรายงานของ ticket 08: ตัวเลขใน data และ/หรือกติกาใหม่ (disadvantage ระยะไกล, terrain บัง line of sight) ตำแหน่งจึงมีผลต่อการเล่น และ balance ยังอยู่ในเป้า (spec: Range experiments, user stories 38, 41–43)
 
-**Blocked by:** 08 — ทดลองระยะ skill ใน simulator และการเลือกชุดของผู้ใช้ (บันทึกใน decision log) (2026-10-18: ไม่รอ ticket 20 แล้ว; 20 เป็นรอบปรับต่อบนชุดนี้)
+**Blocked by:** P1X-08 — ทดลองระยะ skill ใน simulator และการเลือกชุดของผู้ใช้ (บันทึกใน decision log) (2026-10-18: ไม่รอ P1X-20 แล้ว; 20 เป็นรอบปรับต่อบนชุดนี้)
 
-**Status:** in progress (merged in PR #34; one target open: first attack later on Shallows)
+**Status:** done (PR #34; 2026-10-18 ผู้ใช้ยอมรับ: เป้า "Turn ก่อนการโจมตีครั้งแรกสูงกว่า baseline" ไม่ผ่านบน Shallows ส่งต่อให้ P1X-20)
 
 - [x] data และ/หรือกติกาตามชุดที่ผู้ใช้เลือก; กติกาใหม่มี D-row ใน rules §23, ตาราง kit §20 และ test ตรงกัน, ทุกการเปลี่ยนมีแถว decision log พร้อมผล simulator
 - [x] ENGINE_VERSION ขยับถ้ากติกาเปลี่ยน; กติกาใหม่อยู่นอก sim-equivalent layer (แบบ ticket 27) ทำให้ sim-v4 parity ผ่าน
-- [ ] ≥ 2,000 Battle ต่อชุด: ทีม A ชนะ 40–60%, turn limit ≤ 15%, Turn ก่อนการโจมตีครั้งแรกสูงกว่า baseline ทุกชุด; รายงานและ docs/balance/phase-1-baseline.md อัปเดต
+- [x] (ยอมรับบางส่วน 2026-10-18: Turn ก่อนการโจมตีครั้งแรกบน Shallows ไม่สูงขึ้น ส่งต่อ P1X-20) ≥ 2,000 Battle ต่อชุด: ทีม A ชนะ 40–60%, turn limit ≤ 15%, Turn ก่อนการโจมตีครั้งแรกสูงกว่า baseline ทุกชุด; รายงานและ docs/balance/phase-1-baseline.md อัปเดต
 - [x] AI ในเกมใช้กติกาใหม่ได้ (เช่นเลี่ยงยิงจากระยะที่เสีย advantage) และยัง deterministic
 - [x] ticket 10 (Codex) ระบุว่าต้อง refresh visual fixtures
 

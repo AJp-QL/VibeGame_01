@@ -6,7 +6,20 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 
 - One feature per directory: `.scratch/<feature-slug>/`
 - The spec is `.scratch/<feature-slug>/spec.md`
-- Implementation issues are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01` — never a single combined tickets file
+- Implementation issues are one file per ticket at `.scratch/<feature-slug>/issues/<code>-<NN>-<slug>.md` (lower case, e.g. `p1x-24-action-plan-ui.md`), numbered from `01` within each phase — never a single combined tickets file
+
+## Ticket IDs and phase codes (decision log 2026-10-18)
+
+- A ticket ID is `<CODE>-<NN>` (e.g. `P1X-24`). Write it in upper case in the ticket title (`# P1X-24 — …`), in every `**Blocked by:**` entry (always with the code, even within the same phase), at the start of PR titles (`[P1X-24] …`) and in commit messages; paths (files, branches) use lower case.
+- Each phase folder has a code. Pick the code when the folder is created and add it here before writing tickets.
+
+| Code | Folder | Files |
+| --- | --- | --- |
+| `P1` | `.scratch/phase-1-battle-slice/` | `issues/NN-<slug>.md` (named before IDs existed; P1-NN = `issues/NN-*.md`) |
+| `P1X` | `.scratch/phase-1x-playtest-feedback/` | `issues/p1x-NN-<slug>.md` |
+
+- Branches: `claude/<code>-<NN>-<slug>` / `codex/<code>-<NN>-<slug>` for ticket work (the ticket file must exist); other Claude work is `claude/<research|spec|docs|chore>-<slug>` — PRs that only change ticket Status or close tickets use `chore`. The path check in CI enforces this (`tools/path-check`).
+- "ticket NN" in prose written before 2026-10-18 is not rewritten; read it in the context of its phase.
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
 
@@ -20,7 +33,7 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 
 ## When a skill says "publish to the issue tracker"
 
-Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed).
+Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed). Tickets go in `issues/<code>-<NN>-<slug>.md`; if the folder has no code yet, add one to the table above first.
 
 ## When a skill says "fetch the relevant ticket"
 
@@ -31,7 +44,7 @@ Read the file at the referenced path. The user will normally pass the path or th
 Used by `/wayfinder`. The **map** is a file with one **child** file per ticket.
 
 - **Map**: `.scratch/<effort>/map.md` — the Notes / Decisions-so-far / Fog body.
-- **Child ticket**: `.scratch/<effort>/issues/NN-<slug>.md`, numbered from `01`, with the question in the body. A `Type:` line records the ticket type (`research`/`prototype`/`grilling`/`task`); a `Status:` line records `claimed`/`resolved`.
+- **Child ticket**: `.scratch/<effort>/issues/<code>-NN-<slug>.md`, numbered from `01`, with the question in the body. A `Type:` line records the ticket type (`research`/`prototype`/`grilling`/`task`); a `Status:` line records `claimed`/`resolved`.
 - **Blocking**: a `Blocked by: NN, NN` line near the top. A ticket is unblocked when every file it lists is `resolved`.
 - **Frontier**: scan `.scratch/<effort>/issues/` for files that are open, unblocked, and unclaimed; first by number wins.
 - **Claim**: set `Status: claimed` and save before any work.

@@ -3,7 +3,11 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import {
   categoriesOf,
+  checkBranchName,
   checkPaths,
+  CLAUDE_BRANCH_KINDS,
+  findTicketFile,
+  formatBranchResult,
   classify,
   formatResult,
   globToRegExp,
@@ -165,5 +169,72 @@ describe('formatResult', () => {
     expect(text).toContain('path check failed')
     expect(text).toContain('packages/engine/package.json  (claude)')
     expect(text).toContain('newdir/a  (not classified in .github/ownership.json)')
+  })
+})
+
+describe('branch name rule (decision log 2026-10-18)', () => {
+  const tickets = [
+    '.scratch/phase-1-battle-slice/issues/32-node-26.md',
+    '.scratch/phase-1x-playtest-feedback/issues/p1x-24-action-plan-ui.md',
+    '.scratch/phase-1x-playtest-feedback/spec.md',
+  ]
+  const status = (branch: string, files: readonly string[] = tickets, isTag = false) => checkBranchName(branch, files, { isTag }).status
+
+  it('passes a ticket branch whose ticket file exists, for claude/ and codex/', () => {
+    expect(checkBranchName('claude/p1x-24-action-plan', tickets)).toEqual({
+      status: 'pass',
+      branch: 'claude/p1x-24-action-plan',
+      ticket: '.scratch/phase-1x-playtest-feedback/issues/p1x-24-action-plan-ui.md',
+    })
+    expect(status('codex/p1x-24-action-plan-ui')).toBe('pass')
+    expect(status('refs/heads/codex/p1x-24-x')).toBe('pass')
+  })
+
+  it('fails a ticket branch whose ticket does not exist, naming the file it looked for', () => {
+    const result = checkBranchName('claude/p1x-42-typo', tickets)
+    expect(result.status).toBe('fail')
+    expect(formatBranchResult(result)).toContain('.scratch/*/issues/p1x-42-*.md')
+    expect(status('codex/p2-01-new-phase')).toBe('fail')
+  })
+
+  it('finds phase 1 tickets under their old NN-slug.md names', () => {
+    expect(status('claude/p1-32-node-26')).toBe('pass')
+    expect(status('claude/p1-31-x')).toBe('fail')
+    expect(formatBranchResult(checkBranchName('claude/p1-31-x', tickets))).toContain('phase-1-battle-slice/issues/31-*.md')
+  })
+
+  it('allows Claude branches of the non-ticket kinds only', () => {
+    for (const kind of CLAUDE_BRANCH_KINDS) expect(status(`claude/${kind}-ticket-ids`), kind).toBe('pass')
+    expect(status('codex/chore-x')).toBe('fail')
+    expect(status('claude/docs-12-notes')).toBe('pass')
+    expect(status('claude/close-tickets-18-09')).toBe('fail')
+  })
+
+  it('rejects the old number-only ticket names and other prefixes', () => {
+    expect(status('claude/09-apply-ranges')).toBe('fail')
+    expect(status('codex/24-split-app-tsx')).toBe('fail')
+    expect(status('feature/p1x-24-x')).toBe('fail')
+    expect(formatBranchResult(checkBranchName('claude/09-apply-ranges', tickets))).toContain('claude/<code>-<NN>-<slug>')
+  })
+
+  it('compares in lower case', () => {
+    expect(status('claude/P1X-24-Action-Plan')).toBe('pass')
+    expect(findTicketFile('p1x', '24', ['.scratch/phase-1x-playtest-feedback/issues/P1X-24-x.md'])).not.toBeNull()
+  })
+
+  it('skips main and tags', () => {
+    expect(status('main')).toBe('skipped')
+    expect(status('v0.2.0', tickets, true)).toBe('skipped')
+    expect(status('refs/tags/v0.2.0')).toBe('skipped')
+  })
+
+  it('accepts every phase 1.x ticket in the repo under its own branch name', () => {
+    const tracked = execFileSync('git', ['ls-files', '-z', '--', '.scratch'], { cwd: REPO_ROOT, encoding: 'utf8' }).split('\0')
+    const p1x = tracked.filter((f) => /\/issues\/p1x-\d{2}-/.test(f))
+    expect(p1x.length).toBeGreaterThan(20)
+    for (const f of p1x) {
+      const [, num] = /p1x-(\d{2})-/.exec(f)!
+      expect(checkBranchName(`codex/p1x-${num}-x`, tracked).status, f).toBe('pass')
+    }
   })
 })

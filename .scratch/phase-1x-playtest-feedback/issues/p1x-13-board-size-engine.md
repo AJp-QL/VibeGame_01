@@ -1,4 +1,4 @@
-# 13 — ขนาด Board ต่อ Board: expand และย้าย engine, AI, simulator
+# P1X-13 — ขนาด Board ต่อ Board: expand และย้าย engine, AI, simulator
 
 **Owner:** claude
 

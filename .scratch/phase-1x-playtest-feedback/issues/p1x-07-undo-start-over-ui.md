@@ -1,10 +1,10 @@
-# 07 — UI: ปุ่ม Undo, Start over และตัวเลือกใน Replay viewer
+# P1X-07 — UI: ปุ่ม Undo, Start over และตัวเลือกใน Replay viewer
 
 **Owner:** codex
 
 **What to build:** ระหว่าง Turn ของผู้เล่นมีปุ่ม "ย้อนกลับ" ที่บอกว่าจะย้อนถึงไหน ("ต้น Turn" / "หลังการทอยล่าสุด") ปิดเมื่อย้อนไม่ได้ และซ่อนใน Turn ของ AI เมนูใน Battle มี "เริ่มใหม่" ที่ถามยืนยันก่อน แล้วเริ่ม Battle ใหม่ด้วย Scenario, Board, โหมดและฝั่งเดิมแต่ Dice Seed ใหม่ Battle เดิมบันทึกว่าถูกทิ้งใน play stats ทั้งโหมด AI และ Hotseat และ Replay viewer มีตัวเลือกแสดง action ที่ถูก Undo (ค่าเริ่มต้นซ่อน) (spec user stories 14–17, 20–21, 23–27, 49) ถ้า ticket 06 ขยับ ENGINE_VERSION ให้ refresh visual fixtures ใน ticket นี้ด้วย
 
-**Blocked by:** 06 — Replay format 2 บันทึก Undo, 02 — UI quick fixes (เมนูและ dialog ใช้ร่วมกัน)
+**Blocked by:** P1X-06 — Replay format 2 บันทึก Undo, P1X-02 — UI quick fixes (เมนูและ dialog ใช้ร่วมกัน)
 
 **Status:** ready-for-agent
 

@@ -1,10 +1,10 @@
-# 24 — UI: Action plan (เครื่องหมายดาบ, ช่องที่ยืนโจมตีได้, การ์ดยืนยัน)
+# P1X-24 — UI: Action plan (เครื่องหมายดาบ, ช่องที่ยืนโจมตีได้, การ์ดยืนยัน)
 
 **Owner:** codex
 
 **What to build:** เมื่อเลือก Unit ศัตรูที่โจมตีได้ใน activation นี้มีเครื่องหมายดาบ และช่องที่ยืนโจมตีได้มีจุด แตะศัตรูที่มีดาบแล้วเห็นเงาของ Unit บนช่องที่เกมเลือก พร้อมการ์ดยืนยันที่แสดง skill, โอกาสโดนและ damage ผู้เล่นเปลี่ยนช่อง (แตะจุดอื่น) หรือ skill ได้ แล้วกดปุ่มยืนยันครั้งเดียวเพื่อเดินแล้วโจมตี ป้ายบอกว่าทอยแล้วย้อนผลไม่ได้ ในแผง Move preview ศัตรูในรายการเป็นปุ่มที่แตะเพื่อโจมตีจากช่องเงา การแตะบน Board ไม่ยืนยันอะไรเลย ใช้ได้ทั้ง desktop และ 360 px (spec user stories 55–61; สีตามแนวทางใน docs/research/tactics-input-ux.md: น้ำเงิน = เดิน, แดง = โจมตี)
 
-**Blocked by:** 23 — Action plan ใน session, 19 — UI: Move preview cleanup
+**Blocked by:** P1X-23 — Action plan ใน session, P1X-19 — UI: Move preview cleanup
 
 **Status:** ready-for-agent
 

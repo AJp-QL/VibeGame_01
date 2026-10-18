@@ -16,7 +16,12 @@ map มีที่เดียวคือ `.github/ownership.json` (AGENTS.md 
 
 `package.json` ของแต่ละ package อยู่ในหมวดของเจ้าของ package นั้น (`packages/<ชื่อ>/**`)
 
-## กฎ
+## กฎชื่อ branch (decision log 2026-10-18)
+- ticket: `claude/<code>-<NN>-<slug>` หรือ `codex/<code>-<NN>-<slug>` (เช่น `claude/p1x-23-action-plan`) และต้องมีไฟล์ ticket `.scratch/*/issues/<code>-<NN>-*.md` (P1 ใช้ชื่อเดิม `.scratch/phase-1-battle-slice/issues/<NN>-*.md`)
+- งาน Claude ที่ไม่ใช่ ticket: `claude/<research|spec|docs|chore>-<slug>`
+- เทียบแบบตัวเล็ก; `main` และ tag ข้าม; ชื่ออื่นไม่ผ่าน
+
+## กฎ path
 - `main` และ tag: ข้าม
 - `claude/*`: แก้ได้ `claude` + `claudeOnly` + `shared`
 - `codex/*`: แก้ได้ `codex` + `shared`

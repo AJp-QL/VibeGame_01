@@ -1,4 +1,4 @@
-# 01 — Inspiration เฉพาะเมื่อพลาด และข้อมูลการเปลี่ยน Unit / จบ Turn ใน session
+# P1X-01 — Inspiration เฉพาะเมื่อพลาด และข้อมูลการเปลี่ยน Unit / จบ Turn ใน session
 
 **Owner:** claude
 

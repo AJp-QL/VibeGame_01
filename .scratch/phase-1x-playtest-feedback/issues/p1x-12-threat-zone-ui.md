@@ -1,10 +1,10 @@
-# 12 — UI: Threat zone ในแผง Move preview และ overlay ทั้ง Board
+# P1X-12 — UI: Threat zone ในแผง Move preview และ overlay ทั้ง Board
 
 **Owner:** codex
 
 **What to build:** แผง Move preview แสดง "⚠ N" สำหรับช่องที่กำลังดู คือจำนวนศัตรูที่อาจโจมตีช่องนั้นได้ใน Turn หน้า พร้อมคำอธิบายสั้นว่าเป็นค่าประมาณ ไม่ใช่การรับประกัน และมีปุ่มเปิด/ปิด overlay Threat zone ทั้ง Board (ค่าเริ่มต้นปิด) ที่แต้มสีช่องตามจำนวนศัตรูที่อาจโจมตีได้ (spec user stories 7–8, 53)
 
-**Blocked by:** 11 — Threat zone ใน session, 04 — UI: Move preview
+**Blocked by:** P1X-11 — Threat zone ใน session, P1X-04 — UI: Move preview
 
 **Status:** ready-for-agent
 

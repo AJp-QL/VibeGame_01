@@ -1,10 +1,10 @@
-# 08 — ทดลองระยะ skill ใน simulator
+# P1X-08 — ทดลองระยะ skill ใน simulator
 
 **Owner:** claude
 
 **What to build:** รายงานที่ช่วยผู้ใช้เลือกวิธีแก้ "ระยะ skill ไม่เข้ากับขนาด Board" (ระยะ 4 บน Board 7x7 ถึงทุกช่อง): simulator รันได้ 3 variant แยกกันโดยไม่เปลี่ยนเกมจริง (a) ลดระยะใน data (เริ่มที่ Long Shot, Element Bolt, Pin 4 → 3 และ Mark 5 → 4) (b) disadvantage เมื่อโจมตีที่ระยะ 4 ขึ้นไป (สวิตช์กติกา) (c) terrain ที่บัง line of sight วางบน Board และมีตัวชี้วัดใหม่ "จำนวน Turn ก่อนการโจมตีครั้งแรก" รายงานเทียบ baseline กับแต่ละ variant และชุดผสมที่น่าสนใจ แล้วแนะนำชุดหนึ่งพร้อมเหตุผล (spec: Range experiments, user stories 38–43)
 
-**Blocked by:** 01 — Inspiration เฉพาะเมื่อพลาด (วัดด้วยกติกา Inspiration ใหม่)
+**Blocked by:** P1X-01 — Inspiration เฉพาะเมื่อพลาด (วัดด้วยกติกา Inspiration ใหม่)
 
 **Status:** done after merge (user chose a+b+c on 2026-10-18; ticket 09 applies it)
 

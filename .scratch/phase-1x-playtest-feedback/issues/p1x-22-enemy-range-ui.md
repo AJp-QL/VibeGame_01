@@ -1,10 +1,10 @@
-# 22 — UI: แตะศัตรูเพื่อดูระยะของมัน (ความสำคัญต่ำ)
+# P1X-22 — UI: แตะศัตรูเพื่อดูระยะของมัน (ความสำคัญต่ำ)
 
 **Owner:** codex
 
 **What to build:** ผู้เล่นแตะศัตรูบน Board แล้วเห็นช่องที่มันเดินถึงและช่องที่มันอาจโจมตีได้ใน Turn หน้า แยกสีจากไฮไลต์ของ Unit ตัวเอง และจาก overlay Threat zone ทั้ง Board แตะซ้ำหรือแตะที่อื่นเพื่อปิด (spec user story 54) ความสำคัญต่ำ
 
-**Blocked by:** 21 — ระยะของศัตรูแต่ละตัวใน session, 12 — UI: Threat zone (สีและ overlay ใช้ร่วมกัน), 24 — UI: Action plan (ความหมายของการแตะศัตรู)
+**Blocked by:** P1X-21 — ระยะของศัตรูแต่ละตัวใน session, P1X-12 — UI: Threat zone (สีและ overlay ใช้ร่วมกัน), P1X-24 — UI: Action plan (ความหมายของการแตะศัตรู)
 
 **Status:** ready-for-agent
 
