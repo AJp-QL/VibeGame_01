@@ -10,8 +10,12 @@
 
 **Blocked by:** None — ทำก่อนแล้ว merge PR ของ ticket 09
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `sessionText.test.ts` ผ่านกับ session ปัจจุบัน (main) และกับ session หลัง PR ของ ticket 09
-- [ ] ไม่แก้ไฟล์นอก `packages/web/test/`
-- [ ] CI เขียวทั้งสาม job
+- [x] `sessionText.test.ts` ผ่านกับ session ปัจจุบัน (main) และกับ session หลัง PR ของ ticket 09
+- [x] ไม่แก้ไฟล์นอก `packages/web/test/`
+- [x] CI เขียวทั้งสาม job
+
+## Comments
+
+- Merged in PR #42 (`...{ rangeRules: {} }` in the Camouflage text fixture); PR #34 merged after it with CI green.
