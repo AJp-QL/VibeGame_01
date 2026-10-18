@@ -5,6 +5,14 @@
 
 export type { BattleSessionPort, BattleSnapshot, BoardInput } from './port.ts'
 export {
+  attackableEnemies,
+  type ActionPlan,
+  type AttackableEnemy,
+  type PlanChoice,
+  type PlanOrigin,
+  type PlanVia,
+} from './actionPlan.ts'
+export {
   actionAtStake,
   createBattleSession,
   idleUnits,

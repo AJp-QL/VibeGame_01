@@ -38,7 +38,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-20 | Range experiments follow-up | claude | P1X-09 | ready |
 | P1X-21 | Enemy range in session (low priority) | claude | P1X-11 | waiting |
 | P1X-22 | Enemy range UI (low priority) | codex | P1X-21 | waiting |
-| P1X-23 | Action plan in session | claude | P1X-18 | ready |
+| P1X-23 | Action plan in session | claude | P1X-18 | done |
 | P1X-24 | Action plan UI | codex | P1X-23, P1X-19 | waiting |
 | P1X-25 | Move preview visual test re-select | codex | — | done (PR #41) |
 | P1X-26 | Web test vs range rules | codex | — | done (PR #42) |
