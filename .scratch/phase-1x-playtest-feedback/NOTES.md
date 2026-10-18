@@ -21,7 +21,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-03 | Move preview in session | claude | — | done (PR #22) |
 | P1X-04 | Move preview UI | codex | P1X-03 | done (PR #26) |
 | P1X-05 | Undo in engine and session | claude | P1X-01 | done (PR #30) |
-| P1X-06 | Replay format 2 + playback + play stats | claude | P1X-05 | ready |
+| P1X-06 | Replay format 2 + playback + play stats | claude | P1X-05 | done (PR open) |
 | P1X-07 | Undo / Start over / playback toggle UI | codex | P1X-06, P1X-02 | waiting |
 | P1X-08 | Range experiments (simulator) | claude | P1X-01 | done (PR #32); user chose a+b+c on 2026-10-18 |
 | P1X-09 | Apply chosen range combination | claude | P1X-08 + user choice | done (PR #34, ENGINE_VERSION 0.11.0); Shallows first-attack target handed to P1X-20 (user, 2026-10-18) |
