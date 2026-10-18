@@ -10,10 +10,10 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done (PR #49)
 
-- [ ] rejection `no-line-of-sight` และ `BlockedTarget` มีช่อง terrain ที่บัง (ว่างเมื่อไม่มี); เมื่อ Unit และภูเขาขวางพร้อมกัน ได้ทั้งสองอย่าง; Flying ผู้โจมตีไม่ถูกบังเหมือนเดิม; test ใน engine และ session (Move preview ด้วย)
-- [ ] code ของ rejection และผลรับ/ไม่รับของทุก action เหมือนเดิม (test เดิมผ่านโดยไม่แก้); `check-replays` ผ่าน; ENGINE_VERSION ไม่เปลี่ยน
-- [ ] ค่าระยะเริ่มตรวจแนวเล็ง export จาก engine และ `@mt/session`; engine ใช้ค่านี้เองแทนเลข 2
-- [ ] README ของ engine และ session บอก field และค่าใหม่ และบอกให้ UI ใช้ `GAME_RANGE_RULES.longRangeDisadvantageFrom` แทนการเขียนเลขเอง
-- [ ] typecheck, test, build, path check ผ่าน
+- [x] rejection `no-line-of-sight` และ `BlockedTarget` มีช่อง terrain ที่บัง (ว่างเมื่อไม่มี); เมื่อ Unit และภูเขาขวางพร้อมกัน ได้ทั้งสองอย่าง; Flying ผู้โจมตีไม่ถูกบังเหมือนเดิม; test ใน engine และ session (Move preview ด้วย)
+- [x] code ของ rejection และผลรับ/ไม่รับของทุก action เหมือนเดิม (test เดิมผ่านโดยไม่แก้); `check-replays` ผ่าน; ENGINE_VERSION ไม่เปลี่ยน
+- [x] ค่าระยะเริ่มตรวจแนวเล็ง export จาก engine และ `@mt/session`; engine ใช้ค่านี้เองแทนเลข 2
+- [x] README ของ engine และ session บอก field และค่าใหม่ และบอกให้ UI ใช้ `GAME_RANGE_RULES.longRangeDisadvantageFrom` แทนการเขียนเลขเอง
+- [x] typecheck, test, build, path check ผ่าน

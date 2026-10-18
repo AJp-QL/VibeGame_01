@@ -75,6 +75,7 @@ export {
   derivedValues,
   ENGINE_VERSION,
   GAME_RANGE_RULES,
+  LINE_OF_SIGHT_FROM,
   legalActions,
   NO_RANGE_RULES,
   ROUND_LIMIT,

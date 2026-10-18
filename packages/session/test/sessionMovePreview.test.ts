@@ -165,6 +165,39 @@ describe('BattleSession: confirming a Move preview', () => {
   })
 })
 
+describe('BattleSession: terrain that blocks sight is named (phase 1.x ticket 28)', () => {
+  // Quillfox (B.m2) on c1 shoots Long Shot (range 3) at Fangrel on c4: the mountain on c3 is on the line.
+  const BEHIND_MOUNTAIN: Tiles = { A: ['g1', 'c4', 'g2'], B: ['g7', 'g6', 'c1'] }
+  const c3 = tileFromName('c3')
+
+  it('the aiming snapshot lists the mountain tile, and no Unit', () => {
+    const session = newSession(BEHIND_MOUNTAIN, 'B')
+    session.selectUnit('B.m2')
+    session.chooseSkill('long_shot')
+    const blocked = session.getSnapshot().blocked
+    expect(blocked).toEqual([
+      { unit: 'A.m1', tile: tileFromName('c4'), reason: 'no-line-of-sight', blockedBy: [], blockedByTerrain: expect.arrayContaining([c3]) },
+    ])
+  })
+
+  it('a Move preview names the terrain too, as moving there would', () => {
+    const session = newSession(BEHIND_MOUNTAIN, 'B')
+    session.selectUnit('B.m2')
+    let seen = 0
+    for (const tile of session.getSnapshot().reachable) {
+      session.previewMove(tile)
+      const reach = session.getSnapshot().movePreview?.reach.find((r) => r.skill === 'long_shot')
+      for (const b of reach?.blocked ?? []) {
+        // Always set; a block with no Unit in the way can only be terrain.
+        expect(b.blockedByTerrain, `from ${tile.x},${tile.y}`).toBeDefined()
+        if (b.blockedBy.length === 0) expect(b.blockedByTerrain?.length, `from ${tile.x},${tile.y}`).toBeGreaterThan(0)
+        if (b.blockedByTerrain !== undefined && b.blockedByTerrain.length > 0) seen++
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
+  })
+})
+
 describe('BattleSession: what the preview says is what the Unit really gets', () => {
   /** The enemies a real Unit can aim at after really moving to `tile`, read from the ordinary aiming snapshot. */
   function realReach(layout: Tiles, first: Side, unit: UnitId, tile: Tile, skill: string | null): { targets: UnitId[]; blocked: UnitId[] } {
