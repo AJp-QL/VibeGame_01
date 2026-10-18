@@ -6,10 +6,22 @@
 
 **Blocked by:** 18 — Move preview ใน session: แตะ Unit ยกเลิกแค่ preview และ movePreview ใน BattleSnapshot; ticket 25 (แก้ test re-select) ควร merge ก่อน
 
-**Status:** ready-for-agent
+**Status:** in progress
 
-- [ ] `BattleScene.ts` อ่าน `snapshot.movePreview` จาก `BattleSnapshot` โดยไม่มี type cast
+- [x] `BattleScene.ts` อ่าน `snapshot.movePreview` จาก `BattleSnapshot` โดยไม่มี type cast
 - [ ] แตะ Unit ขณะมีเงา: เงาและแผงหาย Unit ยังเลือกอยู่และช่องที่เดินได้ยังสว่าง (Move และ Blink); มี test
-- [ ] field ใน BattleScene ใช้ชื่อตามคำใน CONTEXT.md
-- [ ] `visual/README.md` อธิบาย `--disable-lcd-text` และหน้า `move-preview` พร้อมรายการ capture
+- [x] field ใน BattleScene ใช้ชื่อตามคำใน CONTEXT.md
+- [x] `visual/README.md` อธิบาย `--disable-lcd-text` และหน้า `move-preview` พร้อมรายการ capture
 - [ ] screenshot ไม่เปลี่ยน (หรือ update baseline และตรวจทุกภาพถ้าเปลี่ยน); CI เขียวทั้งสาม job
+
+
+## Verification notes
+
+- The cleanup reads `BattleSnapshot.movePreview` directly and renames the view
+  graphics field to `movePreview`. Rendering and gameplay behaviour are unchanged.
+- The six browser cases assert the Move preview hint, unchanged selection, mode,
+  reachable/available Blink tiles, action count and Battle revision after tapping
+  the selected Unit. The cancelled Board must match its pre-preview pixels,
+  showing that the shadow disappears while selection and highlights remain.
+- Removed PR #41's pre-ticket-18 reselection branch. Each case now continues
+  directly from cancellation to a new preview and confirms with the real button.

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import type { BattleSession } from '@mt/session'
+import { th } from '../src/strings.ts'
 
 declare global { interface Window { previewSession: BattleSession } }
 
@@ -28,6 +29,7 @@ for (const width of [1280, 360]) {
         const snapshot = session.getSnapshot()
         return mode === 'blink' ? snapshot.tileChoices : snapshot.reachable
       }, mode)
+      const selectionBoard = await page.locator('canvas').screenshot()
       // Exercise multiple destinations; choose a genuine blocked preview when requested.
       let destination = tiles[0]!
       if (mode === 'blocked') {
@@ -40,7 +42,10 @@ for (const width of [1280, 360]) {
           throw new Error('Expected a blocked target in this layout')
         })
       }
-      const before = await page.evaluate(() => ({ revision: window.previewSession.getSnapshot().revision, actions: window.previewSession.getSnapshot().actions.length }))
+      const before = await page.evaluate(() => {
+        const s = window.previewSession.getSnapshot()
+        return { revision: s.revision, actions: s.actions.length, selectedUnit: s.selectedUnit, mode: s.mode, reachable: s.reachable, tileChoices: s.tileChoices }
+      })
       await tapTile(page, tiles[1]!)
       await tapTile(page, destination)
       const preview = await page.evaluate(() => window.previewSession.getSnapshot().movePreview)
@@ -49,6 +54,7 @@ for (const width of [1280, 360]) {
       expect(await page.evaluate(() => window.previewSession.getSnapshot().actions.length)).toBe(before.actions)
       const panel = page.locator('.move-preview')
       await expect(panel).toBeVisible()
+      await expect(page.locator('.hint')).toHaveText(th.hintMovePreview)
       if (mode === 'blocked') await expect(panel).toContainText('line of sight')
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
       await page.evaluate(() => document.fonts.ready)
@@ -62,12 +68,19 @@ for (const width of [1280, 360]) {
       await expect(panel).toHaveCount(0)
       expect(await page.evaluate(() => window.previewSession.getSnapshot().movePreview)).toBeNull()
       expect(await page.evaluate(() => window.previewSession.getSnapshot().revision)).toBe(before.revision)
-      // Older sessions also deselect the Unit; ticket 18 keeps it selected (and Blink aimed).
-      if (await page.evaluate(() => window.previewSession.getSnapshot().selectedUnit === null)) {
-        await tapTile(page, original)
-        if (mode === 'blink') await page.getByRole('button', { name: /^Blink/ }).click()
-      }
-      // Confirm through the real controls with either session behaviour.
+      // Ticket 18: cancelling returns to destination selection, keeping its highlights.
+      const cancelled = await page.evaluate(() => {
+        const s = window.previewSession.getSnapshot()
+        return { revision: s.revision, actions: s.actions.length, selectedUnit: s.selectedUnit, mode: s.mode, reachable: s.reachable, tileChoices: s.tileChoices }
+      })
+      expect(cancelled).toEqual(before)
+      if (mode === 'blink') expect(cancelled.tileChoices.length).toBeGreaterThan(0)
+      else expect(cancelled.reachable.length).toBeGreaterThan(0)
+      // The Board removes the preview but retains the selected Unit and destination highlights.
+      const cancelledBoard = await page.locator('canvas').screenshot()
+      expect(cancelledBoard.equals(selectionBoard)).toBe(true)
+      await test.info().attach(`preview-cancelled-${mode}-${width}`, { body: cancelledBoard, contentType: 'image/png' })
+      // Pick another destination and confirm through the real controls.
       await tapTile(page, destination)
       await panel.getByRole('button', { name: mode === 'blink' ? 'Blink' : 'เดิน', exact: true }).click()
       expect(await page.evaluate(() => window.previewSession.getSnapshot().revision)).toBe(before.revision + 1)
