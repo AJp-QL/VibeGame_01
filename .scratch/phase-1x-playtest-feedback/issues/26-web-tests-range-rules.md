@@ -1,4 +1,4 @@
-# 24 — test ของ web: Camouflage text test ต้องไม่พึ่งว่า Board ไม่มีภูเขา/กติการะยะ
+# 26 — test ของ web: Camouflage text test ต้องไม่พึ่งว่า Board ไม่มีภูเขา/กติการะยะ
 
 **Owner:** codex
 

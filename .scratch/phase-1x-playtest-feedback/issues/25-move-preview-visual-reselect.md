@@ -1,4 +1,4 @@
-# 23 — test เทียบภาพ Move preview: ขั้น "re-select" ต้องไม่พึ่งว่าแตะ Unit แล้วเลิกเลือกด้วย
+# 25 — test เทียบภาพ Move preview: ขั้น "re-select" ต้องไม่พึ่งว่าแตะ Unit แล้วเลิกเลือกด้วย
 
 **Owner:** codex
 
