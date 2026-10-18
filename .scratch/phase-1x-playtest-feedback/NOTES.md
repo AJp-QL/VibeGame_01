@@ -24,7 +24,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | 07 | Undo / Start over / playback toggle UI | codex | 06, 02 | waiting |
 | 08 | Range experiments (simulator) | claude | 01 | done (PR #32); user chose a+b+c on 2026-10-18 |
 | 09 | Apply chosen range combination | claude | 08 + user choice | merged (PR #34, ENGINE_VERSION 0.11.0); open target: first attack later on Shallows, user decides |
-| 10 | Fixture refresh after range change + new rule text | codex | 09 | PR #45 reviewed, CI green (screenshots compared); human merges first |
+| 10 | Fixture refresh after range change + new rule text | codex | 09 | done (PR #45, fixtures 0.11.0) |
 | 11 | Threat zone in session | claude | 03, 09 | ready |
 | 12 | Threat zone UI | codex | 11, 04 | waiting |
 | 13 | Board size per Board: expand engine/AI/simulator | claude | — | done (PR #23) |
@@ -33,7 +33,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | 16 | 9x9 Boards UI | codex | 15 | waiting |
 | 17 | Release v0.2.0 + next playtest | claude | 07, 10, 12, 16, 19, 24, 29 | waiting |
 | 18 | Move preview session follow-up | claude | 04, 25 | done (PR #29) |
-| 19 | Move preview UI cleanup | codex | 18 | PR #46 reviewed; visual CI skipped (stale base): merge #45, then #46 merges main and re-runs CI |
+| 19 | Move preview UI cleanup | codex | 18 | done (PR #46) |
 | 20 | Range experiments follow-up | claude | 09 | ready |
 | 21 | Enemy range in session (low priority) | claude | 11 | waiting |
 | 22 | Enemy range UI (low priority) | codex | 21 | waiting |
@@ -43,9 +43,9 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | 26 | Web test vs range rules | codex | — | done (PR #42) |
 | 27 | Range rules cleanup from the PR #34 review | claude | — | ready |
 | 28 | Session: terrain sight blockers + line-of-sight distance export | claude | — | ready (from PR #45 review; merge-second rule with 27 on `combat.ts`) |
-| 29 | UI: range and sight text from session | codex | 28, 10 | waiting |
+| 29 | UI: range and sight text from session | codex | 28 (10 done) | waiting |
 
-Next: merge #45 then #46 (Codex 10, 19). Claude 11, 15, 20, 23, 27, 28 ready (05 in progress).
+Next: Codex 29 after 28. Claude 11, 15, 20, 23, 27, 28 ready (05 in progress).
 
 ## Lead's job
 
