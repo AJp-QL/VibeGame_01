@@ -8,7 +8,11 @@
 
 **Status:** ready-for-agent
 
-- [ ] every fixture opens with `openReplay` as `ready` on current main (`corepack pnpm --dir tools/simulator check-replays` exits 0)
-- [ ] baselines updated on Linux + pinned Chromium and checked by eye
+- [x] every fixture opens with `openReplay` as `ready` on current main (`corepack pnpm --dir tools/simulator check-replays` exits 0)
+- [x] baselines updated on Linux + pinned Chromium and checked by eye
 - [ ] `pnpm --filter @mt/web test:visual --repeat-each=3` passes
-- [ ] `pnpm typecheck`, `pnpm test`, `pnpm build` and the path check pass
+- [x] `pnpm typecheck`, `pnpm test`, `pnpm build` and the path check pass
+
+## Comments
+
+- Refreshed on main `d24c252`: all 16 fixtures retain their actions/data hash and now pin engine 0.12.0. Every Replay opens as ready. Baseline regeneration passed 27/27 with the pinned Linux Chromium; all 25 PNGs remain byte-identical. Every image was inspected; see [evidence](../evidence/30-fixtures-after-replay-v2/README.md). Full workspace: 1,028 passed, 1 skipped; typecheck and build passed. Three-run comparison in progress.
