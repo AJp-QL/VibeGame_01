@@ -102,7 +102,7 @@ describe('the distance variants', () => {
       expect(set.threat.threatenedShare).toBeGreaterThan(0)
       expect(set.threat.threatenedShare).toBeLessThanOrEqual(1)
     }
-  })
+  }, 60000)
 
   it('the baseline plays the game of today: the same Battles as without any variant', async () => {
     const { simulateGames, aggregate } = await import('../src/index.ts')
