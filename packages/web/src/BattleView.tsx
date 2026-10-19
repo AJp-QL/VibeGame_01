@@ -11,15 +11,22 @@ const LABELS: BoardLabels = {
 }
 
 /** Hosts the Phaser Board. Phaser reads the same session as React. */
-export function BattleView({ session }: { session: BattleSessionPort }) {
+export function BattleView({ session, showThreatZone = false }: { session: BattleSessionPort; showThreatZone?: boolean }) {
+  const mountedRef = useRef<ReturnType<typeof mountBattleGame> | null>(null)
   const parentRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
     const parent = parentRef.current
     if (parent === null) return
     // StrictMode mounts twice in development: the teardown removes the first canvas at once.
-    return mountBattleGame(parent, session, LABELS)
+    const mounted = mountBattleGame(parent, session, LABELS)
+    mountedRef.current = mounted
+    return () => { mountedRef.current = null; mounted() }
   }, [session])
+
+  useLayoutEffect(() => {
+    mountedRef.current?.setDisplay({ showThreatZone })
+  }, [session, showThreatZone])
 
   return <div ref={parentRef} className="board" style={{ '--board-pixels': `${boardPixels(session.getSnapshot().state)}px` } as CSSProperties} />
 }

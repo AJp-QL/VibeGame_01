@@ -6,10 +6,11 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { withMovePreview } from '../src/movePreviewSession.ts'
 import { ActionPlanPanel } from '../src/ActionPlanPanel.tsx'
+import { ThreatCount, ThreatZoneToggle } from '../src/ThreatZone.tsx'
+import { UndoControls } from '../src/UndoControls.tsx'
 import { MovePreviewPanel } from '../src/MovePreviewPanel.tsx'
 import { createActionConfirmation } from '../src/actionConfirmation.ts'
 import { StartUnitDialog } from '../src/StartUnitDialog.tsx'
-import { UndoControls } from '../src/UndoControls.tsx'
 import { TurnPanel } from '../src/TurnPanel.tsx'
 import { SkillButtons } from '../src/SkillButtons.tsx'
 import { TerrainLegend } from '../src/TerrainLegend.tsx'
@@ -595,6 +596,29 @@ describe('Action plan UI', () => {
     expect(confirmation.getPending()).toMatchObject({ current: 'A.m1', next: 'A.m2' })
     confirmation.confirm()
     expect(s.getSnapshot().state).not.toBe(before)
+  })
+})
+
+describe('Threat zone advice', () => {
+  it('renders the session count and estimate, with zero muted and overlay off by default', () => {
+    const session = withMovePreview(createBattleSession(playing({ A: ['a1', 'c5', 'c6'], B: ['g7', 'e5', 'c2'] })))
+    session.selectUnit('A.m2')
+    session.previewMove(session.getSnapshot().reachable[0]!)
+    const snapshot = session.getSnapshot()
+    const panel = renderToStaticMarkup(createElement(MovePreviewPanel, { snapshot: { ...snapshot, movePreview: { ...snapshot.movePreview!, threat: 42 } }, session, data }))
+    expect(panel).toContain(th.threatZone.count(42))
+    expect(panel).toContain(th.threatZone.estimate)
+    const zero = renderToStaticMarkup(createElement(ThreatCount, { count: 0 }))
+    expect(zero).toContain('muted')
+    expect(zero).toContain(th.threatZone.count(0))
+    const toggle = renderToStaticMarkup(createElement(ThreatZoneToggle, { visible: false, onChange() {} }))
+    expect(toggle).toContain('aria-pressed="false"')
+    expect(toggle).toContain(th.threatZone.toggle)
+    expect(toggle).not.toContain(th.threatZone.legend)
+    expect(toggle).toContain(th.threatZone.boardEstimate)
+    const previewToggle = renderToStaticMarkup(createElement(ThreatZoneToggle, { visible: true, previewOpen: true, onChange() {} }))
+    expect(previewToggle).not.toContain(th.threatZone.boardEstimate)
+    expect(previewToggle).not.toContain(th.threatZone.estimate)
   })
 })
 

@@ -34,6 +34,9 @@ import {
   SELECTED,
   OUTLINE,
   ORDER_DIGITS,
+  PIXEL_DIGITS,
+  THREAT_FILL,
+  THREAT_TEXT,
   STATUS_DOT,
   STATUS_ICONS,
   STATUS_NEGATIVE,
@@ -70,7 +73,13 @@ const MAX_STATUS_ICONS = 3
 
 type PlanSnapshot = BattleSnapshot & Partial<Pick<SessionSnapshot, 'attackable' | 'plan' | 'mode'>>
 
+
+export interface BoardDisplayOptions {
+  readonly showThreatZone?: boolean
+}
+
 export interface BattleSceneData {
+  readonly display?: BoardDisplayOptions
   readonly session: BattleSessionPort
   readonly labels: BoardLabels
 }
@@ -89,6 +98,8 @@ function drawPattern(g: Phaser.GameObjects.Graphics, pattern: readonly string[],
 }
 
 export class BattleScene extends Phaser.Scene {
+  private showThreatZone = false
+  private threatLayer!: Phaser.GameObjects.Graphics
   private session!: BattleSessionPort
   private labels!: BoardLabels
   private planMarkers!: Phaser.GameObjects.Graphics
@@ -110,12 +121,20 @@ export class BattleScene extends Phaser.Scene {
   init(data: BattleSceneData): void {
     this.session = data.session
     this.labels = data.labels
+    this.showThreatZone = data.display?.showThreatZone === true
+  }
+
+  /** Presentation only: redraw the overlay without touching Units or active tweens. */
+  setDisplay(display: BoardDisplayOptions): void {
+    this.showThreatZone = display.showThreatZone === true
+    if (this.threatLayer) this.drawThreatZone(this.session.getSnapshot())
   }
 
   create(): void {
     const snapshot = this.session.getSnapshot()
     this.terrainLayer = this.add.graphics()
     this.drawBoard(snapshot.state)
+    this.threatLayer = this.add.graphics()
     this.highlights = this.add.graphics()
     this.planMarkers = this.add.graphics().setDepth(6)
     this.movePreview = this.add.graphics().setDepth(5).setAlpha(0.5)
@@ -168,6 +187,7 @@ export class BattleScene extends Phaser.Scene {
   private render(): void {
     const snapshot: PlanSnapshot = this.session.getSnapshot()
     this.drawBoard(snapshot.state)
+    this.drawThreatZone(snapshot)
     this.drawHighlights(snapshot)
     const plan = snapshot.plan
     const preview = plan == null ? snapshot.movePreview : { unit: plan.unit, tile: plan.origin.tile }
@@ -182,8 +202,7 @@ export class BattleScene extends Phaser.Scene {
     }
     if (snapshot.revision !== this.shownRevision) {
       this.shownRevision = snapshot.revision
-      // Undo and Replay jumps redraw an earlier state without animation events.
-      // Stop queued movement too, so it cannot carry a Unit back to the withdrawn tile.
+      // Undo and Replay jumps must cancel queued movement as well as redraw state.
       if (snapshot.events.length === 0) {
         this.tweens.killAll()
         this.time.removeAllEvents()
@@ -263,6 +282,28 @@ export class BattleScene extends Phaser.Scene {
       g.fillStyle(icon.colour, 1)
       drawPattern(g, icon.pattern, left + 1, -14)
     })
+  }
+
+  /** Presentation only: counts are supplied by session, never inferred from the terrain or Units. */
+  private drawThreatZone(snapshot: BattleSnapshot): void {
+    const g = this.threatLayer
+    g.clear()
+    if (!this.showThreatZone || snapshot.state.phase !== 'play') return
+    snapshot.threatZone?.forEach((row, y) => row.forEach((count, x) => {
+      if (count <= 0) return
+      const left = x * TILE_SIZE
+      const top = y * TILE_SIZE
+      g.fillStyle(THREAT_FILL, Math.min(0.12 + count * 0.07, 0.42))
+      g.fillRect(left + 1, top + 1, TILE_SIZE - 1, TILE_SIZE - 1)
+      const text = String(count)
+      const width = text.length * 4 + 2
+      g.fillStyle(OUTLINE, 0.95)
+      g.fillRect(left + TILE_SIZE - width - 1, top + 2, width, 7)
+      g.fillStyle(THREAT_TEXT, 1)
+      Array.from(text).forEach((digit, index) => {
+        drawPattern(g, PIXEL_DIGITS[digit]!, left + TILE_SIZE - width + index * 4, top + 3)
+      })
+    }))
   }
 
   private drawHighlights(snapshot: PlanSnapshot): void {

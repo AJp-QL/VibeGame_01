@@ -1,6 +1,7 @@
 import type { BattleSession, SessionSnapshot } from '@mt/session'
 import { tileName, type GameData } from '@mt/shared'
 import { namer, skillName } from './battleText.ts'
+import { ThreatCount } from './ThreatZone.tsx'
 import { th } from './strings.ts'
 
 export function MovePreviewPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; session: BattleSession; data: GameData }) {
@@ -12,6 +13,7 @@ export function MovePreviewPanel({ snapshot, session, data }: { snapshot: Sessio
     <section className="move-preview" aria-labelledby="move-preview-title">
       <h2 id="move-preview-title">{th.movePreviewTitle(name(preview.unit), tileName(preview.tile))}</h2>
       <p className="muted">{th.movePreviewNote}</p>
+      <ThreatCount count={preview.threat} />
       <ul className="move-reach">
         {preview.reach.map(option => (
           <li key={option.skill ?? 'basic'}>

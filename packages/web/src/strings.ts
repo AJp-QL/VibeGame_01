@@ -43,6 +43,13 @@ export const th = {
     via: { stay: 'อยู่ที่เดิม', move: 'เดิน', blink: 'Blink' },
     legend: 'ดาบ = ศัตรูที่โจมตีได้ใน activation นี้ · จุดแดง = ช่องที่ยืนโจมตีได้ · น้ำเงิน = เดิน',
   },
+  threatZone: {
+    toggle: 'แสดง Threat zone ทั้ง Board',
+    estimate: 'ค่าประมาณจำนวนศัตรูที่อาจโจมตีช่องนี้ได้ใน Turn หน้า ไม่ใช่การรับประกัน',
+    boardEstimate: 'ค่าประมาณจำนวนศัตรูที่อาจโจมตีแต่ละช่องได้ใน Turn หน้า ไม่ใช่การรับประกัน',
+    legend: 'สีม่วงเข้มขึ้น = ศัตรูที่อาจโจมตีได้มากขึ้น · ตัวเลข = จำนวนศัตรู',
+    count: (count: number) => `⚠ ${count}`,
+  },
   confirmMove: 'เดิน',
   movePreviewTitle: (unit: string, tile: string) => `Move preview: ${unit} ที่ ${tile}`,
   movePreviewNote: 'ยังไม่ได้เดินจริง รายการนี้บอกว่าโจมตีใครได้จากช่องเงา',
