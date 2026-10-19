@@ -16,7 +16,7 @@
 
 ## Implementation
 
-- Move preview displays the session count with muted zero and an explicit estimate explanation. The overlay starts off, uses purple shading and numeric counts from session, and preserves movement highlights.
-- Integrated P1X-07 and P1X-24 to resolve overlapping UI and baseline changes. Purple Threat zone remains distinct from blue movement and red Action plan markers. Merge PR #59, #60 and #61 first.
-- [Inspected desktop/mobile evidence](../evidence/12-threat-zone-ui/README.md). Combined typecheck, 1,035 tests passed (1 skipped), build and check-replays pass. Pinned Chromium baseline refresh passed 36/36; the final comparison and CI are recorded in the PR.
-- Final vector-warning refinement passed all 36 local visual comparisons and all three CI jobs, including actual screenshot comparisons (run 39209076655). All acceptance criteria are complete.
+- Session counts drive the preview and optional purple Board overlay. The estimate appears once, with tile-specific wording in a visible preview or Board-wide wording beside the toggle.
+- The live scene redraws its threat layer without recreating the Phaser game; real-browser tests verify canvas identity, state preservation, exact restoration, and completion of a running walk.
+- Shared palette digits/colours replace duplicated rendering constants. Removed the unused title and three orphan evidence images.
+- Includes updated P1X-24 (#61) and main c1474cb. Merge #61 first. [Inspected desktop/mobile evidence and verification](../evidence/12-threat-zone-ui/README.md): 1,051 tests passed / 1 skipped, all 37 pinned Chromium comparisons passed, plus frozen install, typecheck, build, path ownership and replay validation. Final CI status is recorded in the PR.

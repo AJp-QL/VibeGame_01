@@ -11,6 +11,7 @@ for (const width of [1280, 360]) {
     await expect(page.locator('canvas')).toBeVisible()
     const toggle = page.getByRole('button', { name: th.threatZone.toggle })
     await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.getByText(th.threatZone.boardEstimate, { exact: true })).toHaveCount(1)
     const before = await page.evaluate(() => {
       const s = window.threatSession
       const tile = s.getSnapshot().reachable[0]!
@@ -20,6 +21,7 @@ for (const width of [1280, 360]) {
     })
     await expect(page.locator('.threat-value')).toHaveAttribute('aria-label', th.threatZone.count(before.threat!))
     await expect(page.locator('.threat-count')).toContainText(th.threatZone.estimate)
+    await expect(page.getByText(th.threatZone.boardEstimate, { exact: true })).toHaveCount(0)
     const canvas = await page.locator('canvas').elementHandle()
     await expect(page.getByText(th.threatZone.estimate, { exact: true })).toHaveCount(1)
     const plain = await page.locator('canvas').screenshot()
@@ -32,6 +34,7 @@ for (const width of [1280, 360]) {
     await expect(page.locator('canvas')).toHaveScreenshot(`threat-zone-${width}.png`)
     await test.info().attach(`threat-zone-${width}`, { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' })
     await toggle.click()
+    expect(await canvas!.evaluate(element => element === document.querySelector('canvas'))).toBe(true)
     const restored = await page.locator('canvas').screenshot()
     expect(restored.equals(plain)).toBe(true)
     expect(await page.evaluate(() => {

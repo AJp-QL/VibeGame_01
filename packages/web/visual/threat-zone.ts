@@ -38,7 +38,7 @@ function Review() {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot)
   return createElement('main', { className: 'battle' },
     createElement(StartUnitDialog, { confirmation, data }),
-    createElement(ThreatZoneToggle, { visible, previewOpen: snapshot.movePreview !== null, onChange: setVisible }),
+    createElement(ThreatZoneToggle, { visible, previewOpen: snapshot.plan === null && snapshot.movePreview !== null, onChange: setVisible }),
     createElement(BattleView, { session, showThreatZone: visible }),
     createElement(TurnPanel, { key: snapshot.revision, snapshot, session, data }),
   )

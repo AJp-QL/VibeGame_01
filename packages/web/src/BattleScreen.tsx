@@ -75,7 +75,7 @@ export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAga
 
       <UndoControls snapshot={snapshot} onUndo={onUndo} />
       {state.phase === 'play' && state.outcome === null && snapshot.screen === 'board' && (
-        <ThreatZoneToggle previewOpen={snapshot.movePreview !== null} visible={showThreatZone} onChange={setShowThreatZone} />
+        <ThreatZoneToggle previewOpen={snapshot.plan === null && snapshot.movePreview !== null} visible={showThreatZone} onChange={setShowThreatZone} />
       )}
       <BattleView session={session} showThreatZone={showThreatZone} />
       <TerrainLegend />
