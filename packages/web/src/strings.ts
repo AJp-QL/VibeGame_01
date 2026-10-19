@@ -33,6 +33,13 @@ export const th = {
   hintMoveOrDefend: 'แตะช่องที่สว่างเพื่อดู Move preview แล้วกด "เดิน" หรือกด "ป้องกัน" (Guard และ Ward +2 จนถึง Turn ถัดไปของทีมตัวเอง)',
   hintAttackOnly: 'Unit นี้ไม่มีช่องที่เดินได้ กด "โจมตี" เพื่อเลือกเป้า หรือกด "ป้องกัน" ได้',
   hintDefendOnly: 'Unit นี้ไม่มีช่องที่เดินได้ ยังกด "ป้องกัน" ได้',
+  threatZone: {
+    title: 'Threat zone',
+    toggle: 'แสดง Threat zone ทั้ง Board',
+    estimate: 'ค่าประมาณจำนวนศัตรูที่อาจโจมตีช่องนี้ได้ใน Turn หน้า ไม่ใช่การรับประกัน',
+    legend: 'สีม่วงเข้มขึ้น = ศัตรูที่อาจโจมตีได้มากขึ้น · ตัวเลข = จำนวนศัตรู',
+    count: (count: number) => `⚠ ${count}`,
+  },
   confirmMove: 'เดิน',
   movePreviewTitle: (unit: string, tile: string) => `Move preview: ${unit} ที่ ${tile}`,
   movePreviewNote: 'ยังไม่ได้เดินจริง รายการนี้บอกว่าโจมตีใครได้จากช่องเงา',

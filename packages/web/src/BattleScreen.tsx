@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { withMovePreview } from './movePreviewSession.ts'
 import { createActionConfirmation } from './actionConfirmation.ts'
 import { StartUnitDialog } from './StartUnitDialog.tsx'
 import { decidingSide, type BattleOutcome, type BattleSession } from '@mt/session'
 import type { GameData } from '@mt/shared'
+import { ThreatZoneToggle } from './ThreatZone.tsx'
 import { BattleView } from './BattleView.tsx'
 import { BattleMenu } from './BattleMenu.tsx'
 import { StatusBar, ResultSummary } from './BattleStatus.tsx'
@@ -37,6 +38,7 @@ export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAga
   const session = useMemo(() => withMovePreview(confirmation.session), [confirmation])
   const snapshot = useBattleSession(session, onFinished)
   const { state } = snapshot
+  const [showThreatZone, setShowThreatZone] = useState(false)
   const scenario = data.scenarios[state.scenarioId]
   const board = data.boards[state.boardId]
 
@@ -68,7 +70,10 @@ export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAga
         </section>
       )}
 
-      <BattleView session={session} />
+      {state.phase === 'play' && state.outcome === null && snapshot.screen === 'board' && (
+        <ThreatZoneToggle visible={showThreatZone} onChange={setShowThreatZone} />
+      )}
+      <BattleView session={session} showThreatZone={showThreatZone} />
       <TerrainLegend />
 
       {state.phase === 'deployment' ? (

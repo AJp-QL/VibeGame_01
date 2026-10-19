@@ -68,7 +68,20 @@ const SPENT_ALPHA = 0.5
 /** Status icons drawn on a Unit; the Unit card lists them all. */
 const MAX_STATUS_ICONS = 3
 
+const THREAT_DIGITS: Readonly<Record<string, readonly string[]>> = {
+  '0': ['###', '#.#', '#.#', '#.#', '###'], '1': ['.#.', '##.', '.#.', '.#.', '###'],
+  '2': ['##.', '..#', '.#.', '#..', '###'], '3': ['##.', '..#', '.#.', '..#', '##.'],
+  '4': ['#.#', '#.#', '###', '..#', '..#'], '5': ['###', '#..', '##.', '..#', '##.'],
+  '6': ['.##', '#..', '###', '#.#', '###'], '7': ['###', '..#', '.#.', '.#.', '.#.'],
+  '8': ['###', '#.#', '###', '#.#', '###'], '9': ['###', '#.#', '###', '..#', '##.'],
+}
+
+export interface BoardDisplayOptions {
+  readonly showThreatZone?: boolean
+}
+
 export interface BattleSceneData {
+  readonly display?: BoardDisplayOptions
   readonly session: BattleSessionPort
   readonly labels: BoardLabels
 }
@@ -87,6 +100,8 @@ function drawPattern(g: Phaser.GameObjects.Graphics, pattern: readonly string[],
 }
 
 export class BattleScene extends Phaser.Scene {
+  private showThreatZone = false
+  private threatLayer!: Phaser.GameObjects.Graphics
   private session!: BattleSessionPort
   private labels!: BoardLabels
   private highlights!: Phaser.GameObjects.Graphics
@@ -106,12 +121,14 @@ export class BattleScene extends Phaser.Scene {
   init(data: BattleSceneData): void {
     this.session = data.session
     this.labels = data.labels
+    this.showThreatZone = data.display?.showThreatZone === true
   }
 
   create(): void {
     const snapshot = this.session.getSnapshot()
     this.terrainLayer = this.add.graphics()
     this.drawBoard(snapshot.state)
+    this.threatLayer = this.add.graphics()
     this.highlights = this.add.graphics()
     this.movePreview = this.add.graphics().setDepth(5).setAlpha(0.5)
     this.shownRevision = snapshot.revision
@@ -163,6 +180,7 @@ export class BattleScene extends Phaser.Scene {
   private render(): void {
     const snapshot = this.session.getSnapshot()
     this.drawBoard(snapshot.state)
+    this.drawThreatZone(snapshot)
     this.drawHighlights(snapshot)
     const preview = snapshot.movePreview
     this.movePreview.clear()
@@ -248,6 +266,28 @@ export class BattleScene extends Phaser.Scene {
       g.fillStyle(icon.colour, 1)
       drawPattern(g, icon.pattern, left + 1, -14)
     })
+  }
+
+  /** Presentation only: counts are supplied by session, never inferred from the terrain or Units. */
+  private drawThreatZone(snapshot: BattleSnapshot): void {
+    const g = this.threatLayer
+    g.clear()
+    if (!this.showThreatZone || snapshot.state.phase !== 'play') return
+    snapshot.threatZone?.forEach((row, y) => row.forEach((count, x) => {
+      if (count <= 0) return
+      const left = x * TILE_SIZE
+      const top = y * TILE_SIZE
+      g.fillStyle(0xb193ed, Math.min(0.12 + count * 0.07, 0.42))
+      g.fillRect(left + 1, top + 1, TILE_SIZE - 1, TILE_SIZE - 1)
+      const text = String(count)
+      const width = text.length * 4 + 2
+      g.fillStyle(OUTLINE, 0.95)
+      g.fillRect(left + TILE_SIZE - width - 1, top + 2, width, 7)
+      g.fillStyle(0xe4d5ff, 1)
+      Array.from(text).forEach((digit, index) => {
+        drawPattern(g, THREAT_DIGITS[digit]!, left + TILE_SIZE - width + index * 4, top + 3)
+      })
+    }))
   }
 
   private drawHighlights(snapshot: BattleSnapshot): void {

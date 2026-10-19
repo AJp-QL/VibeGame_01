@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser'
 import { boardPixels } from './boardGeometry.ts'
-import { BattleScene, type BattleSceneData } from './BattleScene.ts'
+import { BattleScene, type BattleSceneData, type BoardDisplayOptions } from './BattleScene.ts'
 import { alignInputOnPress, destroyBoard, fitBoard } from './boardFit.ts'
 import type { BattleSessionPort } from '@mt/session'
 import type { BoardLabels } from './labels.ts'
@@ -11,7 +11,7 @@ import type { BoardLabels } from './labels.ts'
  * device pixels per Board pixel (`boardZoom`). Call `fitBattleGame` when the
  * parent changes size. Tear down with `destroyBattleGame`.
  */
-export function createBattleGame(parent: HTMLElement, session: BattleSessionPort, labels: BoardLabels): Phaser.Game {
+export function createBattleGame(parent: HTMLElement, session: BattleSessionPort, labels: BoardLabels, display: BoardDisplayOptions = {}): Phaser.Game {
   const pixels = boardPixels(session.getSnapshot().state)
   const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -24,7 +24,7 @@ export function createBattleGame(parent: HTMLElement, session: BattleSessionPort
     audio: { noAudio: true },
     banner: false,
   })
-  const data: BattleSceneData = { session, labels }
+  const data: BattleSceneData = { session, labels, display }
   game.scene.add('battle', BattleScene, true, data)
   return game
 }
@@ -41,8 +41,8 @@ export function fitBattleGame(game: Phaser.Game, parent: HTMLElement): void {
  * layout has settled (next frame, web fonts loaded), and before every press.
  * Returns the teardown, which also destroys the game.
  */
-export function mountBattleGame(parent: HTMLElement, session: BattleSessionPort, labels: BoardLabels): () => void {
-  const game = createBattleGame(parent, session, labels)
+export function mountBattleGame(parent: HTMLElement, session: BattleSessionPort, labels: BoardLabels, display: BoardDisplayOptions = {}): () => void {
+  const game = createBattleGame(parent, session, labels, display)
   const fit = () => fitBattleGame(game, parent)
   fit()
   game.events.once(Phaser.Core.Events.READY, fit)

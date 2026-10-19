@@ -872,3 +872,8 @@ body {
 .start-unit-dialog::backdrop {
   background: rgb(0 0 0 / 70%);
 }
+
+.threat-count { margin-block: 12px; padding: 8px; border-left: 3px solid #89759f; }
+.threat-count.threatened { border-color: #c8a7ff; color: #eadfff; }
+.threat-count p { margin-bottom: 0; }
+.threat-controls button[aria-pressed="true"] { border-color: #c8a7ff; }
