@@ -44,15 +44,26 @@ describe('data/ passes its schemas', () => {
 
   it('has every Board in data/ look the same after a 180° turn (rules §2.1)', () => {
     const boards = Object.values(data.boards)
-    expect(boards.map((b) => b.id).sort()).toEqual(['crossroads', 'shallows'])
+    expect(boards.map((b) => b.id).sort()).toEqual(['crossroads', 'grand_crossroads', 'shallows', 'wide_shallows'])
     for (const board of boards) {
       const mismatched: string[] = []
-      for (let y = 0; y < 7; y++) {
-        for (let x = 0; x < 7; x++) {
-          if (board.terrain[y]?.[x] !== board.terrain[6 - y]?.[6 - x]) mismatched.push(`${board.id} ${x},${y}`)
+      const size = boardSize(board)
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          if (board.terrain[y]?.[x] !== board.terrain[size - 1 - y]?.[size - 1 - x]) mismatched.push(`${board.id} ${x},${y}`)
         }
       }
       expect(mismatched).toEqual([])
+    }
+  })
+
+  it('has two 9x9 Boards beside the two 7x7 ones, with a mountain or two to block sight (phase 1.x ticket 15)', () => {
+    const sizes = Object.fromEntries(Object.values(data.boards).map((b) => [b.id, boardSize(b)]))
+    expect(sizes).toEqual({ crossroads: 7, shallows: 7, grand_crossroads: 9, wide_shallows: 9 })
+    for (const id of ['grand_crossroads', 'wide_shallows']) {
+      const terrain = data.boards[id]!.terrain.flat()
+      expect(terrain.filter((t) => t === 'mountain').length, id).toBeGreaterThanOrEqual(6)
+      expect(new Set(terrain).size, id).toBe(7)
     }
   })
 

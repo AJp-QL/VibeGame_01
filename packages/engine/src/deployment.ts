@@ -1,12 +1,12 @@
 /**
  * Deployment (rules §17.1): before the first Turn each side places its Tamer
- * and 2 Monsters on empty tiles of its own start zone (the back 2 rows, 14
- * tiles, any terrain), hidden from the other side. Team A places first, then
+ * and 2 Monsters on empty tiles of its own start zone (the back 2 rows of the
+ * Board, any terrain), hidden from the other side. Team A places first, then
  * team B. When both have confirmed, the placements are revealed together,
  * initiative is rolled and the first Turn starts. Deployment uses no dice.
  */
 import { boardSizeOf } from './state.ts'
-import { BOARD_SIZE, isOnBoard, sameTile, tileName, type Side, type Tile } from '@mt/shared'
+import { isOnBoard, sameTile, tileName, type Side, type Tile } from '@mt/shared'
 import type { Action, ApplyResult, Rejection, RejectionCode } from './battle.ts'
 import { rollInitiative } from './initiative.ts'
 import { emit, type Resolution } from './resolution.ts'
@@ -18,17 +18,8 @@ export function startZoneRows(side: Side, size: number): readonly number[] {
   return side === 'A' ? [0, 1] : [size - 2, size - 1]
 }
 
-/**
- * Start zone rows of the 7x7 Boards.
- * @deprecated Use `startZoneRows(side, size)` with the Board's size (phase 1.x ticket 13).
- */
-export const START_ZONE_ROWS: Readonly<Record<Side, readonly number[]>> = {
-  A: startZoneRows('A', BOARD_SIZE),
-  B: startZoneRows('B', BOARD_SIZE),
-}
-
-/** Whether `tile` is in the start zone of `side` on a Board of `size` (7x7 unless given). */
-export function isInStartZone(side: Side, tile: Tile, size: number = BOARD_SIZE): boolean {
+/** Whether `tile` is in the start zone of `side` on a Board of `size`. */
+export function isInStartZone(side: Side, tile: Tile, size: number): boolean {
   return isOnBoard(tile, size) && startZoneRows(side, size).includes(tile.y)
 }
 

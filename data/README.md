@@ -16,5 +16,5 @@
 - ลำดับ: docs/rules -> data/ -> packages/engine
 
 ## สถานะ
-- มี boards/crossroads และ boards/shallows, species 4 ตัว, scenarios/scenario_1 และ scenario_2, skills ครบทุก loadout + Basic Attack + Defend, statuses ครบ 10 ตัวของ phase 1, elements/element_wheel (ticket 07)
+- มี boards/crossroads และ boards/shallows (7x7) กับ boards/grand_crossroads และ boards/wide_shallows (9x9, phase 1.x ticket 15), species 4 ตัว, scenarios/scenario_1 และ scenario_2, skills ครบทุก loadout + Basic Attack + Defend, statuses ครบ 10 ตัวของ phase 1, elements/element_wheel (ticket 07)
 - traits, campaigns ยังว่าง

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BOARD_SIZE, tileFromName, tileName, type Side } from '@mt/shared'
+import { tileFromName, tileName, type Side } from '@mt/shared'
 import {
   applyAction,
   legalActions,
@@ -32,8 +32,9 @@ const VECTORS: readonly (readonly [string, string, readonly string[]])[] = [
 /** Basic Attack reaching 6 tiles, so every vector is in range (ranges are data, spec "Data"). */
 const LONG_REACH = { basic_attack: { range: 6 } } as const
 
-const ALL_TILES = Array.from({ length: BOARD_SIZE * BOARD_SIZE }, (_, i) =>
-  tileName({ x: i % BOARD_SIZE, y: Math.floor(i / BOARD_SIZE) }),
+const SIZE = 7
+const ALL_TILES = Array.from({ length: SIZE * SIZE }, (_, i) =>
+  tileName({ x: i % SIZE, y: Math.floor(i / SIZE) }),
 )
 
 /**

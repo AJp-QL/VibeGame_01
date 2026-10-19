@@ -37,7 +37,7 @@ describe('menu: what it offers (spec user stories 8–9)', () => {
 
   it('offers every Board in data/, in id order', () => {
     const boards = menuBoards(data)
-    expect(boards.map((b) => b.id)).toEqual(['crossroads', 'shallows'])
+    expect(boards.map((b) => b.id)).toEqual(['crossroads', 'grand_crossroads', 'shallows', 'wide_shallows'])
   })
 
   it('starts on Scenario 1, its own Board, Hotseat, human as team A', () => {
@@ -63,7 +63,7 @@ describe('menu: what it offers (spec user stories 8–9)', () => {
 
 describe('menu: starting a Battle uses the choices', () => {
   for (const scenario of ['scenario_1', 'scenario_2']) {
-    for (const board of ['crossroads', 'shallows']) {
+    for (const board of ['crossroads', 'grand_crossroads', 'shallows', 'wide_shallows']) {
       it(`${scenario} on ${board}`, () => {
         const choice: BattleChoice = { scenarioId: scenario, boardId: board, mode: 'hotseat', humanSide: 'A' }
         expect(canStart(data, choice)).toBe(true)
