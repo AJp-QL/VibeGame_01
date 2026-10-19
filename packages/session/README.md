@@ -24,3 +24,5 @@ interaction model ของ Battle แบบไม่มี UI (ADR 0004): ส�
 
 ## สถานะ
 - ticket 20: แยกออกจาก web พฤติกรรมเดิมทุกอย่าง test ของ session, battleChoice, playStats และ Replay ย้ายมาที่ `test/` ส่วน test ข้อความ (บรรทัด Replay, เหตุผลที่เล็งไม่ได้, ข้อความ skill, ชื่อในเมนู, hash ของ data ที่ bundle) อยู่ที่ `packages/web/test/sessionText.test.ts`
+
+- Replay format 2 (P1X-06): `snapshot.recorded` = ทุก action ที่รับ รวมที่ถูก Undo ถอน และ entry `undo` ต่อท้าย (ส่งให้ `battleReplay` แทน `snapshot.actions`; ไม่มี Undo = เท่ากับ `actions`), `snapshot.undos` = จำนวนครั้งที่ใช้ Undo `openReplay` ได้ `ready` พร้อม `final`; `createReplayPlayer(initial, steps, { showUndone? })` ข้าม action ที่ถูกถอนเป็นค่าเริ่มต้น, `setShowUndone(true)` แสดงทั้งหมด (snapshot มี `undone`, `hasUndone`, `showUndone`) ไฟล์ format 1 เล่นเหมือนเดิม Play stats: `recordUndo(index)` นับ `undos` ต่อ Battle, `recordBattleAbandoned(index)` ใส่ `abandonedAt` และนับ `battlesAbandoned` (ทิ้ง Battle ที่ยังไม่จบ; ไม่นับ Battle ที่จบแล้ว)

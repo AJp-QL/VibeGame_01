@@ -49,11 +49,13 @@ import {
   legalActions,
   previewAction,
   undoPoint,
+  undoRecord,
   unitSkills,
   unitsVisibleTo,
   type Action,
   type ActionPreview,
   type BattleEvent,
+  type BattleReplayEntry,
   type BattleState,
   type CommandOption,
   type Rejection,
@@ -146,6 +148,14 @@ export interface SessionSnapshot extends BattleSnapshot {
   readonly log: readonly BattleEvent[]
   /** Every action the engine accepted, in order: with the Dice Seed, this is the Battle's Replay. */
   readonly actions: readonly Action[]
+  /**
+   * The same list for a Replay file (format 2): every accepted action in order,
+   * including the ones Undo withdrew, each Undo as an `undo` entry after them.
+   * Without Undo it equals `actions`. Pass this to `battleReplay`.
+   */
+  readonly recorded: readonly BattleReplayEntry[]
+  /** How many times Undo was used in this Battle (for the play stats). */
+  readonly undos: number
   readonly screen: HotseatScreen
   readonly mode: SelectionMode
   /** The skill being aimed in `skill` mode. */
@@ -721,6 +731,8 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     rejection: null,
     log: [],
     actions: [],
+    recorded: [],
+    undos: 0,
     screen: 'board',
     aiSide: opponent?.side ?? null,
   })
@@ -755,6 +767,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       rejection: null,
       log: [...snapshot.log, ...result.events],
       actions: [...snapshot.actions, action],
+      recorded: [...snapshot.recorded, action],
       ...after(result.state),
     })
   }
@@ -972,6 +985,8 @@ export function createBattleSession(initial: BattleState, options: SessionOption
         rejection: null,
         log: snapshot.log.slice(0, logLengths[point.keep]),
         actions: snapshot.actions.slice(0, point.keep),
+        recorded: [...snapshot.recorded, undoRecord(snapshot.actions.length - point.keep)],
+        undos: snapshot.undos + 1,
         screen: 'board',
       })
     },

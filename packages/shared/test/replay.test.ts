@@ -63,7 +63,7 @@ describe('Replay file format', () => {
     expect(issues({ hello: 'world' }).length).toBeGreaterThan(0)
     expect(issues([])).toHaveLength(1)
     expect(issues({ ...VALID, format: 'something-else' })[0]).toMatch(/^format:/)
-    expect(issues({ ...VALID, formatVersion: 2 })[0]).toMatch(/^formatVersion:/)
+    expect(issues({ ...VALID, formatVersion: 3 })[0]).toMatch(/^formatVersion:/)
   })
 
   it('rejects a Replay with a missing or malformed field, naming the field', () => {
@@ -84,5 +84,33 @@ describe('Replay file format', () => {
     expect(issues({ ...VALID, actions: [{ type: 'endTurn' }, { unit: 'A.m1' }] })[0]).toMatch(/^actions\.1\.type:/)
     expect(issues({ ...VALID, actions: [{ type: 'endTurn' }, 'endTurn'] })[0]).toMatch(/^actions\.1:/)
     expect(issues({ ...VALID, actions: [{ type: '' }] })[0]).toMatch(/^actions\.0\.type:/)
+  })
+})
+
+describe('Replay format 2: undo entries', () => {
+  const v2 = { ...VALID, formatVersion: 2 }
+  const withUndo = (formatVersion: number, entry: Record<string, unknown>) => ({
+    ...VALID,
+    formatVersion,
+    actions: [{ type: 'move' }, entry],
+  })
+
+  it('reads format 1 and format 2', () => {
+    expect(parseReplay(VALID).ok).toBe(true)
+    expect(parseReplay(v2).ok).toBe(true)
+  })
+
+  it('accepts an undo entry in format 2', () => {
+    expect(parseReplay(withUndo(2, { type: 'undo', withdraw: 1 })).ok).toBe(true)
+  })
+
+  it('rejects an undo entry in format 1, naming it', () => {
+    expect(issues(withUndo(1, { type: 'undo', withdraw: 1 }))[0]).toMatch(/^actions\.1\.type:/)
+  })
+
+  it('rejects an undo that withdraws nothing or something that is not a count', () => {
+    expect(issues(withUndo(2, { type: 'undo', withdraw: 0 }))[0]).toMatch(/^actions\.1\.withdraw:/)
+    expect(issues(withUndo(2, { type: 'undo' }))[0]).toMatch(/^actions\.1\.withdraw:/)
+    expect(issues(withUndo(2, { type: 'undo', withdraw: 1.5 }))[0]).toMatch(/^actions\.1\.withdraw:/)
   })
 })
