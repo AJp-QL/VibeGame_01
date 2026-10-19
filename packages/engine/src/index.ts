@@ -96,13 +96,16 @@ export {
   recordReplay,
   replayBattle,
   replayCompatibility,
+  undoRecord,
   type BattleReplay,
+  type BattleReplayEntry,
   type ReplayCompatibility,
   type ReplayError,
   type ReplayHeader,
   type ReplayMismatch,
   type ReplayResult,
   type ReplayStep,
+  type ReplayUndo,
 } from './replay.ts'
 export { ENGINE_VERSION } from './version.ts'
 

@@ -571,7 +571,7 @@ Tamer ที่ได้รับการป้องกันยังถู�
 - ผู้เล่นย้อน action ของ Turn ตัวเองกลับถึง **จุดปลอดภัย** ได้ จุดปลอดภัยคืออันที่มาทีหลังกว่าระหว่าง (ก) ต้น Turn (หลัง End Turn ของอีกฝั่ง หรือก่อน action แรกของ Battle) และ (ข) หลัง action ล่าสุดที่ทอยลูกเต๋าอะไรก็ได้ (attack roll, save, damage, heal, Bleed tick, initiative, Inspiration ที่ทอยใหม่) หรือที่ตอบการทอยนั้น (ใช้หรือไม่ใช้ Inspiration)
 - ย้อนได้เฉพาะฝั่งที่กำลังเล่นภายใน Turn ของตัวเอง และเมื่อมีอย่างน้อย 1 action หลังจุดปลอดภัย ไม่มีในช่วงที่อีกฝั่งต้องตัดสินใจ (เช่น save) ไม่มีใน Turn ของ AI และ Battle ที่จบแล้วหรือยังไม่เริ่มเล่น (deployment) ย้อนไม่ได้
 - ผลคือ state เหมือนตอนอยู่ที่จุดปลอดภัยทุกอย่าง: ตำแหน่ง, Command, Defend (Guarded), Camouflage, Attune, activation ที่เริ่มแล้วและ Unit ที่กำลังเล่น ลูกเต๋าไม่ถูกทอยซ้ำ เพราะ action ที่ถูกย้อนไม่ได้ใช้ลูกเต๋าเลย (ลำดับลูกเต๋า §21.4 ไม่ขยับ) การเล่นต่อจึงเหมือนไม่เคยมี action เหล่านั้น
-- Undo ไม่ใช่ action ของเกมใน ticket นี้ (session ทำ ไม่บันทึกลง Replay) การบันทึกลง Replay เป็นของ Replay format 2 (ticket 06)
+- Undo ไม่ใช่ action ของเกม (engine ไม่รับ action นี้ session ทำ) Replay format 2 (P1X-06) บันทึกเป็น entry `{"type":"undo","withdraw":N}` ต่อจาก action ที่ถูกถอน; ตอนเล่นซ้ำ engine ตรวจกับกติกาจุดปลอดภัยนี้ ถ้า N ไม่ตรงจุดปลอดภัย = Replay เสีย
 
 ---
 
