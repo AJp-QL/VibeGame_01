@@ -148,3 +148,19 @@ image: the selected Unit and destination highlights must remain. The cancelled
 Board is attached as `preview-cancelled-{mode}-{width}`. It then previews again
 and confirms through the real controls. This exercises Move, Blink and Hotseat
 team B at both widths; no compatibility branch for pre-ticket-18 sessions remains.
+
+## 9×9 Boards (P1X-16)
+
+`/sized-board.html?board=grand_crossroads` and `?board=wide_shallows` render
+the bundled Boards through the real session and Phaser renderer, with all seven
+terrain swatches and both 9×9 and 7×7 mini Boards. `sized-board.visual.ts`
+compares each Board at **1280**, **360**, and **375** px. Touch input selects a
+Unit, moves it past the old seventh column, and inspects the bottom-right cell;
+the document must remain within the viewport.
+
+`/sized-board.html?menu` mounts the real App with fixed, in-memory play stats.
+At the same widths the suite selects both 9×9 options alongside the 7×7 ones,
+checks their descriptions and 81-cell previews, compares the Board fieldset,
+and starts a 9×9 Battle. The harness pins Latin/Thai fonts and a test-only App
+version because this isolated server does not load the production Vite define.
+All twelve new baselines use Linux and Playwright's pinned Chromium.
