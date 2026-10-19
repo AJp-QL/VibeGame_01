@@ -234,7 +234,7 @@ function BlockedTargets({ blocked, name }: { blocked: SessionSnapshot['blocked']
           <li key={b.unit}>
             {b.reason === 'target-hidden'
               ? th.blockedHidden(name(b.unit))
-              : th.blockedBy(name(b.unit), b.blockedBy.map(name).join(', '))}
+              : th.blockedBy(name(b.unit), b.blockedBy.map(name).join(', '), (b.blockedByTerrain?.length ?? 0) > 0)}
           </li>
         ))}
       </ul>

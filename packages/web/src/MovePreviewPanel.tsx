@@ -27,7 +27,7 @@ export function MovePreviewPanel({ snapshot, session, data }: { snapshot: Sessio
             )}
             {option.blocked.map(blocked => (
               <span className="blocked" key={blocked.unit}>
-                {blocked.reason === 'target-hidden' ? th.blockedHidden(name(blocked.unit)) : th.blockedBy(name(blocked.unit), blocked.blockedBy.map(name).join(', '))}
+                {blocked.reason === 'target-hidden' ? th.blockedHidden(name(blocked.unit)) : th.blockedBy(name(blocked.unit), blocked.blockedBy.map(name).join(', '), (blocked.blockedByTerrain?.length ?? 0) > 0)}
               </span>
             ))}
           </li>

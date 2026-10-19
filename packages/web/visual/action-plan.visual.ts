@@ -63,8 +63,9 @@ test('the real renderer walks to the planned origin before lunging', async ({ pa
   await page.goto('/plan-animation.html')
   await page.waitForFunction(() => 'planAnimation' in window)
   const result = await page.evaluate(() => (window as unknown as { planAnimation: {
-    lunges: { at: number; x: number; y: number }[]; walkMs: number; origin: { x: number; y: number }; batches: string[][]
+    missingViewCompletions: number; lunges: { at: number; x: number; y: number }[]; walkMs: number; origin: { x: number; y: number }; batches: string[][]
   } }).planAnimation)
+  expect(result.missingViewCompletions).toBe(2)
   expect(result.batches[0]).toContain('unitMoved')
   expect(result.batches[1]).toContain('attackRolled')
   expect(result.lunges).toHaveLength(1)

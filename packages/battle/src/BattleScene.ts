@@ -434,7 +434,7 @@ export class BattleScene extends Phaser.Scene {
   /** Walk a moved Unit along the path the engine reported. */
   private walk(unit: UnitId, path: readonly Tile[], onComplete?: () => void): void {
     const view = this.unitViews.get(unit)
-    if (view === undefined) return
+    if (view === undefined) { onComplete?.(); return }
     this.animating.add(unit)
     const steps = path.map(tileCentre)
     const next = (index: number): void => {
@@ -474,7 +474,7 @@ export class BattleScene extends Phaser.Scene {
   /** Blink: the Unit fades out where it was and fades in on its new tile; nothing in between. */
   private teleport(unit: UnitId, to: Tile, onComplete?: () => void): void {
     const view = this.unitViews.get(unit)
-    if (view === undefined) return
+    if (view === undefined) { onComplete?.(); return }
     this.animating.add(unit)
     const { x, y } = tileCentre(to)
     this.tweens.add({

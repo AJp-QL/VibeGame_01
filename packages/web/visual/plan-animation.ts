@@ -28,6 +28,8 @@ Date.now = () => now
 scene.tweens.startTime = now; scene.tweens.prevTime = now; scene.tweens.time = 0; scene.tweens.nextTime = 0
 // Observe actual lunge starts in the real renderer, using the same fixed clock as Board captures.
 const observed = scene as unknown as {
+  walk(unit: UnitId, path: readonly { x: number; y: number }[], onComplete: () => void): void
+  teleport(unit: UnitId, to: { x: number; y: number }, onComplete: () => void): void
   lunge(attacker: UnitId, target: UnitId): void
   unitViews: Map<UnitId, { container: { x: number; y: number } }>
 }
@@ -38,9 +40,13 @@ observed.lunge = (attacker, target) => {
   lunges.push({ at: now - 1_000_000, x: view.x, y: view.y })
   lunge(attacker, target)
 }
+// A removed view must not strand the next batch in either animation path.
+let missingViewCompletions = 0
+observed.walk('missing', [], () => missingViewCompletions++)
+observed.teleport('missing', { x: 0, y: 0 }, () => missingViewCompletions++)
 session.confirmPlan()
 const move = session.getSnapshot().eventBatches[0]!.find(event => event.type === 'unitMoved')
 if (move?.type !== 'unitMoved') throw new Error('Expected Move events first')
 const walkMs = move.path.length * 90
 for (let elapsed = 0; elapsed < walkMs + 50; elapsed += 10) { now += 10; game.step(now, 10) }
-Object.assign(window, { planAnimation: { lunges, walkMs, origin: origin.tile, batches: session.getSnapshot().eventBatches.map(batch => batch.map(event => event.type)) } })
+Object.assign(window, { planAnimation: { missingViewCompletions, lunges, walkMs, origin: origin.tile, batches: session.getSnapshot().eventBatches.map(batch => batch.map(event => event.type)) } })
