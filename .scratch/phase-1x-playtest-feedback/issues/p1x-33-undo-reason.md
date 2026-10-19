@@ -8,9 +8,9 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done (PR TBD)
 
-- [ ] snapshot บอกได้ว่า Undo ใช้ได้ / ปิด (พร้อมเหตุผล: ต้น Turn, หลังการทอยหรือคำตอบ Inspiration ล่าสุด) / ซ่อน (Turn ของ AI, หน้าส่งเครื่อง, Battle จบ, deployment); `undo` เดิมความหมายเดิม
-- [ ] test ทุกกรณีรวม Hotseat ทั้งสองฝั่งและ vs AI
-- [ ] README ของ session อธิบาย field ใหม่และบอกให้ UI ไม่คิดกติกาการซ่อนเอง
-- [ ] typecheck, test, build, path check ผ่าน; ENGINE_VERSION ไม่เปลี่ยน
+- [x] snapshot บอกได้ว่า Undo ใช้ได้ / ปิด (พร้อมเหตุผล: ต้น Turn, หลังการทอยหรือคำตอบ Inspiration ล่าสุด) / ซ่อน (Turn ของ AI, หน้าส่งเครื่อง, Battle จบ, deployment); `undo` เดิมความหมายเดิม
+- [x] test ทุกกรณีรวม Hotseat ทั้งสองฝั่งและ vs AI
+- [x] README ของ session อธิบาย field ใหม่และบอกให้ UI ไม่คิดกติกาการซ่อนเอง
+- [x] typecheck, test, build, path check ผ่าน; ENGINE_VERSION ไม่เปลี่ยน

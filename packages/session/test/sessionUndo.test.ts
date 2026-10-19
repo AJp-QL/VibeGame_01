@@ -46,6 +46,10 @@ function setup(dice: DiceSource = { seed: SEED }): BattleSetup {
   }
 }
 
+function withoutPreset({ preset: _preset, ...rest }: BattleSetup): BattleSetup {
+  return rest
+}
+
 const newSession = (dice?: DiceSource) => createBattleSession(createBattle(setup(dice)))
 
 /** Scripted dice for a basic attack by Fangrel on Tidewall that misses (a 1), then a reroll. */
@@ -249,5 +253,109 @@ describe('BattleSession: Undo does it', () => {
     const replayed = replayBattle(recordReplay(header, data, snapshot.actions), data)
     if (!replayed.ok) throw new Error('replay failed')
     expect(replayed.final).toEqual(snapshot.state)
+  })
+})
+
+describe('BattleSession: undoState (hidden, disabled with a reason, available)', () => {
+  const available = (session: BattleSession) => {
+    const { undo, undoState } = session.getSnapshot()
+    expect(undo).not.toBeNull()
+    expect(undoState).toEqual({ kind: 'available', offer: undo })
+  }
+
+  it('Hotseat, start of the Turn: disabled, turn-start', () => {
+    const snapshot = newSession().getSnapshot()
+    expect(snapshot.undo).toBeNull()
+    expect(snapshot.undoState).toEqual({ kind: 'disabled', reason: 'turn-start' })
+  })
+
+  it('Hotseat: available after a move, and again for the other side after the hand-over', () => {
+    const session = newSession()
+    stepTo(session, 'A.m2')
+    available(session)
+    session.endTurn()
+    session.continueHotseat()
+    // Team B has not acted: the End Turn before it is not B's to take back.
+    expect(session.getSnapshot().undoState).toEqual({ kind: 'disabled', reason: 'turn-start' })
+    stepTo(session, 'B.m2')
+    available(session)
+    session.undo()
+    expect(session.getSnapshot().undoState).toEqual({ kind: 'disabled', reason: 'turn-start' })
+  })
+
+  it('disabled with after-roll right after a dice roll, available once something follows', () => {
+    const session = newSession()
+    attackTidewall(session)
+    while (session.getSnapshot().state.pending?.kind === 'inspiration') session.declineInspiration()
+    expect(session.getSnapshot().undoState).toEqual({ kind: 'disabled', reason: 'after-roll' })
+    stepTo(session, 'A.m2')
+    available(session)
+  })
+
+  it('an Inspiration decision pending or answered is after-roll too', () => {
+    const session = newSession(missDice())
+    attackTidewall(session)
+    expect(session.getSnapshot().state.pending).toMatchObject({ kind: 'inspiration' })
+    expect(session.getSnapshot().undoState).toEqual({ kind: 'disabled', reason: 'after-roll' })
+    session.declineInspiration()
+    expect(session.getSnapshot().undoState).toEqual({ kind: 'disabled', reason: 'after-roll' })
+  })
+
+  it('an earlier roll does not make a fresh Turn after-roll', () => {
+    const session = newSession()
+    attackTidewall(session)
+    while (session.getSnapshot().state.pending?.kind === 'inspiration') session.declineInspiration()
+    session.endTurn()
+    session.continueHotseat()
+    expect(session.getSnapshot().undoState).toEqual({ kind: 'disabled', reason: 'turn-start' })
+  })
+
+  it('vs AI: the human side gets all three; the AI Turn is hidden', () => {
+    const session = createBattleSession(createBattle(setup()), { ai: { side: 'B', profile: GAME_PROFILES.greedy } })
+    expect(session.getSnapshot().undoState).toEqual({ kind: 'disabled', reason: 'turn-start' })
+    stepTo(session, 'A.m2')
+    available(session)
+    session.endTurn()
+    expect(session.getSnapshot().aiToAct).toBe(true)
+    expect(session.getSnapshot().undoState).toEqual({ kind: 'hidden' })
+  })
+
+  it('hidden during deployment', () => {
+    const session = createBattleSession(createBattle(withoutPreset(setup())))
+    expect(session.getSnapshot().state.phase).not.toBe('play')
+    expect(session.getSnapshot().undoState).toEqual({ kind: 'hidden' })
+  })
+
+  it('hidden on the initiative screen, shown once the Board is up', () => {
+    const session = createBattleSession(createBattle(withoutPreset(setup({ rolls: [3, 17] }))))
+    const place = (tiles: readonly string[]) => {
+      for (const tile of tiles) session.input({ type: 'tapTile', tile: tileFromName(tile) })
+    }
+    place(['d1', 'c2', 'e2'])
+    session.confirmDeployment()
+    session.continueHotseat()
+    place(['d7', 'e6', 'c6'])
+    session.confirmDeployment()
+    expect(session.getSnapshot().screen).toBe('initiative')
+    expect(session.getSnapshot().undoState).toEqual({ kind: 'hidden' })
+    session.continueHotseat()
+    expect(session.getSnapshot().undoState).toEqual({ kind: 'disabled', reason: 'turn-start' })
+  })
+
+  it('hidden when the Battle is over', () => {
+    const session = newSession()
+    stepTo(session, 'A.m2')
+    const state = { ...session.getSnapshot().state, outcome: { winner: 'A', reason: 'wipe' } } as unknown as BattleState
+    const over = createBattleSession(state)
+    expect(over.getSnapshot().undoState).toEqual({ kind: 'hidden' })
+    expect(over.getSnapshot().undo).toBeNull()
+  })
+
+  it('undo() reports whether it went back', () => {
+    const session = newSession()
+    expect(session.undo()).toBe(false)
+    stepTo(session, 'A.m2')
+    expect(session.undo()).toBe(true)
+    expect(session.undo()).toBe(false)
   })
 })
