@@ -63,3 +63,16 @@ pixel scaling (32 px tiles on the tested DPR-1 phones).
 - [wide-shallows-1280.png](../../../../packages/web/visual/baselines/wide-shallows-1280.png)
 - [wide-shallows-360.png](../../../../packages/web/visual/baselines/wide-shallows-360.png)
 - [wide-shallows-375.png](../../../../packages/web/visual/baselines/wide-shallows-375.png)
+
+## Validation
+
+- Frozen install, typecheck, production build, replay compatibility and path
+  ownership: passed (19 changed files, all Codex-owned or shared).
+- Visual comparison: **44/44 passed** with pinned Chromium on Linux.
+- Full unit suite: **1,051 passed, 1 skipped** with
+  `pnpm test --testTimeout=15000`. Default `pnpm test` passed 1,050 tests and
+  skipped one, with only the existing simulator 9×9 case exceeding its 5-second
+  limit (~5.5 seconds on this environment). That case passes in isolation.
+  The timeout override is CLI-only; repository configuration is unchanged.
+- GitHub CI: queued when the PR was prepared; the ticket's CI checkbox remains
+  open until all three jobs pass.
