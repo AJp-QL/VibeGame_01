@@ -6,7 +6,7 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** done (PR pending)
+**Status:** done (PR #68)
 
 - [x] `BattleSnapshot.attackable?`, `plan?`, `mode?` (optional, doc comment) ใน `port.ts`; ชนิดที่ใช้ export จาก `@mt/session` ครบ
 - [x] session ส่งค่าเดียวกับ `SessionSnapshot`; Replay player ไม่ส่งหรือส่งค่าว่าง; test ระดับ port (ชนิดและค่า) ใน session
