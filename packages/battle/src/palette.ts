@@ -60,7 +60,7 @@ export const SIDE_COLOURS: Readonly<Record<Side, number>> = {
 export const OUTLINE = 0x141414
 export const GRID_LINE = 0x1e1e1e
 export const SELECTED = 0xffe14d
-export const REACHABLE = 0xffffff
+export const REACHABLE = 0x69bfff
 /** Enemies the selected Unit can attack, and the one picked for the preview. */
 export const TARGET = 0xff4a3d
 export const PENDING_TARGET = 0xffe14d
