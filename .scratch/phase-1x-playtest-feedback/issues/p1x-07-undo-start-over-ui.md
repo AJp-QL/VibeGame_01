@@ -14,3 +14,8 @@
 - [ ] Replay viewer มีตัวเลือกแสดง action ที่ถูก Undo
 - [ ] ข้อความอยู่ใน strings ของ web มี text test; screenshot ที่ desktop และ 360 px
 - [ ] visual fixtures ตรงกับ engine ปัจจุบัน; CI เขียวทั้งสาม job
+
+## Notes from P1X-06
+
+- ENGINE_VERSION is 0.12.0 after P1X-06; the fixture refresh is P1X-30 (do it first or together).
+- Use `snapshot.recorded` in `replayToExport`; `ReplayPlayer.setShowUndone`; `stats.recordUndo(index)` / `stats.recordBattleAbandoned(index)`. Details in the P1X-06 ticket comments.

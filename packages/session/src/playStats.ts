@@ -27,6 +27,10 @@ export interface BattleRecord {
   readonly winner?: BattleOutcome['winner']
   readonly cause?: BattleOutcome['cause']
   readonly rounds?: number
+  /** Times the player used Undo in this Battle (absent in stats saved before ticket 06: none counted). */
+  readonly undos?: number
+  /** The player left this Battle unfinished and began another (Start over, ticket 07). */
+  readonly abandonedAt?: string
 }
 
 export interface PlayStats {
@@ -35,6 +39,8 @@ export interface PlayStats {
   readonly appOpens: number
   readonly battlesStarted: number
   readonly battlesFinished: number
+  /** Battles the player threw away with Start over; 0 in stats saved before ticket 06. */
+  readonly battlesAbandoned: number
   /** Local dates (YYYY-MM-DD) the game was opened on, oldest first. */
   readonly daysPlayed: readonly string[]
   /** The most recent Battles, oldest first (at most MAX_BATTLES). */
@@ -57,6 +63,7 @@ export function emptyStats(): PlayStats {
     appOpens: 0,
     battlesStarted: 0,
     battlesFinished: 0,
+    battlesAbandoned: 0,
     daysPlayed: [],
     battles: [],
   }
@@ -81,6 +88,7 @@ function parseStats(text: string | null): PlayStats {
       appOpens: count(raw.appOpens),
       battlesStarted: count(raw.battlesStarted),
       battlesFinished: count(raw.battlesFinished),
+      battlesAbandoned: count(raw.battlesAbandoned),
       daysPlayed: Array.isArray(raw.daysPlayed) ? raw.daysPlayed.filter((d) => typeof d === 'string') : [],
       battles: Array.isArray(raw.battles) ? raw.battles.filter((b) => b !== null && typeof b === 'object') : [],
     }
@@ -98,6 +106,10 @@ export interface PlayStatsStore {
   /** A Battle began; returns its index for `recordBattleFinished`. */
   recordBattleStarted(choice: BattleChoice): number
   recordBattleFinished(index: number, outcome: BattleOutcome, rounds: number): void
+  /** The player used Undo in the Battle with this index (adds 1 to its `undos`). */
+  recordUndo(index: number): void
+  /** The player threw the unfinished Battle away (Start over); counted once, never for a finished Battle. */
+  recordBattleAbandoned(index: number): void
 }
 
 export function createPlayStats(storage: StatsStorage | null, now: () => Date): PlayStatsStore {
@@ -127,6 +139,11 @@ export function createPlayStats(storage: StatsStorage | null, now: () => Date): 
     return days.includes(day) ? days : [...days, day]
   }
 
+  /** The record's place in `battles` (older ones may have been dropped). */
+  function positionOf(index: number): number {
+    return stats.battles.length - (stats.battlesStarted - index)
+  }
+
   return {
     read: () => stats,
     persistent: () => saving,
@@ -146,9 +163,23 @@ export function createPlayStats(storage: StatsStorage | null, now: () => Date): 
       save({ ...stats, battlesStarted: stats.battlesStarted + 1, daysPlayed: withDay(stats.daysPlayed, at), battles })
       return stats.battlesStarted - 1
     },
+    recordUndo(index) {
+      const position = positionOf(index)
+      const record = stats.battles[position]
+      if (record === undefined) return
+      const battles = stats.battles.map((b, i) => (i === position ? { ...record, undos: (record.undos ?? 0) + 1 } : b))
+      save({ ...stats, battles })
+    },
+    recordBattleAbandoned(index) {
+      const position = positionOf(index)
+      const record = stats.battles[position]
+      if (record === undefined || record.finishedAt !== undefined || record.abandonedAt !== undefined) return
+      const at = now()
+      const battles = stats.battles.map((b, i) => (i === position ? { ...record, abandonedAt: at.toISOString() } : b))
+      save({ ...stats, battlesAbandoned: stats.battlesAbandoned + 1, daysPlayed: withDay(stats.daysPlayed, at), battles })
+    },
     recordBattleFinished(index, outcome, rounds) {
-      // The record's place in `battles` (older ones may have been dropped).
-      const position = stats.battles.length - (stats.battlesStarted - index)
+      const position = positionOf(index)
       const record = stats.battles[position]
       if (record === undefined || record.finishedAt !== undefined) return
       const at = now()

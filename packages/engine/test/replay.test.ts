@@ -197,7 +197,7 @@ describe('Replay of a Battle', () => {
     )
     expect(replay).toEqual({
       format: 'monster-tactics-replay',
-      formatVersion: 1,
+      formatVersion: 2,
       engineVersion: ENGINE_VERSION,
       dataHash: dataHash(gameData),
       scenarioId: 'scenario_2',
