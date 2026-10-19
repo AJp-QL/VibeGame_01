@@ -22,10 +22,10 @@
 
 **Blocked by:** None — P1X-15 merged (PR #52)
 
-**Status:** ready-for-agent
+**Status:** ready-for-human — หยุดที่ขั้น 3 (PR [P1X-36]): 9x9 ผ่านเป้า 1/4 ชุด (เดิม 0/4), 7x7 ยังผ่าน 4/4; รายงานและทางเลือกใน `docs/balance/ticket-36-tune-9x9.md` รอผู้ใช้ตัดสิน; data ไม่เปลี่ยน จึงไม่มี fixture ล้าสมัยและไม่ต้องมี ticket refresh
 
-- [ ] ขั้น 1 (data) วัดแล้ว ผลอยู่ในรายงานใหม่ `docs/balance/ticket-36-tune-9x9.md` เทียบกับ ticket 15 ทุกชุด รวม 7x7
-- [ ] ขั้น 2 (AI เดินเข้าหาเมื่อยิงไม่ได้) มี test ใน `packages/ai` และวัดแล้วทั้ง 9x9 และ 7x7; 7x7 ยังผ่านเป้าทุกชุด; sim-v4 parity ผ่าน
-- [ ] Board 9x9 ผ่านเป้าทุกชุด หรือรายงานหยุดที่ขั้น 3 พร้อมทางเลือกให้ผู้ใช้ตัดสิน (ไม่เปลี่ยนกติกาเอง)
-- [ ] ทุกการเปลี่ยน data/AI มีแถว decision log พร้อมผล simulator; rules.md อัปเดตถ้า Board เปลี่ยน
-- [ ] fixtures: หมายเหตุใน P1X-16 หรือ ticket Codex refresh; typecheck, test, build, path check, `check-replays` ผ่าน (exit 3 = stale ได้ถ้ามี ticket refresh)
+- [x] ขั้น 1 (data) วัดแล้ว (ภูเขา 8 → 6 และ 8 → 4 ไม่ขยับตัวเลข จึงคง data เดิม) ผลอยู่ในรายงานใหม่ `docs/balance/ticket-36-tune-9x9.md` เทียบกับ ticket 15 ทุกชุด รวม 7x7
+- [x] ขั้น 2 (AI เดินเข้าหาเมื่อยิงไม่ได้) มี test ใน `packages/ai` และวัดแล้วทั้ง 9x9 และ 7x7; 7x7 ยังผ่านเป้าทุกชุด; sim-v4 parity ผ่าน
+- [x] Board 9x9 ผ่านเป้าทุกชุด หรือรายงานหยุดที่ขั้น 3 พร้อมทางเลือกให้ผู้ใช้ตัดสิน (ไม่เปลี่ยนกติกาเอง)
+- [x] ทุกการเปลี่ยน data/AI มีแถว decision log พร้อมผล simulator; rules.md อัปเดตถ้า Board เปลี่ยน
+- [x] fixtures: หมายเหตุใน P1X-16 หรือ ticket Codex refresh; typecheck, test, build, path check, `check-replays` ผ่าน (exit 3 = stale ได้ถ้ามี ticket refresh)
