@@ -547,3 +547,37 @@ describe('Action plan: a plan that does not exist any more', () => {
     expect(session.getSnapshot().attackable.every((e) => e.unit !== 'B.m1' || e.origins.length > 0)).toBe(true)
   })
 })
+
+describe('Action plan: a tap on the Board never commits (spec story 61)', () => {
+  it('tapping a reachable tile through input while a plan exists sends nothing', () => {
+    const session = newSession(MIDDLE, 'A')
+    session.selectUnit('A.m1')
+    session.aimTarget('B.m2')
+    const plan = session.getSnapshot().plan!
+    const before = session.getSnapshot().state
+    const reachable = session.getSnapshot().reachable
+    const stray = reachable.find((t) => !plan.originChoices.some((o) => o.tile.x === t.x && o.tile.y === t.y))
+    if (stray === undefined) throw new Error('need a reachable tile that is not an origin')
+    session.input({ type: 'tapTile', tile: stray })
+    expect(session.getSnapshot().state).toBe(before)
+    expect(session.getSnapshot().actions).toEqual([])
+    expect(session.getSnapshot().plan).toEqual(plan)
+  })
+
+  it('tapping a tile that is one of the plan\'s origins moves the shadow there and sends nothing', () => {
+    const session = newSession(MIDDLE, 'A')
+    session.selectUnit('A.m1')
+    session.aimTarget('B.m2')
+    const other = session.getSnapshot().plan!.originChoices[1]!
+    session.input({ type: 'tapTile', tile: other.tile })
+    expect(session.getSnapshot().plan!.origin).toEqual(other)
+    expect(session.getSnapshot().actions).toEqual([])
+  })
+
+  it('without a plan a tap on a lit tile still moves at once (the old flow)', () => {
+    const session = newSession(MIDDLE, 'A')
+    session.selectUnit('A.m1')
+    session.input({ type: 'tapTile', tile: session.getSnapshot().reachable[0]! })
+    expect(session.getSnapshot().actions).toHaveLength(1)
+  })
+})
