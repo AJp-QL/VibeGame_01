@@ -8,14 +8,19 @@
 
 **Status:** ready-for-agent
 
-- [ ] ปุ่ม "ย้อนกลับ" แสดง/ปิด/ซ่อนตามข้อมูลของ session และป้ายบอกจุดที่จะย้อนถึง
-- [ ] เมื่อปุ่มปิดเพราะเพิ่งทอยลูกเต๋า บอกเหตุผลให้ผู้เล่น (เช่น "ทอยลูกเต๋าแล้ว ย้อนผลไม่ได้") ตามเหตุผลใน spec (Undo ข้ามการทอยไม่ได้)
-- [ ] "เริ่มใหม่" ใน in-Battle menu มี dialog ยืนยัน, Battle ใหม่ใช้ Dice Seed ใหม่, Battle เดิมถูกบันทึกว่าถูกทิ้ง, ใช้ได้ทั้งสองโหมด
-- [ ] Replay viewer มีตัวเลือกแสดง action ที่ถูก Undo
-- [ ] ข้อความอยู่ใน strings ของ web มี text test; screenshot ที่ desktop และ 360 px
+- [x] ปุ่ม "ย้อนกลับ" แสดง/ปิด/ซ่อนตามข้อมูลของ session และป้ายบอกจุดที่จะย้อนถึง
+- [x] เมื่อปุ่มปิดเพราะเพิ่งทอยลูกเต๋า บอกเหตุผลให้ผู้เล่น (เช่น "ทอยลูกเต๋าแล้ว ย้อนผลไม่ได้") ตามเหตุผลใน spec (Undo ข้ามการทอยไม่ได้)
+- [x] "เริ่มใหม่" ใน in-Battle menu มี dialog ยืนยัน, Battle ใหม่ใช้ Dice Seed ใหม่, Battle เดิมถูกบันทึกว่าถูกทิ้ง, ใช้ได้ทั้งสองโหมด
+- [x] Replay viewer มีตัวเลือกแสดง action ที่ถูก Undo
+- [x] ข้อความอยู่ใน strings ของ web มี text test; screenshot ที่ desktop และ 360 px
 - [ ] visual fixtures ตรงกับ engine ปัจจุบัน; CI เขียวทั้งสาม job
 
 ## Notes from P1X-06
 
 - ENGINE_VERSION is 0.12.0 after P1X-06; the fixture refresh is P1X-30 (do it first or together).
 - Use `snapshot.recorded` in `replayToExport`; `ReplayPlayer.setShowUndone`; `stats.recordUndo(index)` / `stats.recordBattleAbandoned(index)`. Details in the P1X-06 ticket comments.
+
+## Implementation
+
+- Undo uses only the session offer and records accepted Undos in play stats. A disabled button explains that dice results cannot be withdrawn. Start over preserves choices, changes Dice Seed and records abandonment in AI and Hotseat. Replay export now uses `snapshot.recorded`; the viewer offers the session show-undone toggle and labels withdrawn steps. Undo/Replay jumps cancel queued Board animations.
+- [Desktop/mobile evidence](../evidence/07-undo-start-over-ui/README.md). Frozen install, typecheck, 1,032 tests passed (1 skipped), build, check-replays and path check pass. Pinned Chromium visual suite: 31/31 passed, baseline PNGs unchanged. Includes P1X-30 fixture refresh; merge PR #59 first. CI pending.
