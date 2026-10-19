@@ -78,6 +78,8 @@ for (const width of [1280, 360]) {
       else expect(cancelled.reachable.length).toBeGreaterThan(0)
       // The Board removes the preview but retains the selected Unit and destination highlights.
       const cancelledBoard = await page.locator('canvas').screenshot()
+      await test.info().attach('selection-before-preview', { body: selectionBoard, contentType: 'image/png' })
+      await test.info().attach('selection-after-cancel', { body: cancelledBoard, contentType: 'image/png' })
       expect(cancelledBoard.equals(selectionBoard)).toBe(true)
       await test.info().attach(`preview-cancelled-${mode}-${width}`, { body: cancelledBoard, contentType: 'image/png' })
       // Pick another destination and confirm through the real controls.

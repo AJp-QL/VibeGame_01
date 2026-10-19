@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { withMovePreview } from '../src/movePreviewSession.ts'
+import { ActionPlanPanel } from '../src/ActionPlanPanel.tsx'
 import { MovePreviewPanel } from '../src/MovePreviewPanel.tsx'
 import { createActionConfirmation } from '../src/actionConfirmation.ts'
 import { StartUnitDialog } from '../src/StartUnitDialog.tsx'
@@ -359,9 +360,9 @@ describe('phase 1.x Move preview UI', () => {
     for (const reach of snapshot.movePreview!.reach) {
       expect(panel).toContain(reach.skill === null ? th.attack : data.skills[reach.skill]!.name)
     }
-    const blocked = { ...snapshot, movePreview: { ...snapshot.movePreview!, reach: [{ skill: null, targets: ['B.m1'], blocked: [{ unit: 'B.m2', tile: t('b6')!, reason: 'no-line-of-sight' as const, blockedBy: ['B.m1'] }] }] } }
+    const blocked = { ...snapshot, movePreview: { ...snapshot.movePreview!, options: [{ key: 'basicAttack::B.m1', kind: 'attack' as const, skill: null, target: 'B.m1', action: { type: 'basicAttack' as const, unit: 'A.m2', target: 'B.m1' } }], reach: [{ skill: null, targets: ['B.m1'], blocked: [{ unit: 'B.m2', tile: t('b6')!, reason: 'no-line-of-sight' as const, blockedBy: ['B.m1'] }] }] } }
     const blockedPanel = renderToStaticMarkup(createElement(MovePreviewPanel, { snapshot: blocked, session: s, data }))
-    expect(blockedPanel).toContain(th.movePreviewTargets('Tidewall (ทีม B)'))
+    expect(blockedPanel).toMatch(/<button[^>]*>Tidewall \(ทีม B\)/)
     expect(blockedPanel).toContain(th.blockedBy('Quillfox (ทีม B)', 'Tidewall (ทีม B)'))
   })
 
@@ -466,5 +467,55 @@ describe('phase 1.x range rules text', () => {
     expect(legend).not.toContain('terrain ไม่บังแนวเล็ง')
     expect(th.blockedBy('Quillfox', '')).toBe('Quillfox: ภูเขา ขวางแนวเล็ง (line of sight)')
     expect(th.rejection['no-line-of-sight']).toContain('ภูเขา')
+  })
+})
+
+
+describe('Action plan UI', () => {
+  function previewSession() {
+    return withMovePreview(createBattleSession(playing({ A: ['a1', 'c5', 'c6'], B: ['g7', 'e5', 'c2'] })))
+  }
+  it('aims a badged enemy and changes origins without committing; the button sends the session plan', () => {
+    const s = previewSession()
+    s.selectUnit('A.m1')
+    const before = s.getSnapshot()
+    const enemy = before.attackable[0]!
+    expect(enemy).toBeDefined()
+    s.input({ type: 'tapUnit', unit: enemy.unit })
+    let snapshot = s.getSnapshot()
+    expect(snapshot.plan?.target).toBe(enemy.unit)
+    expect(snapshot.state).toBe(before.state)
+    const origin = snapshot.plan!.originChoices.find(origin => origin.via === 'move')!
+    expect(origin).toBeDefined()
+    s.input({ type: 'tapTile', tile: origin.tile })
+    snapshot = s.getSnapshot()
+    expect(snapshot.plan?.origin.tile).toEqual(origin.tile)
+    expect(snapshot.state).toBe(before.state)
+    const panel = renderToStaticMarkup(createElement(ActionPlanPanel, { snapshot, session: s, data }))
+    expect(panel).toContain(th.actionPlan.title)
+    expect(panel).toContain(th.actionPlan.rolls)
+    expect(panel).toContain(th.actionPlan.confirm)
+    const steps = snapshot.plan!.steps.length
+    s.confirmPlan()
+    expect(s.getSnapshot().actions.length).toBe(before.actions.length + steps)
+    expect(s.getSnapshot().eventBatches).toHaveLength(steps)
+  })
+
+  it('asks before a confirmed plan abandons another Unit with an Action left', () => {
+    const raw = previewSession()
+    raw.selectUnit('A.m1')
+    raw.input({ type: 'tapTile', tile: raw.getSnapshot().reachable[0]! })
+    raw.confirmMove()
+    const confirmation = createActionConfirmation(raw)
+    const s = withMovePreview(confirmation.session)
+    s.selectUnit('A.m2')
+    const enemy = s.getSnapshot().attackable[0]!
+    s.aimTarget(enemy.unit)
+    const before = s.getSnapshot().state
+    s.confirmPlan()
+    expect(s.getSnapshot().state).toBe(before)
+    expect(confirmation.getPending()).toMatchObject({ current: 'A.m1', next: 'A.m2' })
+    confirmation.confirm()
+    expect(s.getSnapshot().state).not.toBe(before)
   })
 })

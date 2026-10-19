@@ -7,6 +7,7 @@ import { SkillButtons } from './SkillButtons.tsx'
 import { TerrainSwatch } from './TerrainLegend.tsx'
 import { PreviewCard } from './ActionPreview.tsx'
 import { InspirationPrompt } from './InspirationPrompt.tsx'
+import { ActionPlanPanel } from './ActionPlanPanel.tsx'
 import { MovePreviewPanel } from './MovePreviewPanel.tsx'
 import { th } from './strings.ts'
 
@@ -16,6 +17,7 @@ function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, cu
   if (state.pending?.kind === 'inspiration') return th.inspiration.hint(state.pending.side)
   if (state.pending !== null) return th.hintRetreat(selected === undefined ? state.pending.unit : unitName(selected, data))
   if (selected === undefined) return th.hintSelect(state.sideToAct)
+  if (snapshot.plan !== null) return th.actionPlan.hint
   if (snapshot.movePreview !== null) return th.hintMovePreview
   if (snapshot.mode === 'attack') {
     if (snapshot.preview !== null) return th.hintConfirm
@@ -101,10 +103,11 @@ export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapsh
 
   return (
     <section className="panel controls">
+      {snapshot.attackable.length > 0 && <p className="muted">{th.actionPlan.legend}</p>}
       <p className="hint">{turnHint(snapshot, selected, current, data)}</p>
       {selected !== undefined && <UnitCard unit={selected} state={state} data={data} />}
       {inspected !== undefined && <UnitCard unit={inspected} state={state} data={data} />}
-      {selected !== undefined && snapshot.mode === 'move' && !deciding && snapshot.skills.length > 0 && (
+      {selected !== undefined && snapshot.mode === 'move' && !deciding && snapshot.plan === null && snapshot.skills.length > 0 && (
         <SkillButtons snapshot={snapshot} session={session} data={data} />
       )}
       {snapshot.mode === 'skill' && snapshot.elementChoices.length > 0 && (
@@ -142,8 +145,9 @@ export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapsh
       {snapshot.mode !== 'move' && snapshot.blocked.length > 0 && (
         <BlockedTargets blocked={snapshot.blocked} name={namer(state, data)} />
       )}
-      {snapshot.movePreview !== null && <MovePreviewPanel snapshot={snapshot} session={session} data={data} />}
-      {snapshot.preview !== null && snapshot.movePreview === null && (
+      {snapshot.plan !== null && <ActionPlanPanel snapshot={snapshot} session={session} data={data} />}
+      {snapshot.plan === null && snapshot.movePreview !== null && <MovePreviewPanel snapshot={snapshot} session={session} data={data} />}
+      {snapshot.plan === null && snapshot.preview !== null && snapshot.movePreview === null && (
         <PreviewCard preview={snapshot.preview} action={snapshot.ready} name={namer(state, data)} data={data} />
       )}
       {state.pending?.kind === 'inspiration' ? (
@@ -156,7 +160,7 @@ export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapsh
         </div>
       ) : warning === null ? (
         <div className="buttons">
-          {selected !== undefined && snapshot.mode === 'move' && (
+          {selected !== undefined && snapshot.mode === 'move' && snapshot.plan === null && (
             <button
               type="button"
               className="secondary"
@@ -166,12 +170,12 @@ export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapsh
               {th.attack}
             </button>
           )}
-          {selected !== undefined && snapshot.mode === 'move' && (
+          {selected !== undefined && snapshot.mode === 'move' && snapshot.plan === null && (
             <button type="button" className="secondary" disabled={!snapshot.canDefend} onClick={() => session.defend()}>
               {th.defend}
             </button>
           )}
-          {selected?.kind === 'tamer' && snapshot.mode === 'move' && (
+          {selected?.kind === 'tamer' && snapshot.mode === 'move' && snapshot.plan === null && (
             <button
               type="button"
               className="secondary"
@@ -182,7 +186,7 @@ export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapsh
               {th.command}
             </button>
           )}
-          {snapshot.ready !== null && snapshot.movePreview === null && (
+          {snapshot.plan === null && snapshot.ready !== null && snapshot.movePreview === null && (
             <button type="button" className="primary" onClick={() => session.confirmAttack()}>
               {snapshot.mode === 'skill' ? th.confirmSkill : snapshot.mode === 'command' ? th.confirmCommand : th.confirmAttack}
             </button>

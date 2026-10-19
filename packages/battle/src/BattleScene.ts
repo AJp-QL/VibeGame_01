@@ -16,7 +16,7 @@
 import * as Phaser from 'phaser'
 import type { Tile } from '@mt/shared'
 import { boardPixels, tileAtPoint, tileCentre, TILE_SIZE } from './boardGeometry.ts'
-import { derivedValues, type BattleSessionPort, type BattleSnapshot, type BattleState, type UnitId, type UnitState } from '@mt/session'
+import { derivedValues, type BattleSessionPort, type BattleSnapshot, type BattleState, type SessionSnapshot, type UnitId, type UnitState } from '@mt/session'
 import {
   AREA,
   ATTUNED,
@@ -68,6 +68,8 @@ const SPENT_ALPHA = 0.5
 /** Status icons drawn on a Unit; the Unit card lists them all. */
 const MAX_STATUS_ICONS = 3
 
+type PlanSnapshot = BattleSnapshot & Partial<Pick<SessionSnapshot, 'attackable' | 'plan' | 'mode'>>
+
 export interface BattleSceneData {
   readonly session: BattleSessionPort
   readonly labels: BoardLabels
@@ -89,6 +91,7 @@ function drawPattern(g: Phaser.GameObjects.Graphics, pattern: readonly string[],
 export class BattleScene extends Phaser.Scene {
   private session!: BattleSessionPort
   private labels!: BoardLabels
+  private planMarkers!: Phaser.GameObjects.Graphics
   private highlights!: Phaser.GameObjects.Graphics
   private movePreview!: Phaser.GameObjects.Graphics
   private terrainLayer!: Phaser.GameObjects.Graphics
@@ -113,6 +116,7 @@ export class BattleScene extends Phaser.Scene {
     this.terrainLayer = this.add.graphics()
     this.drawBoard(snapshot.state)
     this.highlights = this.add.graphics()
+    this.planMarkers = this.add.graphics().setDepth(6)
     this.movePreview = this.add.graphics().setDepth(5).setAlpha(0.5)
     this.shownRevision = snapshot.revision
     this.render()
@@ -161,10 +165,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private render(): void {
-    const snapshot = this.session.getSnapshot()
+    const snapshot: PlanSnapshot = this.session.getSnapshot()
     this.drawBoard(snapshot.state)
     this.drawHighlights(snapshot)
-    const preview = snapshot.movePreview
+    const plan = snapshot.plan
+    const preview = plan == null ? snapshot.movePreview : { unit: plan.unit, tile: plan.origin.tile }
     this.movePreview.clear()
     const previewUnit = preview == null ? undefined : snapshot.units.find(unit => unit.id === preview.unit)
     if (preview != null && previewUnit !== undefined) {
@@ -250,7 +255,7 @@ export class BattleScene extends Phaser.Scene {
     })
   }
 
-  private drawHighlights(snapshot: BattleSnapshot): void {
+  private drawHighlights(snapshot: PlanSnapshot): void {
     const g = this.highlights
     g.clear()
     for (const tile of snapshot.reachable) {
@@ -258,6 +263,27 @@ export class BattleScene extends Phaser.Scene {
       g.fillRect(tile.x * TILE_SIZE + 1, tile.y * TILE_SIZE + 1, TILE_SIZE - 1, TILE_SIZE - 1)
       g.lineStyle(1, REACHABLE, 0.9)
       g.strokeRect(tile.x * TILE_SIZE + 2.5, tile.y * TILE_SIZE + 2.5, TILE_SIZE - 4, TILE_SIZE - 4)
+    }
+    // Attack origins and enemies come entirely from the session's Action plan data.
+    const enemies = snapshot.mode === 'move' ? snapshot.attackable ?? [] : []
+    const origins = snapshot.plan?.originChoices ?? enemies.flatMap(enemy => enemy.origins)
+    for (const origin of origins) {
+      const centre = tileCentre(origin.tile)
+      g.fillStyle(OUTLINE, 1)
+      g.fillCircle(centre.x, centre.y + 9, 3)
+      g.fillStyle(TARGET, 1)
+      g.fillCircle(centre.x, centre.y + 9, 2)
+    }
+    const markers = this.planMarkers
+    markers.clear()
+    for (const enemy of enemies) {
+      // A small sword in a dark badge; status icons keep their own corners.
+      const left = enemy.tile.x * TILE_SIZE + 12
+      const top = enemy.tile.y * TILE_SIZE + 2
+      markers.fillStyle(OUTLINE, 1)
+      markers.fillRect(left - 1, top - 1, 9, 10)
+      markers.fillStyle(TARGET, 1)
+      drawPattern(markers, ['.....##', '....###', '...###.', '#.###..', '.###...', '..###..', '.#..#..'], left, top)
     }
     for (const tile of snapshot.area) {
       g.fillStyle(AREA, 0.25)
@@ -316,6 +342,25 @@ export class BattleScene extends Phaser.Scene {
 
   /** Play the events of the latest action, in order. */
   private animateEvents(snapshot: BattleSnapshot): void {
+    const batches = snapshot.eventBatches
+    if (batches !== undefined && batches.length > 1) {
+      const play = (index: number): void => {
+        const events = batches[index]
+        if (events === undefined) return
+        const move = events.find(event => event.type === 'unitMoved')
+        const blink = events.find(event => event.type === 'unitTeleported')
+        // Chain on the actual animation completion, not an estimated delay: a slow
+        // frame must not start the attack while the Unit is still walking.
+        if (move?.type === 'unitMoved') this.walk(move.unit, move.path, () => play(index + 1))
+        else if (blink?.type === 'unitTeleported') this.teleport(blink.unit, blink.to, () => play(index + 1))
+        else {
+          this.animateEvents({ ...snapshot, events, eventBatches: [] })
+          play(index + 1)
+        }
+      }
+      play(0)
+      return
+    }
     let critical = false
     // Events after an attack's result (counterattack, push) wait for it to show.
     let offset = 0
@@ -377,7 +422,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** Walk a moved Unit along the path the engine reported. */
-  private walk(unit: UnitId, path: readonly Tile[]): void {
+  private walk(unit: UnitId, path: readonly Tile[], onComplete?: () => void): void {
     const view = this.unitViews.get(unit)
     if (view === undefined) return
     this.animating.add(unit)
@@ -387,6 +432,7 @@ export class BattleScene extends Phaser.Scene {
       if (step === undefined) {
         this.animating.delete(unit)
         this.render()
+        onComplete?.()
         return
       }
       this.tweens.add({ targets: view.container, x: step.x, y: step.y, duration: STEP_MS, onComplete: () => next(index + 1) })
@@ -416,7 +462,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** Blink: the Unit fades out where it was and fades in on its new tile; nothing in between. */
-  private teleport(unit: UnitId, to: Tile): void {
+  private teleport(unit: UnitId, to: Tile, onComplete?: () => void): void {
     const view = this.unitViews.get(unit)
     if (view === undefined) return
     this.animating.add(unit)
@@ -434,6 +480,7 @@ export class BattleScene extends Phaser.Scene {
           onComplete: () => {
             this.animating.delete(unit)
             this.render()
+            onComplete?.()
           },
         })
       },
