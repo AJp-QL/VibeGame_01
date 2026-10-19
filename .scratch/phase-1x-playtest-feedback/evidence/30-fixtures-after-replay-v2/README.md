@@ -40,6 +40,6 @@ The contact sheets below show the 19 Board frames; the full-resolution PNGs, inc
 - [taunted.png](../../../../packages/web/visual/baselines/taunted.png)
 - [weakened.png](../../../../packages/web/visual/baselines/weakened.png)
 
-Checks: frozen install, typecheck, 1,028 tests passed (1 skipped), build. Three repeated visual comparisons and path check are recorded in the PR.
+Checks: frozen install, typecheck, 1,028 tests passed (1 skipped), build. Three repeated visual comparisons passed 81/81. Path check passed for all 22 changed files.
 
 The `--with-deps` browser install could not use `su` (no root password). Installing Chromium alone succeeded; existing system libraries support the pinned browser. Browser cache: `/workspace/.cache/ms-playwright`.
