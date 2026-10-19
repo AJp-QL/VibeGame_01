@@ -97,7 +97,7 @@ export function Menu({
                   onChange={() => set({ boardId: option.id })}
                 />
                 <span>
-                  <strong>{option.name}</strong>
+                  <strong>{th.menu.boardLabel(option.name, option.terrain.length)}</strong>
                   {th.menu.boardBlurb[option.id] !== undefined && (
                     <span className="muted">{th.menu.boardBlurb[option.id]}</span>
                   )}

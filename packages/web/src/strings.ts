@@ -107,6 +107,7 @@ export const th = {
       grand_crossroads: 'ทางแยกกว้าง 9×9 มีแสงและมืดกลาง Board ภูเขาขนาบกลางทาง ป่า น้ำและทะเลทรายกระจายรอบนอก',
       wide_shallows: 'แม่น้ำตื้นพาดทแยงผ่านกลาง Board ขนาด 9×9 มีป่าริมน้ำและภูเขากระจายสองฝั่ง',
     } as Readonly<Record<string, string>>,
+    boardLabel: (name: string, size: number) => `${name} · ${size}×${size}`,
     boardPreview: (name: string) => `แผนที่ Board ${name}`,
     mode: {
       hotseat: 'Hotseat',
