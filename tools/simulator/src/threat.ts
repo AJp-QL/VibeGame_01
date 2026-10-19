@@ -7,11 +7,10 @@
  *
  * Exact in the Move (the engine's own reachable tiles under the distance metric
  * in play, other Units blocking) and in the skill range; it ignores line of
- * sight, cooldowns, Hidden and what the enemy stands on. Call it inside
- * `withDistanceMetric` (the simulator's `playBattle` does) so distance and
- * Move follow the experiment.
+ * sight, cooldowns, Hidden and what the enemy stands on. The metric is the one in the
+ * Battle's range rules (`RangeRules.distanceMetric`).
  */
-import { boardSizeOf, distance, reachableTiles, type BattleState } from '@mt/engine'
+import { boardSizeOf, distanceIn, reachableTiles, type BattleState } from '@mt/engine'
 import type { Side, Tile } from '@mt/shared'
 
 const boardTiles = (size: number): Tile[] => Array.from({ length: size * size }, (_, i) => ({ x: i % size, y: Math.floor(i / size) }))
@@ -51,7 +50,7 @@ export function threatenedTiles(state: BattleState, side: Side): ReadonlySet<num
     for (const tile of all) {
       const key = tile.y * 100 + tile.x
       if (threatened.has(key)) continue
-      if (stands.some((from) => distance(from, tile) <= reach)) threatened.add(key)
+      if (stands.some((from) => distanceIn(state, from, tile) <= reach)) threatened.add(key)
     }
   }
   return threatened
@@ -61,10 +60,4 @@ export function threatenedTiles(state: BattleState, side: Side): ReadonlySet<num
 export function sampleThreat(state: BattleState, side: Side, turn: number): ThreatSample {
   const tiles = boardSizeOf(state) ** 2
   return { turn, side, threatened: threatenedTiles(state, side).size, tiles }
-}
-
-/** Mean threatened share (0-1) of `samples`; `safe` is one minus it. */
-export function threatenedShare(samples: readonly ThreatSample[]): number {
-  if (samples.length === 0) return 0
-  return samples.reduce((a, s) => a + s.threatened / s.tiles, 0) / samples.length
 }

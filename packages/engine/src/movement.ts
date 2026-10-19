@@ -10,33 +10,30 @@ import { isImmobile } from './statuses.ts'
 /**
  * How distance is measured. The game plays 'chebyshev' (rules §2.3) always; the
  * other two exist only for the simulator's range experiments (phase 1.x ticket
- * 20) and are switched on for the length of one call with `withDistanceMetric`:
+ * 20), set through `RangeRules.distanceMetric` of a Battle:
  *  - 'orthogonal': no diagonals, distance = |dx| + |dy|, Move steps in 4 directions.
  *  - 'alternating': a diagonal costs 1, then 2, then 1 ... along a path (a
  *    straight line of k diagonals costs k + floor(k/2)); distance = max + floor(min / 2).
  */
 export type DistanceMetric = 'chebyshev' | 'orthogonal' | 'alternating'
 
-let activeMetric: DistanceMetric = 'chebyshev'
-
-/** Run `fn` with `metric` measuring every distance and Move; the previous metric is back afterwards, even if `fn` throws. */
-export function withDistanceMetric<T>(metric: DistanceMetric, fn: () => T): T {
-  const previous = activeMetric
-  activeMetric = metric
-  try {
-    return fn()
-  } finally {
-    activeMetric = previous
-  }
-}
-
-/** Distance between two tiles: Chebyshev, diagonals count 1 (rules §2.3). */
-export function distance(a: Tile, b: Tile): number {
+/** Distance between two tiles: Chebyshev, diagonals count 1 (rules §2.3), unless a `metric` is given. */
+export function distance(a: Tile, b: Tile, metric: DistanceMetric = 'chebyshev'): number {
   const dx = Math.abs(a.x - b.x)
   const dy = Math.abs(a.y - b.y)
-  if (activeMetric === 'chebyshev') return Math.max(dx, dy)
-  if (activeMetric === 'orthogonal') return dx + dy
+  if (metric === 'chebyshev') return Math.max(dx, dy)
+  if (metric === 'orthogonal') return dx + dy
   return Math.max(dx, dy) + Math.floor(Math.min(dx, dy) / 2)
+}
+
+/** The metric of this Battle (Chebyshev unless its range rules say otherwise). */
+export function metricOf(state: BattleState): DistanceMetric {
+  return state.rangeRules?.distanceMetric ?? 'chebyshev'
+}
+
+/** `distance` in the metric of `state`. */
+export function distanceIn(state: BattleState, a: Tile, b: Tile): number {
+  return distance(a, b, metricOf(state))
 }
 
 /**
@@ -72,7 +69,8 @@ const key = (tile: Tile): number => tile.y * 100 + tile.x
  * path is the fewest steps; ties broken by the fixed neighbour order.
  */
 export function reachableTiles(state: BattleState, unit: UnitState): ReadonlyMap<number, readonly Tile[]> {
-  if (activeMetric !== 'chebyshev') return reachableCosted(state, unit, activeMetric)
+  const metric = metricOf(state)
+  if (metric !== 'chebyshev') return reachableCosted(state, unit, metric)
   const range = moveRangeNow(state, unit)
   const size = boardSizeOf(state)
   const canPassOver = unit.kind === 'monster' && unit.movement === 'flying'

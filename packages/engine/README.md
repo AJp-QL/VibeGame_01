@@ -19,6 +19,7 @@ rules engine แบบ deterministic ที่ใช้ร่วมกันท�
 
 ## สถานะ
 - interface สาธารณะ (Seam A) ใน `src/index.ts`: `createBattle`, `legalActions`, `previewAction`, `applyAction`, `derivedValues`, `unitsVisibleTo` และ dice stream (xoshiro128** + SplitMix64 ตาม rules §21.5, หรือผลทอยที่กำหนดเองสำหรับ test)
+- `distance`, `distanceIn`, `reachableTiles` และ type `DistanceMetric` เป็น export ถาวร (ticket 20) เพราะ AI และ simulator ต้องวัดระยะแบบเดียวกับ engine: วิธีวัดอยู่ใน `RangeRules.distanceMetric` ของ Battle (ไม่มี state ซ่อน) เกมเล่น Chebyshev เสมอ (ค่าเริ่มต้นเมื่อไม่ระบุ) อีกสองแบบ (`orthogonal`, `alternating`) ใช้ใน simulator เท่านั้น
 - กติกาที่ทำแล้ว:
   - deployment (rules §17.1, `src/deployment.ts`): Battle เริ่มที่ `phase: 'deployment'` ทีม A วางก่อนแล้วทีม B action `deploy` (วางหรือย้ายก่อนยืนยัน เฉพาะช่องว่างในโซนเริ่ม 2 แถวหลัง) และ `confirmDeployment` (ต้องวางครบ 3 Unit) การวางของแต่ละฝั่งซ่อนจากอีกฝั่ง (`unitsVisibleTo`, event `unitPlaced.hiddenFrom`) จนทั้งสองฝั่งยืนยัน แล้วเปิดเผยพร้อมกัน
   - initiative (rules §17.2, D-09, `src/initiative.ts`): d20 + AGI mod สูงสุดในทีม (รวม Tamer) A ทอยก่อน B เสมอทอยใหม่ทั้งคู่ เก็บผลทุกคู่ใน `state.initiative` (รวมคู่หลังใช้ Inspiration ดู ticket 12 ด้านล่าง)

@@ -64,7 +64,7 @@ The distance switch is global inside a run, so everything that asks "how far" fo
 
 ## What changed in the code (additive; the game plays as before)
 
-- `packages/engine/src/movement.ts`: `withDistanceMetric(metric, fn)`, `DistanceMetric`, and `reachableTiles` exported. The metric is a module-level switch, `'chebyshev'` by default, scoped to one call with `try/finally`; the game never sets it. No `ENGINE_VERSION` bump: the same data, Dice Seed and actions give the same result (936 tests, `check-replays` exit 0).
+- Engine: `DistanceMetric` is a field of the Battle's `RangeRules` (`distanceMetric`, absent = Chebyshev), carried in the state: no hidden or module-level state. `distance(a, b, metric?)` stays pure; `distanceIn(state, a, b)` and `reachableTiles` are exported, and every engine and AI distance call reads the Battle's metric. No `ENGINE_VERSION` bump: the same data, Dice Seed and actions give the same result (the 2,000-Battle tables were regenerated after this refactor and are byte-identical; `check-replays` exit 0). Documented in `packages/engine/README.md`.
 - `packages/ai/src/planner.ts`: two neighbour loops also require distance 1 (no change under Chebyshev).
-- `tools/simulator`: `sim distance` (`distanceExperiment.ts`, `distanceWorker.ts`), the metric (`threat.ts`), `Matchup.distanceMetric` and `Matchup.onTurnStart`. `SIM_PROFILES` and the sim-v4 parity check are untouched (they never set a metric).
+- `tools/simulator`: `sim distance` (`distanceExperiment.ts`, `distanceWorker.ts`), the metric (`threat.ts`), `Matchup.onTurnStart`. `SIM_PROFILES` and the sim-v4 parity check are untouched (they never set a metric).
 - Tests: `packages/engine/test/distanceMetric.test.ts`, `tools/simulator/test/distance.test.ts`.

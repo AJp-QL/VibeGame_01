@@ -21,7 +21,7 @@ import type { ActionPreview, Rejection, RejectionCode } from './battle.ts'
 import { isFlying, previewAttack, spendAttackRoll } from './combat.ts'
 import { LINE_OF_SIGHT_FROM, unitsOnLine } from './lineOfSight.ts'
 import { sightBlockingTiles } from './rangeRules.ts'
-import { distance } from './movement.ts'
+import { distance, distanceIn, metricOf, type DistanceMetric } from './movement.ts'
 import { emit } from './resolution.ts'
 import { GENERIC, type SkillHandler, type SkillHandlers, type SkillResolution, type SkillUse } from './skillHandler.ts'
 import type { UseSkillAction } from './skills.ts'
@@ -48,9 +48,9 @@ function boardTiles(size: number): Tile[] {
  * The tiles an area skill covers around `centre` (Burst: the centre and its 8
  * neighbours), on a Board of `size` (7x7 unless given), reading order.
  */
-export function areaTiles(skill: Skill, centre: Tile, size: number = BOARD_SIZE): Tile[] {
+export function areaTiles(skill: Skill, centre: Tile, size: number = BOARD_SIZE, metric: DistanceMetric = 'chebyshev'): Tile[] {
   const radius = skill.area?.radius ?? 0
-  return boardTiles(size).filter((tile) => distance(tile, centre) <= radius)
+  return boardTiles(size).filter((tile) => distance(tile, centre, metric) <= radius)
 }
 
 // ------------------------------------------------------------------ Burst
@@ -58,7 +58,7 @@ export function areaTiles(skill: Skill, centre: Tile, size: number = BOARD_SIZE)
 /** Whether `user` may centre `skill` on `centre` (D-14, rules §7.1): on the Board, distance 0 to range, line of sight from 2. */
 function checkCentre(state: BattleState, user: UnitState, skill: Skill, centre: Tile): Rejection | null {
   if (!isOnBoard(centre, boardSizeOf(state))) return rejection('off-board', `(${centre.x}, ${centre.y}) is not on the Board`)
-  const d = distance(user.tile, centre)
+  const d = distanceIn(state, user.tile, centre)
   if (d > skill.range) return rejection('out-of-range', `${tileName(centre)} is ${d} tiles away; ${skill.name} reaches ${skill.range}`)
   // Rules §7.1, §15.1: only to the centre (as the line's end), from distance 2, unless the user is Flying.
   if (d >= LINE_OF_SIGHT_FROM && !isFlying(user)) {
@@ -82,14 +82,14 @@ function checkCentre(state: BattleState, user: UnitState, skill: Skill, centre: 
 /** Hidden (rules §8.2): Burst does not hit it when it stands 2 or more tiles from the user (not from the centre). */
 function hiddenFrom(state: BattleState, user: UnitState, target: UnitState): boolean {
   const from = untargetableFrom(state, target)
-  return from !== null && distance(user.tile, target.tile) >= from
+  return from !== null && distanceIn(state, user.tile, target.tile) >= from
 }
 
 /** The enemies `skill` centred on `centre` may hit, in Unit order. Allies are never hit. */
 function areaEnemies(state: BattleState, user: UnitState, skill: Skill, centre: Tile): UnitState[] {
   const radius = skill.area?.radius ?? 0
   return state.units.filter(
-    (u) => u.side !== user.side && distance(u.tile, centre) <= radius && !hiddenFrom(state, user, u),
+    (u) => u.side !== user.side && distanceIn(state, u.tile, centre) <= radius && !hiddenFrom(state, user, u),
   )
 }
 
@@ -140,11 +140,11 @@ const BURST: SkillHandler = {
       const target = findUnit(state, id)
       if (target === undefined) return rejection('unknown-unit', `No Unit "${id}" on the Board`)
       if (target.side === user.side) return rejection('not-an-enemy', `${id} is on the same side as ${user.id}`)
-      if (distance(target.tile, centre) > radius) {
+      if (distanceIn(state, target.tile, centre) > radius) {
         return rejection('out-of-range', `${id} is not in ${skill.name}'s area around ${tileName(centre)}`)
       }
       if (hiddenFrom(state, user, target)) {
-        return rejection('target-hidden', `${id} is Hidden and ${distance(user.tile, target.tile)} tiles from ${user.id}`)
+        return rejection('target-hidden', `${id} is Hidden and ${distanceIn(state, user.tile, target.tile)} tiles from ${user.id}`)
       }
       targets.push(target)
     }
@@ -173,7 +173,7 @@ const BURST: SkillHandler = {
       skill: use.skill.id,
       user: use.user.id,
       centre,
-      area: areaTiles(use.skill, centre, boardSizeOf(state)),
+      area: areaTiles(use.skill, centre, boardSizeOf(state), metricOf(state)),
       attacks: use.targets.map((target, index) =>
         previewAttack(index === 0 ? state : later, { attacker: use.user, target, skill: use.skill }),
       ),
@@ -190,7 +190,7 @@ const BLINK: SkillHandler = {
       return rejection('invalid-target', `${skill.name} needs a destination tile only`)
     }
     if (!isOnBoard(to, boardSizeOf(state))) return rejection('off-board', `(${to.x}, ${to.y}) is not on the Board`)
-    const d = distance(user.tile, to)
+    const d = distanceIn(state, user.tile, to)
     // D-13: always `skill.range`; no Command or Aquatic bonus, and Pin does not stop it.
     if (d < 1 || d > skill.range) return rejection('out-of-range', `${tileName(to)} is ${d} tiles away; ${skill.name} reaches 1 to ${skill.range}`)
     const occupant = state.units.find((u) => sameTile(u.tile, to))

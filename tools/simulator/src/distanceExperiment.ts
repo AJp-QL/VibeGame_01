@@ -4,7 +4,7 @@
  * measured (Chebyshev as today, no diagonals, diagonals alternating 1/2) crossed
  * with the range of the long-shot skills (3 as today, or 2). Nothing here
  * touches data/ or the game's rules: a variant exists only inside a simulator run
- * (the metric through `Matchup.distanceMetric`, the ranges on a copy of the data).
+ * (the metric through `RangeRules.distanceMetric`, the ranges on a copy of the data).
  */
 import { cpus } from 'node:os'
 import { Worker } from 'node:worker_threads'
@@ -107,8 +107,7 @@ export function runDistanceSet(data: GameData, job: DistanceJob): DistanceSetRes
         scenario: job.scenario,
         board: job.board,
         profiles: { A: profile, B: profile },
-        rangeRules: GAME_RANGE_RULES,
-        distanceMetric: v.metric,
+        rangeRules: { ...GAME_RANGE_RULES, distanceMetric: v.metric },
         onTurnStart: (state, side) => samples.push(sampleThreat(state, side, ++turn)),
       },
       seed,

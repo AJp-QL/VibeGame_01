@@ -20,7 +20,7 @@
  */
 import type { ApplyResult, Rejection } from './battle.ts'
 import { checkActor, isRejection } from './combat.ts'
-import { distance } from './movement.ts'
+import { distanceIn } from './movement.ts'
 import { COMMAND_OPTIONS, findUnit, type BattleState, type CommandOption, type UnitId, type UnitState } from './state.ts'
 import { activate } from './turns.ts'
 
@@ -53,7 +53,7 @@ export function checkCommand(state: BattleState, action: CommandAction): { tamer
   if (target === undefined) return { code: 'unknown-unit', message: `No Unit "${action.target}" on the Board` }
   if (target.side !== tamer.side) return { code: 'not-an-ally', message: `${target.id} is not on ${tamer.id}'s side` }
   if (target.kind !== 'monster') return { code: 'invalid-target', message: 'Command is for an allied Monster' }
-  const d = distance(tamer.tile, target.tile)
+  const d = distanceIn(state, tamer.tile, target.tile)
   if (d > COMMAND_RANGE) {
     return { code: 'out-of-range', message: `${target.id} is ${d} tiles away; Command reaches ${COMMAND_RANGE}` }
   }

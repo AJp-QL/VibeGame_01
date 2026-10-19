@@ -3,7 +3,7 @@
  * one summary per Battle (`GameRecord`) and the totals (`Metrics`) with the
  * same metric set as prototype/simulation/sim.py v4 `aggregate`.
  */
-import { applyAction, createBattle, decidingSide, withDistanceMetric, type Action, type BattleEvent, type BattleState, type DistanceMetric } from '@mt/engine'
+import { applyAction, createBattle, decidingSide, type Action, type BattleEvent, type BattleState } from '@mt/engine'
 import { chooseAction, createAi, type AiProfile, type AiState } from '@mt/ai'
 import type { RangeRules } from '@mt/engine'
 import type { GameData, Side } from '@mt/shared'
@@ -52,8 +52,6 @@ export interface Matchup {
   readonly profiles: Readonly<Record<Side, AiProfile>>
   /** Experiment switches of the engine (phase 1.x ticket 08); absent = the game's rules. */
   readonly rangeRules?: RangeRules
-  /** How distance is measured (phase 1.x ticket 20); absent = the game's Chebyshev. */
-  readonly distanceMetric?: DistanceMetric
   /** Called with the state when a Turn starts, for `side`, before it acts (phase 1.x ticket 20). */
   readonly onTurnStart?: (state: BattleState, side: Side) => void
 }
@@ -87,10 +85,6 @@ export interface PlayedBattle {
 
 /** One Battle, AI on both sides, from deployment to the end. */
 export function playBattle(data: GameData, matchup: Matchup, seed: string, maxActions = 5000): PlayedBattle {
-  return matchup.distanceMetric === undefined ? playBattleNow(data, matchup, seed, maxActions) : withDistanceMetric(matchup.distanceMetric, () => playBattleNow(data, matchup, seed, maxActions))
-}
-
-function playBattleNow(data: GameData, matchup: Matchup, seed: string, maxActions: number): PlayedBattle {
   const scenario = data.scenarios[matchup.scenario]
   const board = data.boards[matchup.board]
   if (scenario === undefined) throw new Error(`Unknown scenario "${matchup.scenario}"`)

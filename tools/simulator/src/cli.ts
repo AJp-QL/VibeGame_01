@@ -27,7 +27,8 @@ import { simulateGames } from './simulate.ts'
 import { applyVariant, RANGE_VARIANTS, variantById } from './variants.ts'
 import { cpus } from 'node:os'
 
-export type Command = 'run' | 'parity' | 'baseline' | 'ranges' | 'distance'
+export const COMMANDS = ['run', 'parity', 'baseline', 'ranges', 'distance'] as const
+export type Command = (typeof COMMANDS)[number]
 
 export interface CliOptions {
   readonly command: Command
@@ -53,8 +54,9 @@ const USAGE = 'usage: sim run|parity|baseline|ranges|distance [--scenario id] [-
 
 /** Parse argv (without node and the script). Throws with a usage line on anything unknown. */
 export function parseArgs(argv: readonly string[]): CliOptions {
-  const [command, ...rest] = argv
-  if (command !== 'run' && command !== 'parity' && command !== 'baseline' && command !== 'ranges' && command !== 'distance') throw new Error(USAGE)
+  const [first, ...rest] = argv
+  const command = COMMANDS.find((c) => c === first)
+  if (command === undefined) throw new Error(USAGE)
   const opts: Record<string, string | true> = {}
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i] ?? ''

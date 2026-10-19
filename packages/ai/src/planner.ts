@@ -11,7 +11,7 @@ import {
   applyAction,
   boardSizeOf,
   COMMAND_RANGE,
-  distance,
+  distanceIn,
   moveRangeNow,
   previewAction,
   type Action,
@@ -146,8 +146,8 @@ function posValue(ctx: Ctx, st: BattleState, unit: UnitState, at: Tile = unit.ti
   const enemies = enemiesOf(st, unit)
   if (unit.kind === 'tamer') {
     const monsters = alliesOf(st, unit).filter((m) => m.kind === 'monster')
-    if (monsters.some((m) => distance(m.tile, at) <= 3)) v += 0.3
-    if (h.protectTamer > 0 && monsters.some((m) => distance(m.tile, at) === 1)) v += h.protectTamer
+    if (monsters.some((m) => distanceIn(st, m.tile, at) <= 3)) v += 0.3
+    if (h.protectTamer > 0 && monsters.some((m) => distanceIn(st, m.tile, at) === 1)) v += h.protectTamer
   } else {
     v += 0.8 * ctx.terrainMod(st, unit, at)
     const tamer = tamerOf(st, unit.side)
@@ -155,9 +155,9 @@ function posValue(ctx: Ctx, st: BattleState, unit: UnitState, at: Tile = unit.ti
     const r = ctx.maxRange(unit)
     if (ctx.profile.mode === 'tamer_rush') {
       const enemyTamer = enemies.find((e) => e.kind === 'tamer')
-      if (enemyTamer !== undefined) v -= 0.5 * Math.max(0, distance(at, enemyTamer.tile) - r)
+      if (enemyTamer !== undefined) v -= 0.5 * Math.max(0, distanceIn(st, at, enemyTamer.tile) - r)
     } else if (enemies.length > 0) {
-      const dmin = Math.min(...enemies.map((e) => distance(at, e.tile)))
+      const dmin = Math.min(...enemies.map((e) => distanceIn(st, at, e.tile)))
       v -= 0.25 * Math.max(0, dmin - r)
     }
   }
@@ -185,7 +185,7 @@ function attackValue(ctx: Ctx, st: BattleState, unit: UnitState, enemy: UnitStat
     let gain = 0
     for (const ally of alliesOf(st, unit)) {
       if (hasActed(ctx, ally)) continue
-      if (distance(ally.tile, enemy.tile) > moveRangeNow(st, ally) + ctx.maxRange(ally)) continue
+      if (distanceIn(st, ally.tile, enemy.tile) > moveRangeNow(st, ally) + ctx.maxRange(ally)) continue
       const base = ctx.advAgainst(st, ally, enemy)
       const next: Adv = base < 0 ? 0 : 1
       if (next !== base) gain += ctx.w(enemy) * (ctx.bestEv(st, ally, enemy, next, true) - ctx.bestEv(st, ally, enemy, base, true))
@@ -200,7 +200,7 @@ function attackValue(ctx: Ctx, st: BattleState, unit: UnitState, enemy: UnitStat
     if (focus > 0) val *= 1 + focus * (1 - taker.hp / ctx.maxHp(taker))
     if (skill.effects?.push !== undefined) {
       const tamer = tamerOf(st, unit.side)
-      if (tamer !== undefined && distance(enemy.tile, tamer.tile) === 1) {
+      if (tamer !== undefined && distanceIn(st, enemy.tile, tamer.tile) === 1) {
         val += 0.5 * ctx.bestEv(st, enemy, tamer, null, false) * ctx.wdef(tamer) * 0.5
       }
     }
@@ -235,8 +235,8 @@ function attackValue(ctx: Ctx, st: BattleState, unit: UnitState, enemy: UnitStat
  * attacks drops the target.
  */
 function markValue(ctx: Ctx, st: BattleState, unit: UnitState, enemy: UnitState): number {
-  const now = alliesOf(st, unit).filter((a) => !hasActed(ctx, a) && distance(a.tile, enemy.tile) <= moveRangeNow(st, a) + ctx.maxRange(a))
-  const next = [unit, ...alliesOf(st, unit)].filter((a) => distance(a.tile, enemy.tile) <= ctx.baseMove(a) + ctx.maxRange(a) + 1)
+  const now = alliesOf(st, unit).filter((a) => !hasActed(ctx, a) && distanceIn(st, a.tile, enemy.tile) <= moveRangeNow(st, a) + ctx.maxRange(a))
+  const next = [unit, ...alliesOf(st, unit)].filter((a) => distanceIn(st, a.tile, enemy.tile) <= ctx.baseMove(a) + ctx.maxRange(a) + 1)
   return advantageWorth(ctx, st, now, enemy, true) + ctx.profile.heuristics.lookahead * advantageWorth(ctx, st, next, enemy, false)
 }
 
@@ -292,7 +292,7 @@ function counterRelief(ctx: Ctx, st: BattleState, unit: UnitState, enemy: UnitSt
   let best = 0
   for (const ours of st.units) {
     if (ours.side !== unit.side || ours.kind !== 'monster' || ctx.maxRange(ours) > 1) continue
-    if (distance(ours.tile, enemy.tile) > ctx.baseMove(ours) + 1) continue
+    if (distanceIn(st, ours.tile, enemy.tile) > ctx.baseMove(ours) + 1) continue
     const p = ctx.preview(st, enemy, ours, BASIC_ATTACK)
     const dice = counterDice(ctx, enemy)
     const cut = ctx.evOf(st, p, ours, { dice })[0] - ctx.evOf(st, p, ours, { dice, damageDelta })[0]
@@ -364,7 +364,7 @@ function actionsOf(ctx: Ctx, st: BattleState, unit: UnitState, moveFirst: boolea
 
     if (skill.attack !== undefined && skill.target === 'enemy') {
       for (const enemy of enemies) {
-        if (distance(here, enemy.tile) > skill.range) continue
+        if (distanceIn(st, here, enemy.tile) > skill.range) continue
         const action: Action =
           skillId === BASIC_ATTACK ? { type: 'basicAttack', unit: unit.id, target: enemy.id } : { ...base, target: enemy.id }
         const result = previewAction(st, action)
@@ -392,7 +392,7 @@ function actionsOf(ctx: Ctx, st: BattleState, unit: UnitState, moveFirst: boolea
       // Skills that only roll saves: Taunt, Hex, Distract (by the status they give).
       const status = statusApplied(skill)
       for (const enemy of enemies) {
-        if (status === undefined || distance(here, enemy.tile) > skill.range) continue
+        if (status === undefined || distanceIn(st, here, enemy.tile) > skill.range) continue
         const action: Action = { ...base, target: enemy.id }
         const p = legalPreview(st, action)
         if (p?.type !== 'save') continue
@@ -440,7 +440,7 @@ function actionsOf(ctx: Ctx, st: BattleState, unit: UnitState, moveFirst: boolea
         if (isCountering(ctx, unit)) continue
         let v = 0
         for (const enemy of enemies) {
-          if (distance(enemy.tile, here) <= ctx.baseMove(enemy) + 1) {
+          if (distanceIn(st, enemy.tile, here) <= ctx.baseMove(enemy) + 1) {
             const pa = ctx.maxRange(enemy) <= 1 ? 0.35 : 0.1
             const [cexp, cpk] = counterEv(ctx, st, unit, enemy)
             v += pa * (ctx.w(enemy) * cexp + cpk * ctx.kb(st, enemy))
@@ -464,7 +464,7 @@ function actionsOf(ctx: Ctx, st: BattleState, unit: UnitState, moveFirst: boolea
       if (status === undefined || !previewAction(st, action).ok) continue
       let v = 0
       for (const a of [unit, ...allies]) {
-        if (a.id !== unit.id && distance(a.tile, here) > skill.range) continue
+        if (a.id !== unit.id && distanceIn(st, a.tile, here) > skill.range) continue
         if (hasStatus(a, status)) continue
         const e = Math.max(0, ...enemies.map((x) => ctx.bestEv(st, a, x, null, false)))
         v += 0.05 * e * (2 + (a.id !== unit.id && !hasActed(ctx, a) ? 1 : 0))
@@ -473,7 +473,7 @@ function actionsOf(ctx: Ctx, st: BattleState, unit: UnitState, moveFirst: boolea
     } else if (skill.target === 'ally' && skill.effects?.heal !== undefined) {
       // First Aid.
       for (const a of [unit, ...allies]) {
-        if (a.id !== unit.id && distance(a.tile, here) > skill.range) continue
+        if (a.id !== unit.id && distanceIn(st, a.tile, here) > skill.range) continue
         const p = legalPreview(st, { ...base, target: a.id })
         if (p?.type !== 'heal') continue
         const miss = p.maxHp - a.hp
@@ -487,7 +487,7 @@ function actionsOf(ctx: Ctx, st: BattleState, unit: UnitState, moveFirst: boolea
       // Cover: our Tamer takes the Monster's damage.
       const tt = ctx.threat(st, unit)
       for (const a of allies) {
-        if (a.kind === 'tamer' || distance(a.tile, here) !== 1) continue
+        if (a.kind === 'tamer' || distanceIn(st, a.tile, here) !== 1) continue
         const action: Action = { ...base, target: a.id }
         if (!previewAction(st, action).ok) continue
         const tx = ctx.threat(st, a)
@@ -508,7 +508,7 @@ function bestStep(ctx: Ctx, st: BattleState, unit: UnitState, pv0: number): { ti
   for (const d of NEIGHBOURS) {
     const q = { x: unit.tile.x + d.x, y: unit.tile.y + d.y }
     // One step away under the distance metric in play (a diagonal is 2 away in the no-diagonal experiment).
-    if (!isOnBoard(q, boardSizeOf(st)) || distance(unit.tile, q) !== 1 || st.units.some((u) => sameTile(u.tile, q))) continue
+    if (!isOnBoard(q, boardSizeOf(st)) || distanceIn(st, unit.tile, q) !== 1 || st.units.some((u) => sameTile(u.tile, q))) continue
     let value: number
     if (ctx.profile.simQuirks) value = posValue(ctx, st, unit, q)
     else {
@@ -535,8 +535,8 @@ function areaCandidates(ctx: Ctx, st: BattleState, unit: UnitState, skill: Skill
   for (let y = 0; y < 7; y++) {
     for (let x = 0; x < 7; x++) {
       const centre = { x, y }
-      if (distance(unit.tile, centre) > skill.range) continue
-      const inArea = enemies.filter((e) => distance(e.tile, centre) <= radius)
+      if (distanceIn(st, unit.tile, centre) > skill.range) continue
+      const inArea = enemies.filter((e) => distanceIn(st, e.tile, centre) <= radius)
       if (inArea.length === 0) continue
       // Whether a target can be hit depends on the user and the target, not the centre (Hidden):
       // a centre covering the same enemies as an earlier usable one gives the same candidate.
@@ -570,7 +570,7 @@ function attuneCandidates(ctx: Ctx, st: BattleState, unit: UnitState, skill: Ski
   for (const d of NEIGHBOURS) {
     const q = { x: unit.tile.x + d.x, y: unit.tile.y + d.y }
     const occ = st.units.find((u) => sameTile(u.tile, q))
-    if (occ === undefined || distance(unit.tile, q) !== 1 || occ.kind !== 'monster' || occ.movement === 'flying') continue
+    if (occ === undefined || distanceIn(st, unit.tile, q) !== 1 || occ.kind !== 'monster' || occ.movement === 'flying') continue
     const old = ctx.terrainMod(st, occ, q)
     let element: Element | undefined
     let delta: number
@@ -608,9 +608,9 @@ function commandValue(ctx: Ctx, st: BattleState, tamer: UnitState): CommandValue
   let best = NO_COMMAND
   const enemies = enemiesOf(st, tamer)
   for (const m of alliesOf(st, tamer)) {
-    if (m.kind !== 'monster' || hasActed(ctx, m) || distance(tamer.tile, m.tile) > COMMAND_RANGE) continue
+    if (m.kind !== 'monster' || hasActed(ctx, m) || distanceIn(st, tamer.tile, m.tile) > COMMAND_RANGE) continue
     const mv = moveRangeNow(st, m)
-    const near = enemies.filter((e) => distance(m.tile, e.tile) <= mv + ctx.maxRange(m))
+    const near = enemies.filter((e) => distanceIn(st, m.tile, e.tile) <= mv + ctx.maxRange(m))
     if (near.length > 0) {
       let gain = 0
       for (const e of near) {
@@ -621,7 +621,7 @@ function commandValue(ctx: Ctx, st: BattleState, tamer: UnitState): CommandValue
       }
       if (gain > best.value) best = { value: gain, target: m.id, option: 'advantage' }
     } else if (mv > 0) {
-      const far = enemies.filter((e) => distance(m.tile, e.tile) <= mv + 1 + ctx.maxRange(m))
+      const far = enemies.filter((e) => distanceIn(st, m.tile, e.tile) <= mv + 1 + ctx.maxRange(m))
       if (far.length > 0) {
         const v = 0.5 * Math.max(...far.map((e) => ctx.bestEv(st, m, e, null, true) * ctx.w(e)))
         if (v > best.value) best = { value: v, target: m.id, option: 'move' }
@@ -744,8 +744,8 @@ export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[], de
   const taunter = taunterOf(ctx, st, unit)
   const closest = (list: readonly Dest[]) => {
     if (taunter === undefined || list.length === 0) return list
-    const min = Math.min(...list.map((d) => distance(d.tile, taunter.tile)))
-    return list.filter((d) => distance(d.tile, taunter.tile) === min)
+    const min = Math.min(...list.map((d) => distanceIn(st, d.tile, taunter.tile)))
+    return list.filter((d) => distanceIn(st, d.tile, taunter.tile) === min)
   }
   const afDests = closest(validDests)
   let bestDest: Dest | undefined

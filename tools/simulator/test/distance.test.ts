@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createBattle, withDistanceMetric, type BattleState } from '@mt/engine'
+import { createBattle, type BattleState, type DistanceMetric } from '@mt/engine'
 import { tileFromName, type Tile } from '@mt/shared'
 import {
   DISTANCE_BASELINE,
@@ -20,7 +20,7 @@ import {
 
 const data = loadRepoData()
 
-function battle(tiles: { A: readonly [string, string, string]; B: readonly [string, string, string] }): BattleState {
+function battle(tiles: { A: readonly [string, string, string]; B: readonly [string, string, string] }, distanceMetric?: DistanceMetric): BattleState {
   const toTiles = (names: readonly [string, string, string]) => names.map(tileFromName) as unknown as readonly [Tile, Tile, Tile]
   return createBattle({
     scenario: data.scenarios.scenario_1!,
@@ -30,18 +30,21 @@ function battle(tiles: { A: readonly [string, string, string]; B: readonly [stri
     statuses: data.statuses,
     elementWheel: data.elementWheel,
     dice: { seed: '0000000000000001' },
+    ...(distanceMetric === undefined ? {} : { rangeRules: { distanceMetric } }),
     preset: { tiles: { A: toTiles(tiles.A), B: toTiles(tiles.B) }, firstSide: 'A' },
   })
 }
 
 // Team A in one corner, team B in the other.
-const apart = battle({ A: ['a1', 'a2', 'b1'], B: ['g7', 'g6', 'f7'] })
+const TEAMS = { A: ['a1', 'a2', 'b1'], B: ['g7', 'g6', 'f7'] } as const
+const LONE = { A: ['g1', 'a1', 'a2'], B: ['g7', 'g6', 'f7'] } as const
+const apart = battle(TEAMS)
 
 describe('the threatened-tiles metric (Threat zone)', () => {
   it('counts the tiles within Move + skill range of a side', () => {
     const chebyshev = threatenedTiles(apart, 'A')
-    const orthogonal = withDistanceMetric('orthogonal', () => threatenedTiles(apart, 'A'))
-    const alternating = withDistanceMetric('alternating', () => threatenedTiles(apart, 'A'))
+    const orthogonal = threatenedTiles(battle(TEAMS, 'orthogonal'), 'A')
+    const alternating = threatenedTiles(battle(TEAMS, 'alternating'), 'A')
     // The same Units, fewer tiles the less far a step and a shot carry.
     expect(orthogonal.size).toBeLessThan(alternating.size)
     expect(alternating.size).toBeLessThanOrEqual(chebyshev.size)
@@ -50,11 +53,11 @@ describe('the threatened-tiles metric (Threat zone)', () => {
   })
 
   it('a stricter metric only ever threatens a subset of the tiles', () => {
-    const lone = battle({ A: ['g1', 'a1', 'a2'], B: ['g7', 'g6', 'f7'] })
+    const lone = battle(LONE)
     for (const side of ['A', 'B'] as const) {
       const chebyshev = threatenedTiles(lone, side)
-      const alternating = withDistanceMetric('alternating', () => threatenedTiles(lone, side))
-      const orthogonal = withDistanceMetric('orthogonal', () => threatenedTiles(lone, side))
+      const alternating = threatenedTiles(battle(LONE, 'alternating'), side)
+      const orthogonal = threatenedTiles(battle(LONE, 'orthogonal'), side)
       expect([...orthogonal].every((t) => alternating.has(t))).toBe(true)
       expect([...alternating].every((t) => chebyshev.has(t))).toBe(true)
     }

@@ -10,7 +10,7 @@
  */
 import {
   derivedValues,
-  distance,
+  distanceIn,
   moveRangeNow,
   previewAttackWhatIf,
   terrainEffectAt,
@@ -159,7 +159,7 @@ export class Ctx {
    * Command are the same for the whole decision.
    */
   preview(st: BattleState, attacker: UnitState, target: UnitState, skillId: string): AttackPreview {
-    const d = distance(attacker.tile, target.tile)
+    const d = distanceIn(st, attacker.tile, target.tile)
     // Distance class: melee, near or (range rules, D-31) far enough for the long-range disadvantage.
     const far = st.rangeRules?.longRangeDisadvantageFrom
     const reach = d <= 1 ? d : far !== undefined && d >= far ? 3 : 2
@@ -235,7 +235,7 @@ export class Ctx {
     const key = `${enemy.id}>${unit.id}@${unit.tile.x},${unit.tile.y}:${mv}:${delta}:${prot ? 1 : 0}`
     const cached = this.threatFroms.get(key)
     if (cached !== undefined) return cached
-    const dd = distance(enemy.tile, unit.tile)
+    const dd = distanceIn(st, enemy.tile, unit.tile)
     let best = 0
     for (const s of this.damageSkills(enemy)) {
       if (s.area || this.cooldown(enemy, s.id) > 1 || dd > mv + s.range) continue
@@ -288,7 +288,7 @@ export class Ctx {
     for (const enemy of st.units) {
       if (enemy.side === unit.side) continue
       const mv = moveRangeNow(st, enemy)
-      const dd = distance(enemy.tile, at)
+      const dd = distanceIn(st, enemy.tile, at)
       if (dd > mv + this.maxRange(enemy)) continue
       if (hidden && dd > mv + 1) continue
       let best = 0
@@ -309,7 +309,7 @@ export class Ctx {
     const mv = this.baseMove(enemy) + 1
     for (const ours of st.units) {
       if (ours.side === enemy.side) continue
-      const f = distance(enemy.tile, ours.tile) <= mv + this.maxRange(enemy) ? 1 : 0.3
+      const f = distanceIn(st, enemy.tile, ours.tile) <= mv + this.maxRange(enemy) ? 1 : 0.3
       best = Math.max(best, f * this.wdef(ours) * this.bestEv(st, enemy, ours, null, false))
     }
     return best
@@ -359,7 +359,7 @@ export function isLastMonster(st: BattleState, unit: UnitState): boolean {
 /** A Tamer with an allied Monster next to it (Tamer protection, rules §9): only a cache key here; the engine applies the rule. */
 export function protectedNow(st: BattleState, unit: UnitState): boolean {
   if (unit.kind !== 'tamer') return false
-  return st.units.some((m) => m.side === unit.side && m.kind === 'monster' && distance(m.tile, unit.tile) === 1)
+  return st.units.some((m) => m.side === unit.side && m.kind === 'monster' && distanceIn(st, m.tile, unit.tile) === 1)
 }
 
 /** HP that damage to `unit` comes off: its Tamer's under Cover (sim.py `eff`). */
