@@ -48,6 +48,7 @@ import {
   decidingSide,
   legalActions,
   previewAction,
+  threatZone,
   undoPoint,
   undoRecord,
   unitSkills,
@@ -139,6 +140,11 @@ export interface MovePreview {
    * each enemy it reaches, Defend and the skills that are not attacks. `choosePlanAction(key)` plans one.
    */
   readonly options: readonly PlanChoice[]
+  /**
+   * Threat zone (ticket 11): how many enemies could attack `tile` in the other side's next Turn,
+   * coarsely (Move range plus longest attack reach; see the engine's `threatCount`). Advice, not a promise.
+   */
+  readonly threat: number
 }
 
 /**
@@ -196,6 +202,11 @@ export interface SessionSnapshot extends BattleSnapshot {
    * Action, so a view can walk the Unit before it attacks. `events` keeps its meaning (the last action's).
    */
   readonly eventBatches: readonly (readonly BattleEvent[])[]
+  /**
+   * Threat zone of every tile for the side the Board is shown to, indexed `[y][x]` (same count as
+   * `movePreview.threat`), for an overlay the player can switch on. Empty outside play.
+   */
+  readonly threatZone: readonly (readonly number[])[]
   /** Action plan: the enemies the selected Unit can attack in this activation, and from where (empty when nothing can be done). */
   readonly attackable: readonly AttackableEnemy[]
   /** Action plan: the enemy picked (UI state), if any. */
@@ -334,6 +345,7 @@ type Computed =
   | 'elementChoices'
   | 'movePreview'
   | 'attackable'
+  | 'threatZone'
   | 'plan'
   | 'undo'
   | 'canCommand'
@@ -490,7 +502,7 @@ function reachOf(moved: BattleState, actions: readonly Action[], unit: UnitId, s
  * the engine applies the action to a copy of `state` and reads the legal
  * actions of the result (spec: Move preview). `null` if the engine refuses.
  */
-function movePreviewOf(state: BattleState, unit: UnitId, action: Action): MovePreview | null {
+function movePreviewOf(state: BattleState, unit: UnitId, action: Action, threatAt: (tile: Tile) => number): MovePreview | null {
   const result = applyAction(state, action)
   if (!result.ok || result.state.pending !== null) return null
   const moved = result.state
@@ -506,7 +518,7 @@ function movePreviewOf(state: BattleState, unit: UnitId, action: Action): MovePr
     if (attacks && ready && button.skill !== used) options.push(button.skill)
   }
   const reach = options.map((skill) => reachOf(moved, actions, unit, skill))
-  return { unit, tile: destination, skill: used, reach, options: choicesOf(moved, actions, unit) }
+  return { unit, tile: destination, skill: used, reach, options: choicesOf(moved, actions, unit), threat: threatAt(destination) }
 }
 
 /** Units of the side to act that have at least one legal action. */
@@ -718,8 +730,10 @@ export function createBattleSession(initial: BattleState, options: SessionOption
             ...skill,
             usable: actions.some((a) => a.type === 'useSkill' && a.unit === selected.id && a.skill === skill.skill),
           }))
+    const zone = state.phase === 'play' ? threatZone(state, viewer(state)) : []
+    const threatAt = (tile: Tile) => zone[tile.y]?.[tile.x] ?? 0
     const planning = state.phase === 'play' && state.pending === null && selectedUnit !== null && humanMayAct(state)
-    const attackable = planning ? attackableEnemies(state, selectedUnit) : []
+    const attackable = planning ? attackableEnemies(state, selectedUnit, threatAt) : []
     let plan: ActionPlan | null = null
     if (planning && (base.planTarget !== null || base.planChoice !== null)) {
       const stake = actionAtStake(state, actions)
@@ -728,6 +742,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
         selectedUnit,
         { target: base.planTarget, origin: base.planOrigin, choice: base.planChoice },
         stake !== null && stake !== selectedUnit ? stake : null,
+        threatAt,
       )
     }
     let movePreview: MovePreview | null = null
@@ -742,7 +757,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
           ? ready
           : null
       const action = move ?? blink
-      if (action !== null) movePreview = movePreviewOf(state, selectedUnit, action)
+      if (action !== null) movePreview = movePreviewOf(state, selectedUnit, action, threatAt)
     }
     const tilesOf = (ids: readonly UnitId[]) =>
       ids.flatMap((id) => {
@@ -778,6 +793,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       elementChoices,
       movePreview,
       attackable,
+      threatZone: zone,
       plan,
       undo: undoOffer(base, states),
       canCommand: commandTargets(actions, selectedUnit).length > 0,
