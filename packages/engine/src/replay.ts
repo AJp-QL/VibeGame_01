@@ -13,7 +13,7 @@
  * (`undoPoint`, rules §17.5). Replaying applies it, so the final state is the
  * one the player had; the withdrawn steps stay in `steps`, marked `undone`.
  * `undo` is a file entry, not an Action: `applyAction` never sees it, so the
- * rules and ENGINE_VERSION are unchanged.
+ * rules are unchanged; replaying accepts a file that 0.11.0 rejected, so ENGINE_VERSION moved to 0.12.0.
  */
 import {
   dataHash,
@@ -190,8 +190,10 @@ export function replayBattle(replay: Replay, data: GameData): ReplayResult {
     if (recorded.type === UNDO_RECORD_TYPE) {
       const withdraw = (recorded as Partial<UndoRecord>).withdraw
       const point = undoPoint(states, stood)
-      if (replay.formatVersion < 2 || point === null || withdraw !== stood.length - point.keep) {
-        const message = replay.formatVersion < 2 ? 'Undo needs Replay format 2' : `Undo of ${String(withdraw)} action(s) does not go back to a safe point`
+      // Against the AI the person only takes back their own Turn (rules §17.5): an undo while the AI is to act is refused.
+      const aiTurn = replay.mode === 'ai' && replay.humanSide !== undefined && state.sideToAct !== replay.humanSide
+      if (replay.formatVersion < 2 || aiTurn || point === null || withdraw !== stood.length - point.keep) {
+        const message = replay.formatVersion < 2 ? 'Undo needs Replay format 2' : aiTurn ? 'Undo during the AI Turn' : `Undo of ${String(withdraw)} action(s) does not go back to a safe point`
         return { ok: false, error: { kind: 'rejected', index, action: recorded, rejection: { code: 'unknown-action', message } } }
       }
       for (const step of standing.splice(point.keep)) undone.add(step)

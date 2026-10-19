@@ -17,5 +17,5 @@
 
 ## Notes from P1X-06
 
-- ENGINE_VERSION did not change (0.11.0): no fixture refresh needed for P1X-06 itself.
+- ENGINE_VERSION is 0.12.0 after P1X-06; the fixture refresh is P1X-30 (do it first or together).
 - Use `snapshot.recorded` in `replayToExport`; `ReplayPlayer.setShowUndone`; `stats.recordUndo(index)` / `stats.recordBattleAbandoned(index)`. Details in the P1X-06 ticket comments.

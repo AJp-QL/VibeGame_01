@@ -21,7 +21,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-03 | Move preview in session | claude | — | done (PR #22) |
 | P1X-04 | Move preview UI | codex | P1X-03 | done (PR #26) |
 | P1X-05 | Undo in engine and session | claude | P1X-01 | done (PR #30) |
-| P1X-06 | Replay format 2 + playback + play stats | claude | P1X-05 | done (PR open) |
+| P1X-06 | Replay format 2 + playback + play stats | claude | P1X-05 | done (PR #50) |
 | P1X-07 | Undo / Start over / playback toggle UI | codex | P1X-06, P1X-02 | waiting |
 | P1X-08 | Range experiments (simulator) | claude | P1X-01 | done (PR #32); user chose a+b+c on 2026-10-18 |
 | P1X-09 | Apply chosen range combination | claude | P1X-08 + user choice | done (PR #34, ENGINE_VERSION 0.11.0); Shallows first-attack target handed to P1X-20 (user, 2026-10-18) |
@@ -45,6 +45,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-27 | Range rules cleanup from the PR #34 review | claude | — | done (PR #53) |
 | P1X-28 | Session: terrain sight blockers + line-of-sight distance export | claude | — | done (PR #49) |
 | P1X-29 | UI: range and sight text from session | codex | P1X-28 (P1X-10 done) | waiting |
+| P1X-30 | Refresh visual fixtures and baselines for engine 0.12.0 | codex | P1X-06 | waiting |
 
 Next: Codex P1X-29 after P1X-28. Claude P1X-06, 11, 15, 20, 23, 27, 28 ready.
 

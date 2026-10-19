@@ -269,3 +269,28 @@ describe('Play stats: Undo and abandoned Battles', () => {
     expect(stats.read().battles[0]!.undos).toBe(1)
   })
 })
+
+describe('Undo inside a Replay: Turn boundaries and the AI Turn', () => {
+  it('never crosses a Turn boundary: an undo that would withdraw the End Turn is refused', () => {
+    const session = newSession()
+    stepTo(session, 'A.m2')
+    session.endTurn()
+    // B's Turn has begun; taking back A's End Turn (and move) is not B's to do.
+    const { recorded } = session.getSnapshot()
+    for (const withdraw of [1, 2]) {
+      const bad = [...recorded, { type: 'undo', withdraw } as const]
+      expect(openReplay(serializeReplay(recordReplay(HEADER, data, bad)), data).kind).toBe('broken')
+    }
+  })
+
+  it('refuses an undo while the AI is to act', () => {
+    const aiHeader = { ...HEADER, mode: 'ai', humanSide: 'B' } as const
+    const session = newSession()
+    stepTo(session, 'A.m2')
+    const bad = [...session.getSnapshot().recorded, { type: 'undo', withdraw: 1 } as const]
+    // Team A (the AI here) is to act and has moved: its undo is refused...
+    expect(openReplay(serializeReplay(recordReplay(aiHeader, data, bad)), data).kind).toBe('broken')
+    // ...the same file as a human Turn is fine.
+    expect(openReplay(serializeReplay(recordReplay({ ...aiHeader, humanSide: 'A' }, data, bad)), data).kind).toBe('ready')
+  })
+})
