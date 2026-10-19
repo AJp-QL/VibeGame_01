@@ -6,7 +6,8 @@
  */
 import type { Tile } from '@mt/shared'
 import type { BattleEvent, BattleState, UnitId, UnitState } from '@mt/engine'
-import type { MovePreview } from './session.ts'
+import type { ActionPlan, AttackableEnemy } from './actionPlan.ts'
+import type { MovePreview, SelectionMode } from './session.ts'
 
 export interface BattleSnapshot {
   readonly state: BattleState
@@ -56,12 +57,28 @@ export interface BattleSnapshot {
    * for a single action, a Move's and an Action's for a confirmed Action plan, so the Unit can walk
    * before it attacks. `events` keeps its meaning. Optional like `movePreview`.
    */
+  readonly eventBatches?: readonly (readonly BattleEvent[])[]
   /**
    * Threat zone (phase 1.x ticket 11): enemies that could attack each tile next Turn, for the side the
    * Board is shown to, indexed `[y][x]`; empty outside play. Optional like `movePreview`; the Replay player gives none.
    */
   readonly threatZone?: readonly (readonly number[])[]
-  readonly eventBatches?: readonly (readonly BattleEvent[])[]
+  /**
+   * Action plan (phase 1.x tickets 23, 32): the enemies the selected Unit can attack in this activation,
+   * and from where, for the Board's sword marks and the standing tiles. Same value as
+   * `SessionSnapshot.attackable`. Optional like `movePreview`; the Replay player gives none.
+   */
+  readonly attackable?: readonly AttackableEnemy[]
+  /**
+   * Action plan: where the selected Unit would act from and what it would do, or `null` until a target
+   * or choice is picked. Same value as `SessionSnapshot.plan`. Optional like `movePreview`; the Replay player gives none.
+   */
+  readonly plan?: ActionPlan | null
+  /**
+   * What the player is aiming: `move`, `attack`, `skill` or `command`. Same value as
+   * `SessionSnapshot.mode`. Optional like `movePreview`; the Replay player gives none.
+   */
+  readonly mode?: SelectionMode
 }
 
 /** A tap or click on the Board. No hover: mobile has none. */

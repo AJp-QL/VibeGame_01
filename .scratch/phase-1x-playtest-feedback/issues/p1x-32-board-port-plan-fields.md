@@ -6,9 +6,9 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done (PR pending)
 
-- [ ] `BattleSnapshot.attackable?`, `plan?`, `mode?` (optional, doc comment) ใน `port.ts`; ชนิดที่ใช้ export จาก `@mt/session` ครบ
-- [ ] session ส่งค่าเดียวกับ `SessionSnapshot`; Replay player ไม่ส่งหรือส่งค่าว่าง; test ระดับ port (ชนิดและค่า) ใน session
-- [ ] README ของ session บอก field ใหม่ของ port และบอกว่า Board อ่านจาก port ไม่ cast
-- [ ] typecheck, test, build, path check ผ่าน; ENGINE_VERSION ไม่เปลี่ยน
+- [x] `BattleSnapshot.attackable?`, `plan?`, `mode?` (optional, doc comment) ใน `port.ts`; ชนิดที่ใช้ export จาก `@mt/session` ครบ
+- [x] session ส่งค่าเดียวกับ `SessionSnapshot`; Replay player ไม่ส่งหรือส่งค่าว่าง; test ระดับ port (ชนิดและค่า) ใน session
+- [x] README ของ session บอก field ใหม่ของ port และบอกว่า Board อ่านจาก port ไม่ cast
+- [x] typecheck, test, build, path check ผ่าน; ENGINE_VERSION ไม่เปลี่ยน
