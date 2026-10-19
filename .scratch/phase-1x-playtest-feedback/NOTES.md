@@ -32,7 +32,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-14 | Board size per Board: battle/web | codex | P1X-13 | done (PR #27) |
 | P1X-15 | Contract BOARD_SIZE + 9x9 Boards | claude | P1X-13, P1X-14, P1X-09 | PR #52 on hold (user, 2026-10-19) until Codex P1X-31 (9x9 `boardBlurb`, not blocked) lands; merges last |
 | P1X-16 | 9x9 Boards UI | codex | P1X-15 | waiting |
-| P1X-17 | Release v0.2.0 + next playtest | claude | P1X-07, P1X-10, P1X-12, P1X-16, P1X-19, P1X-24, P1X-29 | waiting |
+| P1X-17 | Release v0.2.0 + next playtest | claude | P1X-07, P1X-10, P1X-12, P1X-16, P1X-19, P1X-24, P1X-29, P1X-34, P1X-35, P1X-36 | waiting |
 | P1X-18 | Move preview session follow-up | claude | P1X-04, P1X-25 | done (PR #29) |
 | P1X-19 | Move preview UI cleanup | codex | P1X-18 | done (PR #46) |
 | P1X-20 | Range experiments follow-up | claude | P1X-09 | done (PR #55; 2026-10-19 user accepted: keep the game) |
