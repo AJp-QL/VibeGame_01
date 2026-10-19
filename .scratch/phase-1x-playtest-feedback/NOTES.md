@@ -51,6 +51,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-33 | Session: Undo hidden/disabled + reason | claude | — | ready (from PR #60 review) |
 | P1X-34 | UI: Board reads plan fields from port | codex | P1X-32, P1X-24 | waiting |
 | P1X-35 | UI: Undo hide/disable + reason from session | codex | P1X-33, P1X-07 | waiting |
+| P1X-36 | Tune 9x9 Boards (balance targets) + AI approach on 9x9 | claude | — | ready (user, 2026-10-19: approach phase via 9x9 after P1X-20) |
 
 Next: human merges #58, #59, #60, then #61 and #62 after fixes; #52 after #58. Claude P1X-21, 32, 33 ready.
 
