@@ -1,0 +1,12 @@
+# P1X-34 — UI: Board อ่านข้อมูล Action plan จาก port
+
+**Owner:** codex
+
+**What to build:** หลัง P1X-32 ให้ `packages/battle/src/BattleScene.ts` เลิกใช้ `type PlanSnapshot = BattleSnapshot & Partial<Pick<SessionSnapshot, …>>` และอ่าน `attackable`, `plan`, `mode` จาก `BattleSnapshot` ตรง (เหมือน `threatZone`) ผู้เล่นเห็นเหมือนเดิม screenshot ไม่เปลี่ยน
+
+**Blocked by:** P1X-32 — port ของ Board: ข้อมูล Action plan; P1X-24 — UI: Action plan (PR #61)
+
+**Status:** ready-for-agent
+
+- [ ] ไม่มี type ที่ขยาย `BattleSnapshot` เองใน packages/battle; อ่านจาก port ที่ P1X-32 เพิ่ม
+- [ ] screenshot ไม่เปลี่ยน (หรือ update baseline และตรวจทุกภาพถ้าเปลี่ยน); CI เขียวทั้งสาม job
