@@ -8,13 +8,14 @@
 
 **Blocked by:** None — ทำก่อนแล้วจึง merge P1X-15 (PR #52)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] `th.menu.boardBlurb` มี `grand_crossroads` และ `wide_shallows` เป็นภาษาไทย อ่านแล้วตรงกับ Board
 - [x] test "each Board has a Thai description" ผ่านทั้งบน main และบน branch ของ PR #52 (merge PR #52 เข้า branch ทดสอบในเครื่อง ไม่ใส่ใน PR นี้)
-- [ ] แก้แค่ `packages/web/src/strings.ts` (และ test ถ้าจำเป็น); CI เขียวทั้งสาม job
+- [x] แก้แค่ `packages/web/src/strings.ts` (และ test ถ้าจำเป็น); CI เขียวทั้งสาม job
 
 ## Comments
 
 - Added both Thai blurbs after checking the terrain rows on `claude/p1x-15-board-9x9`. The existing 27 session text tests pass on current main and in a separate checkout with PR #52 merged for verification only. PR #52 changes are excluded from this branch.
 - Typecheck and build pass. Full tests and CI are recorded in the PR. The current visual suite reports stale 0.11.0 fixtures against engine 0.12.0; P1X-30 owns that refresh.
+- Full workspace run: 1,028 passed, 1 skipped. CI run 39204237380 passed all three jobs; the visual job used its documented stale-fixture warning.
