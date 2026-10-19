@@ -97,6 +97,7 @@ export class BattleScene extends Phaser.Scene {
   private readonly unitViews = new Map<UnitId, UnitView>()
   /** Units whose position a running animation owns (walking, lunging, falling). */
   private readonly animating = new Set<UnitId>()
+  private readonly floatingLabels = new Set<Phaser.GameObjects.Text>()
   private shownRevision = -1
 
   constructor() {
@@ -176,6 +177,15 @@ export class BattleScene extends Phaser.Scene {
     }
     if (snapshot.revision !== this.shownRevision) {
       this.shownRevision = snapshot.revision
+      // Undo and Replay jumps redraw an earlier state without animation events.
+      // Stop queued movement too, so it cannot carry a Unit back to the withdrawn tile.
+      if (snapshot.events.length === 0) {
+        this.tweens.killAll()
+        this.time.removeAllEvents()
+        this.animating.clear()
+        for (const label of this.floatingLabels) label.destroy()
+        this.floatingLabels.clear()
+      }
       this.animateEvents(snapshot)
     }
     const { state } = snapshot
@@ -501,13 +511,14 @@ export class BattleScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 1)
       .setDepth(10)
+    this.floatingLabels.add(label)
     this.tweens.add({
       targets: label,
       y: label.y - 10,
       alpha: 0,
       delay: FLOAT_MS / 2,
       duration: FLOAT_MS / 2,
-      onComplete: () => label.destroy(),
+      onComplete: () => { this.floatingLabels.delete(label); label.destroy() },
     })
   }
 

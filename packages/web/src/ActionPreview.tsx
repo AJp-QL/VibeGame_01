@@ -1,3 +1,4 @@
+import { GAME_RANGE_RULES } from '@mt/session'
 import type { Action, ActionPreview, AttackPreview, BattleState, RollModeSource, StatusOdds } from '@mt/session'
 import { tileName, type GameData } from '@mt/shared'
 import { statName, statusName } from './skillText.ts'
@@ -57,7 +58,7 @@ function RollModeSources({
         ))}
         {preview.longRangeDisadvantage && (
           <li className="disadvantage">
-            <span className="tag">{th.rollEffect.disadvantage}</span> {th.sourceLongRange}
+            <span className="tag">{th.rollEffect.disadvantage}</span> {th.sourceLongRange(GAME_RANGE_RULES.longRangeDisadvantageFrom!)}
           </li>
         )}
       </ul>

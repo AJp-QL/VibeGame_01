@@ -72,8 +72,8 @@ export function startBattle(data: GameData, choice: BattleChoice, stats: PlaySta
  * the export time comes from the UI, not the engine.
  */
 export function replayToExport(screen: Extract<Screen, { kind: 'battle' }>, stats: PlayStatsStore, at: Date) {
-  const { actions } = screen.session.getSnapshot()
-  return battleReplay(screen.data, screen.choice, screen.diceSeed, actions, {
+  const { recorded } = screen.session.getSnapshot()
+  return battleReplay(screen.data, screen.choice, screen.diceSeed, recorded, {
     appVersion: __APP_VERSION__,
     createdAt: at.toISOString(),
     stats: stats.read(),
@@ -91,4 +91,18 @@ export async function replayScreen(file: File, data: GameData, choice: BattleCho
   const opened = openReplay(await file.text(), data)
   if (opened.kind === 'ready') return { kind: 'replay', data, choice, opened }
   return { kind: 'menu', data, choice, notice: opened }
+}
+
+/** Start over preserves the menu choices; the replaced Battle is abandoned only after creation succeeds. */
+export function startOver(screen: Extract<Screen, { kind: 'battle' }>, stats: PlayStatsStore): Screen {
+  const next = startBattle(screen.data, screen.choice, stats)
+  if (next.kind === 'battle') stats.recordBattleAbandoned(screen.statsIndex)
+  return next
+}
+
+/** Count an Undo only when the session accepted it. */
+export function undoBattle(screen: Extract<Screen, { kind: 'battle' }>, stats: PlayStatsStore): void {
+  const before = screen.session.getSnapshot().undos
+  screen.session.undo()
+  if (screen.session.getSnapshot().undos > before) stats.recordUndo(screen.statsIndex)
 }

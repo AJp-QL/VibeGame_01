@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { BattleChoice, PlayStatsStore } from '@mt/session'
 import { BattleScreen } from './BattleScreen.tsx'
-import { errorScreen, exportStats, openMenu, replayScreen, replayToExport, startBattle } from './appScreens.ts'
+import { errorScreen, exportStats, openMenu, replayScreen, replayToExport, startBattle, startOver, undoBattle } from './appScreens.ts'
 import type { GameData } from '@mt/shared'
 import { Menu } from './Menu.tsx'
 import { feedbackFormUrl } from './config.ts'
@@ -53,6 +53,8 @@ export function App({ stats, feedbackUrl = feedbackFormUrl() }: AppProps) {
           diceSeed={screen.diceSeed}
           feedbackUrl={feedbackUrl}
           onPlayAgain={() => setScreen(startBattle(screen.data, screen.choice, stats))}
+          onStartOver={() => setScreen(startOver(screen, stats))}
+          onUndo={() => undoBattle(screen, stats)}
           onMenu={() => toMenu(screen)}
           onExportReplay={() => downloadReplay(replayToExport(screen, stats, new Date()))}
           onFinished={(outcome, rounds) => stats.recordBattleFinished(screen.statsIndex, outcome, rounds)}

@@ -8,12 +8,13 @@ import { withMovePreview } from '../src/movePreviewSession.ts'
 import { MovePreviewPanel } from '../src/MovePreviewPanel.tsx'
 import { createActionConfirmation } from '../src/actionConfirmation.ts'
 import { StartUnitDialog } from '../src/StartUnitDialog.tsx'
+import { UndoControls } from '../src/UndoControls.tsx'
 import { TurnPanel } from '../src/TurnPanel.tsx'
 import { SkillButtons } from '../src/SkillButtons.tsx'
 import { TerrainLegend } from '../src/TerrainLegend.tsx'
 import { PreviewCard } from '../src/ActionPreview.tsx'
 import { logLines } from '../src/EventLog.tsx'
-import { createBattleSession, createBattle, menuBoards, menuScenarios, type BattleState } from '@mt/session'
+import { GAME_RANGE_RULES, LINE_OF_SIGHT_FROM, createBattleSession, createBattle, menuBoards, menuScenarios, type BattleState } from '@mt/session'
 import { dataHash, loadGameData, tileFromName, type Board, type Side } from '@mt/shared'
 import { loadBundledGameData } from '../src/gameData.ts'
 import { describeAction } from '../src/replay.ts'
@@ -362,7 +363,7 @@ describe('phase 1.x Move preview UI', () => {
     const blocked = { ...snapshot, movePreview: { ...snapshot.movePreview!, reach: [{ skill: null, targets: ['B.m1'], blocked: [{ unit: 'B.m2', tile: t('b6')!, reason: 'no-line-of-sight' as const, blockedBy: ['B.m1'] }] }] } }
     const blockedPanel = renderToStaticMarkup(createElement(MovePreviewPanel, { snapshot: blocked, session: s, data }))
     expect(blockedPanel).toContain(th.movePreviewTargets('Tidewall (ทีม B)'))
-    expect(blockedPanel).toContain(th.blockedBy('Quillfox (ทีม B)', 'Tidewall (ทีม B)'))
+    expect(blockedPanel).toContain(th.blockedBy('Quillfox (ทีม B)', 'Tidewall (ทีม B)', false))
   })
 
   it('Blink uses the preview panel and its own confirmation button', () => {
@@ -416,7 +417,7 @@ describe('phase 1.x range rules text', () => {
     expect(preview.rollModeSources).toEqual([])
     expect(preview.rollMode).toBe('disadvantage')
     const html = renderToStaticMarkup(createElement(PreviewCard, { preview, action: null, name: id => id, data }))
-    expect(html).toContain(th.sourceLongRange)
+    expect(html).toContain(th.sourceLongRange(GAME_RANGE_RULES.longRangeDisadvantageFrom!))
     expect(html).toContain(th.previewNet.disadvantage)
     expect(html).not.toContain(th.previewNoSources)
   })
@@ -426,13 +427,13 @@ describe('phase 1.x range rules text', () => {
     expect(preview.longRangeDisadvantage).toBe(true)
     expect(preview.rollMode).toBe('normal')
     const html = renderToStaticMarkup(createElement(PreviewCard, { preview, action: null, name: id => id, data }))
-    expect(html).toContain(th.sourceLongRange)
+    expect(html).toContain(th.sourceLongRange(GAME_RANGE_RULES.longRangeDisadvantageFrom!))
     expect(html).toContain(th.sourceTerrainMatch(th.terrain.water))
     expect(html).toContain(th.previewNet.cancelled)
     const near = markPreview('normal', 'd2')
     expect(near.longRangeDisadvantage).toBeUndefined()
     const nearHtml = renderToStaticMarkup(createElement(PreviewCard, { preview: near, action: null, name: id => id, data }))
-    expect(nearHtml).not.toContain(th.sourceLongRange)
+    expect(nearHtml).not.toContain(th.sourceLongRange(GAME_RANGE_RULES.longRangeDisadvantageFrom!))
     expect(nearHtml).toContain(th.previewNoSources)
   })
 
@@ -442,29 +443,84 @@ describe('phase 1.x range rules text', () => {
     const s = withMovePreview(raw)
     s.selectUnit('B.m2')
     s.chooseSkill('mark')
-    expect(s.getSnapshot().blocked).toContainEqual(expect.objectContaining({ unit: 'A.tamer', reason: 'no-line-of-sight', blockedBy: [] }))
+    expect(s.getSnapshot().blocked).toContainEqual(expect.objectContaining({ unit: 'A.tamer', reason: 'no-line-of-sight', blockedBy: [], blockedByTerrain: expect.arrayContaining([expect.any(Object)]) }))
     const targeting = renderToStaticMarkup(createElement(TurnPanel, { snapshot: s.getSnapshot(), session: s, data }))
-    expect(targeting).toContain(th.blockedBy('Tamer (ทีม A)', ''))
+    expect(targeting).toContain(th.blockedBy('Tamer (ทีม A)', '', true))
     s.cancel()
     s.input({ type: 'tapTile', tile: t('b3')! })
     const snapshot = s.getSnapshot()
-    expect(snapshot.movePreview?.reach.flatMap(option => option.blocked)).toContainEqual(expect.objectContaining({ unit: 'A.tamer', reason: 'no-line-of-sight', blockedBy: [] }))
+    expect(snapshot.movePreview?.reach.flatMap(option => option.blocked)).toContainEqual(expect.objectContaining({ unit: 'A.tamer', reason: 'no-line-of-sight', blockedBy: [], blockedByTerrain: expect.arrayContaining([expect.any(Object)]) }))
     const panel = renderToStaticMarkup(createElement(MovePreviewPanel, { snapshot, session: s, data }))
-    expect(panel).toContain(th.blockedBy('Tamer (ทีม A)', ''))
+    expect(panel).toContain(th.blockedBy('Tamer (ทีม A)', '', true))
+  })
+
+  it.each([
+    { units: true, terrain: false, expected: 'Tamer (ทีม A): Tidewall (ทีม B) ขวางแนวเล็ง (line of sight)' },
+    { units: false, terrain: true, expected: 'Tamer (ทีม A): ภูเขา ขวางแนวเล็ง (line of sight)' },
+    { units: true, terrain: true, expected: 'Tamer (ทีม A): Tidewall (ทีม B), ภูเขา ขวางแนวเล็ง (line of sight)' },
+    { units: false, terrain: false, expected: 'Tamer (ทีม A):  ขวางแนวเล็ง (line of sight)' },
+  ])('renders session blockers in targeting and Move preview: $units Units, $terrain terrain', ({ units, terrain, expected }) => {
+    const s = withMovePreview(createBattleSession(playing({ A: ['a1', 'd4', 'c3'], B: ['a7', 'e5', 'b6'] })))
+    s.selectUnit('A.m2')
+    s.input({ type: 'tapTile', tile: s.getSnapshot().reachable[0]! })
+    const snapshot = s.getSnapshot()
+    const blocked = [{ unit: 'A.tamer', tile: t('e2')!, reason: 'no-line-of-sight' as const,
+      blockedBy: units ? ['B.m1'] : [], blockedByTerrain: terrain ? [t('c2')!, t('d2')!] : [] }]
+    const targeting = renderToStaticMarkup(createElement(TurnPanel, { snapshot: { ...snapshot, movePreview: null, mode: 'attack', blocked }, session: s, data }))
+    const panel = renderToStaticMarkup(createElement(MovePreviewPanel, {
+      snapshot: { ...snapshot, movePreview: { ...snapshot.movePreview!, reach: [{ skill: null, targets: [], blocked }] } }, session: s, data,
+    }))
+    expect(targeting).toContain(expected)
+    expect(panel).toContain(expected)
+    if (!terrain) {
+      expect(targeting).not.toContain('ภูเขา ขวางแนวเล็ง')
+      expect(panel).not.toContain('ภูเขา ขวางแนวเล็ง')
+    }
+  })
+
+  it('uses session thresholds at the skill description boundaries and parameterizes range strings', () => {
+    const longRangeFrom = GAME_RANGE_RULES.longRangeDisadvantageFrom!
+    const mark = data.skills.mark!
+    expect(skillSummary({ ...mark, range: longRangeFrom - 1 }, data.statuses)).not.toContain(th.skillLongRange(longRangeFrom))
+    expect(skillSummary({ ...mark, range: longRangeFrom }, data.statuses)).toContain(th.skillLongRange(longRangeFrom))
+    expect(skillSummary({ ...mark, range: LINE_OF_SIGHT_FROM - 1 }, data.statuses)).not.toContain(th.skillLineOfSight)
+    expect(skillSummary({ ...mark, range: LINE_OF_SIGHT_FROM }, data.statuses)).toContain(th.skillLineOfSight)
+    expect(th.skillLongRange(7)).toBe('attack roll จากระยะ 7 ขึ้นไปได้ disadvantage')
+    expect(th.sourceLongRange(7)).toBe('โจมตีจากระยะ 7 ขึ้นไป: ได้ disadvantage')
+    expect(th.legendLongRange(7)).toBe('attack roll จากระยะ 7 ขึ้นไปได้ disadvantage รวมถึงการโจมตีแต่ละเป้าของ Burst')
+    expect(th.legendLineOfSight(5)).toBe('โจมตีจากระยะ 5 ขึ้นไป: Unit และภูเขาที่อยู่บนเส้นระหว่างผู้โจมตีกับเป้าจะบัง ยกเว้นผู้โจมตีเป็น Flying')
+    const legend = renderToStaticMarkup(createElement(TerrainLegend))
+    expect(legend).toContain(th.legendLineOfSight(LINE_OF_SIGHT_FROM))
   })
 
   it('describes current ranges, distant attacks and mountain sight blockers', () => {
     for (const id of ['long_shot', 'element_bolt', 'pin']) expect(skillSummary(data.skills[id]!, data.statuses)).toContain(th.skillRange(3))
     expect(skillSummary(data.skills.mark!, data.statuses)).toContain(th.skillRange(4))
-    for (const id of ['mark', 'burst']) expect(skillSummary(data.skills[id]!, data.statuses)).toContain(th.skillLongRange)
+    for (const id of ['mark', 'burst']) expect(skillSummary(data.skills[id]!, data.statuses)).toContain(th.skillLongRange(GAME_RANGE_RULES.longRangeDisadvantageFrom!))
     expect(skillSummary(data.skills.mark!, data.statuses)).toContain(th.skillLineOfSight)
-    expect(skillSummary(data.skills.blink!, data.statuses)).not.toContain(th.skillLongRange)
+    expect(skillSummary(data.skills.blink!, data.statuses)).not.toContain(th.skillLongRange(GAME_RANGE_RULES.longRangeDisadvantageFrom!))
     const legend = renderToStaticMarkup(createElement(TerrainLegend))
-    expect(legend).toContain(th.legendLongRange)
+    expect(legend).toContain(th.legendLongRange(GAME_RANGE_RULES.longRangeDisadvantageFrom!))
     expect(legend).toContain('Unit และภูเขา')
     expect(legend).toContain('Flying')
     expect(legend).not.toContain('terrain ไม่บังแนวเล็ง')
-    expect(th.blockedBy('Quillfox', '')).toBe('Quillfox: ภูเขา ขวางแนวเล็ง (line of sight)')
+    expect(th.blockedBy('Quillfox', '', true)).toBe('Quillfox: ภูเขา ขวางแนวเล็ง (line of sight)')
     expect(th.rejection['no-line-of-sight']).toContain('ภูเขา')
+  })
+})
+
+
+describe('Undo text', () => {
+  it('names the session safe point, disables unavailable Undo, and hides it during AI Turns', () => {
+    const session = createBattleSession(playing({ A: ['a1', 'd4', 'g1'], B: ['a7', 'd5', 'g7'] }))
+    const render = (snapshot: ReturnType<typeof session.getSnapshot>) => renderToStaticMarkup(createElement(UndoControls, { snapshot, onUndo() {} }))
+    const snapshot = session.getSnapshot()
+    expect(render(snapshot)).toContain(th.undo.unavailable)
+    expect(render(snapshot)).toContain('disabled')
+    expect(render({ ...snapshot, undo: { to: 'turnStart', actions: 1 } })).toContain(th.undo.to.turnStart)
+    expect(render({ ...snapshot, undo: { to: 'lastRoll', actions: 1 } })).toContain(th.undo.to.lastRoll)
+    expect(render({ ...snapshot, aiSide: snapshot.state.sideToAct })).toBe('')
+    expect(th.battleMenu.startOverConfirm).toContain('Dice Seed ใหม่')
+    expect(th.replay.showUndone).toContain('Undo')
   })
 })
