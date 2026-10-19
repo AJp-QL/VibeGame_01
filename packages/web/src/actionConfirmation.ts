@@ -52,6 +52,10 @@ export function createActionConfirmation(session: BattleSession) {
       defend() {
         if (session.getSnapshot().canDefend) guard(() => session.defend())
       },
+      confirmPlan() {
+        const { plan } = session.getSnapshot()
+        if (plan?.choice !== null && plan !== null) guard(() => session.confirmPlan())
+      },
       confirmAttack() {
         const { ready } = session.getSnapshot()
         if (ready === null) return

@@ -6,11 +6,16 @@
 
 **Blocked by:** P1X-23 — Action plan ใน session, P1X-19 — UI: Move preview cleanup
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] เครื่องหมายดาบและจุดช่องที่ยืนโจมตีได้มาจากข้อมูลของ session ไม่คำนวณกติกาเอง
-- [ ] แตะศัตรูที่มีดาบ → เงาบนช่องที่เกมเลือก + การ์ดยืนยัน (skill, โอกาสโดน, damage); แตะจุดอื่นเปลี่ยนช่อง; เปลี่ยน skill ได้; ยืนยันด้วยปุ่มเท่านั้น
-- [ ] Unit เดินก่อนแล้วจึงโจมตีบน Board (ใช้ events ของทั้งสอง action)
-- [ ] ในแผง Move preview แตะศัตรูในรายการเพื่อโจมตีจากช่องเงา
-- [ ] ข้อความอยู่ใน strings ของ web มี text test; screenshot ที่ desktop และ 360 px; CI เขียวทั้งสาม job
-- [ ] PR บอกจำนวนแตะของ "เดินแล้วโจมตี" ก่อน/หลัง (เป้า 3 เมื่อเลือกเป้าก่อน, 4 เมื่อเลือกช่องก่อน)
+- [x] เครื่องหมายดาบและจุดช่องที่ยืนโจมตีได้มาจากข้อมูลของ session ไม่คำนวณกติกาเอง
+- [x] แตะศัตรูที่มีดาบ → เงาบนช่องที่เกมเลือก + การ์ดยืนยัน (skill, โอกาสโดน, damage); แตะจุดอื่นเปลี่ยนช่อง; เปลี่ยน skill ได้; ยืนยันด้วยปุ่มเท่านั้น
+- [x] Unit เดินก่อนแล้วจึงโจมตีบน Board (ใช้ events ของทั้งสอง action)
+- [x] ในแผง Move preview แตะศัตรูในรายการเพื่อโจมตีจากช่องเงา
+- [x] ข้อความอยู่ใน strings ของ web มี text test; screenshot ที่ desktop และ 360 px; CI เขียวทั้งสาม job
+- [x] PR บอกจำนวนแตะของ "เดินแล้วโจมตี" ก่อน/หลัง (เป้า 3 เมื่อเลือกเป้าก่อน, 4 เมื่อเลือกช่องก่อน)
+
+## Implementation
+
+- Session data drives swords, origins, the shadow, choices and attack preview. Board taps only aim; the confirmation button commits through the switch-Unit guard. Event batches animate in order, chaining the Action after Move/Blink completion.
+- [Evidence, checks and tap counts](../evidence/24-action-plan-ui/README.md): 6 → 3 taps enemy-first, 6 → 4 tile-first. Full visual comparison passed 30/30. Includes P1X-30; merge PR #59 first. All three CI jobs passed (run 39207023609), including actual Board screenshot comparisons.
