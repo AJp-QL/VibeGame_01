@@ -1,14 +1,12 @@
 # P1X-24 Action plan
 
 - [Desktop](action-plan-1280.png) · [360 px mobile](action-plan-360.png)
-- [Walk before attack](walk-before-attack.png): real renderer, deterministic 10 ms clock. A multi-step Move finishes at the planned origin before the attack lunge starts.
+- [Walk before attack](walk-before-attack.png): the real renderer advances on a deterministic 10 ms clock; Move completes at the planned origin before the lunge starts.
 
-Every target, origin, choice, preview and event batch comes from session. Enemy taps aim; origin taps move the shadow; only the confirmation button commits. The existing switch-Unit guard wraps `confirmPlan`. Move preview target buttons plan an attack from the shadow; support choices are available there too. Movement is blue, swords and attack origins red. Inspected both Action plan captures and all six updated Move preview baselines; text wraps and buttons remain usable at 360 px. The 19 Board-only baselines are unchanged.
+Session supplies every target, origin, choice, preview and event batch. Enemy taps aim; origin taps move the shadow; only confirmation commits through the switch-Unit guard. Tapping the planning Unit calls `session.cancel()`: it clears only the plan and preserves selection and any Move preview, including when staying cannot attack. Missing Unit views invoke both walk and Blink completion callbacks so later batches continue. Regression tests cover these cases and both real Board input flows.
 
-Tap count (including selecting the Unit): before = 6 (Unit, tile, confirm Move, Attack, target, confirm attack); enemy-first = 3 (Unit, badged enemy, confirm plan); tile-first = 4 (Unit, tile, enemy button, confirm plan). Optional origin/skill changes add taps.
+Tap count including Unit selection: 6 → 3 enemy-first, 6 → 4 tile-first. Optional skill/origin changes add taps. Blue movement, red swords/dots and usable wrapping remain visible at 360 px. P1X-32/34 still own the port contract cleanup.
 
-Checks: frozen install, typecheck, workspace tests 1,030 passed / 1 skipped; web tests after the animation refinement 65/65; build, check-replays and path check. Linux pinned Chromium visual comparison: 30/30 passed. The suite includes both real Board input flows, switching skills without committing, a tile-first plan preserving the chosen origin, and actual animation order.
+Revalidated against main c1474cb: frozen install, typecheck, 1,050 tests passed / 1 skipped, build, path ownership and replay validation passed. All 34 pinned Linux Chromium visual cases passed. All baselines remain unchanged by the review corrections, including the six blue Move preview images. Refreshed these evidence captures from the passing run.
 
-Includes the completed P1X-30 fixture prerequisite (PR #59). The local visual server used port 4182 while other ticket suites used 4178/4180. An early capture run overlapped a renderer edit, and a loaded cloud run reached a UI test timeout; the final complete run passed on the finished code with the standard per-case timeouts.
-
-Review correction: tapping the planning Unit now calls session cancellation even when no stay origin is offered. Missing Unit views complete both walk and Blink callbacks, allowing later animation batches to run. Regression coverage includes that cancellation without spending actions and both missing-view completions, alongside the existing real walk-before-attack check. Merged current main; the blue reachable-tile colour and its six baselines are unchanged. The port cleanup remains tracked separately by P1X-32/34.
+Main added two 9×9 Boards (P1X-15/P1X-16), invalidating the fixture data hash. Regenerated all 16 fixtures and verified their only change is `dataHash`; seeds, actions and replay payloads are unchanged. Actual screenshot comparisons passed against the existing baselines.

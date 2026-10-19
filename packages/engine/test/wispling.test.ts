@@ -476,7 +476,7 @@ describe('Blink: Minor, replaces the Move, teleport 1–2 tiles (rules §15.1, D
       for (let x = 0; x < 7; x++) {
         const tile = { x, y }
         const d = distance(tile, t('d2'))
-        if (isOnBoard(tile) && d >= 1 && d <= 2 && !state.units.some((u) => u.tile.x === x && u.tile.y === y)) expected.push(tile)
+        if (isOnBoard(tile, 7) && d >= 1 && d <= 2 && !state.units.some((u) => u.tile.x === x && u.tile.y === y)) expected.push(tile)
       }
     }
     expect(legalUses(state, 'blink').map((a) => a.tile)).toEqual(expected)

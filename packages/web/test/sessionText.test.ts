@@ -559,6 +559,27 @@ describe('Action plan UI', () => {
     expect(s.getSnapshot().actions).toEqual(before.actions)
   })
 
+  it('cancels only the tile-first plan, retaining its Move preview and selection', () => {
+    const s = previewSession()
+    s.selectUnit('A.m1')
+    const destination = s.getSnapshot().reachable.find(tile => {
+      s.previewMove(tile)
+      return s.getSnapshot().movePreview!.options.some(option => option.kind === 'attack')
+    })
+    expect(destination).toBeDefined()
+    const before = s.getSnapshot()
+    const choice = before.movePreview!.options.find(option => option.kind === 'attack')!
+    s.choosePlanAction(choice.key)
+    expect(s.getSnapshot().plan).not.toBeNull()
+    s.input({ type: 'tapUnit', unit: 'A.m1' })
+    const after = s.getSnapshot()
+    expect(after.plan).toBeNull()
+    expect(after.movePreview?.tile).toEqual(destination)
+    expect(after.selectedUnit).toBe(before.selectedUnit)
+    expect(after.state).toBe(before.state)
+    expect(after.actions).toEqual(before.actions)
+  })
+
   it('asks before a confirmed plan abandons another Unit with an Action left', () => {
     const raw = previewSession()
     raw.selectUnit('A.m1')

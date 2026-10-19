@@ -11,4 +11,5 @@
 - [ ] เมนูแสดง Board 9x9 พร้อม mini Board
 - [ ] Board 9x9 เล่นได้ที่ desktop และ 360/375 px ไม่มี horizontal scroll, แตะถูกช่อง
 - [ ] screenshot ของ 9x9 อย่างน้อย 1 ฉาก; visual fixtures บันทึกใหม่ตาม data ปัจจุบัน baseline ตรวจด้วยตา
+- [x] `boardBlurb` ของ `grand_crossroads` และ `wide_shallows`: ทำใน P1X-31 (merge ก่อน P1X-15)
 - [ ] CI เขียวทั้งสาม job
