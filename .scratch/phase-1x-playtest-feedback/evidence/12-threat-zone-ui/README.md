@@ -12,3 +12,5 @@ The final branch includes P1X-30 (#59), P1X-07 (#60) and P1X-24 (#61) to resolve
 Standalone validation: typecheck, 1,029 tests passed / 1 skipped, build, check-replays, 29/29 pinned Chromium visual comparisons. Combined typecheck, 1,035 tests passed / 1 skipped, build and check-replays passed. Baseline refresh passed 36/36 on the pinned Linux Chromium build 1234. Inspected all eight updated baseline PNGs and both full-page captures; the red swords/dots, blue movement borders and purple count marks remain distinct. The final comparison and CI are recorded in the PR. The local visual server used port 4184 while other ticket suites ran on separate ports. No gameplay rules or session contracts changed.
 
 The count warning uses an inline vector icon with the string-table count as its accessible label, avoiding the host emoji font. After this refinement, typecheck, build and all 70 web tests passed; the eight affected browser cases passed during baseline refresh.
+
+Final validation after the vector icon change: 36/36 local visual comparisons passed; all three CI jobs passed (run 39209076655), confirming identical screenshots across the local and CI environments.
