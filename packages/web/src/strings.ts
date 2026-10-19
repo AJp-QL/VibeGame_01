@@ -49,7 +49,7 @@ export const th = {
   hintConfirm: 'ดูโอกาสโดนและ damage แล้วกดยืนยัน หรือแตะศัตรูตัวอื่นเพื่อเปลี่ยนเป้า',
   hintAllBlocked: 'ศัตรูในระยะเลือกไม่ได้ทั้งหมด (ช่องที่ขีดกากบาท: ถูกขวางแนวเล็ง หรือติด Hidden) ลองเดินไปตำแหน่งอื่นก่อน',
   blockedTitle: 'เลือกไม่ได้',
-  blockedBy: (target: string, blockers: string) => `${target}: ${blockers || 'ภูเขา'} ขวางแนวเล็ง (line of sight)`,
+  blockedBy: (target: string, blockers: string, terrainBlocked: boolean) => `${target}: ${[blockers, terrainBlocked ? 'ภูเขา' : ''].filter(Boolean).join(', ')} ขวางแนวเล็ง (line of sight)`,
   blockedHidden: (target: string) => `${target}: ติด Hidden ซ่อนตัวในป่า เล็งได้จากระยะ 1 เท่านั้น`,
   hintBattleOver: 'Battle จบแล้ว',
   hintSwitchEnds: (unit: string) => `ถ้าเริ่มเล่น Unit อื่น ${unit} จะเล่นต่อใน Turn นี้ไม่ได้`,
@@ -210,9 +210,9 @@ export const th = {
   legendWheel: 'ธาตุ: ป่า > น้ำ > ภูเขา > ทะเลทราย > ป่า และแสงกับมืดชนะกันและกัน ธาตุที่ชนะได้ advantage ธาตุที่แพ้ได้ disadvantage (Tamer ไม่มีธาตุ)',
   legendTerrain:
     'Monster ที่ยืนบนช่องธาตุเดียวกับตัวเองโจมตีด้วย advantage บนช่องธาตุที่ชนะธาตุตัวเองโจมตีด้วย disadvantage Tamer และ Flying ไม่ได้รับผล Aquatic นับช่องน้ำเป็นธาตุตัวเอง',
-  legendLongRange: 'attack roll จากระยะ 4 ขึ้นไปได้ disadvantage รวมถึงการโจมตีแต่ละเป้าของ Burst',
+  legendLongRange: (from: number) => `attack roll จากระยะ ${from} ขึ้นไปได้ disadvantage รวมถึงการโจมตีแต่ละเป้าของ Burst`,
   legendProtection: 'Tamer ที่มี Monster ฝ่ายเดียวกันยืนติด: ศัตรูโจมตี Tamer ด้วย disadvantage ทุกระยะ',
-  legendLineOfSight: 'โจมตีจากระยะ 2 ขึ้นไป: Unit และภูเขาที่อยู่บนเส้นระหว่างผู้โจมตีกับเป้าจะบัง ยกเว้นผู้โจมตีเป็น Flying',
+  legendLineOfSight: (from: number) => `โจมตีจากระยะ ${from} ขึ้นไป: Unit และภูเขาที่อยู่บนเส้นระหว่างผู้โจมตีกับเป้าจะบัง ยกเว้นผู้โจมตีเป็น Flying`,
 
   hpTitle: 'HP ของ Unit บน Board',
 
@@ -234,7 +234,7 @@ export const th = {
   sourceElementWins: (attacker: string, target: string) => `ธาตุ${attacker}ชนะธาตุ${target}ของเป้า`,
   sourceElementLoses: (attacker: string, target: string) => `ธาตุ${target}ของเป้าชนะธาตุ${attacker}`,
   sourceTerrainMatch: (terrain: string) => `ยืนบนช่อง${terrain} ตรงกับธาตุตัวเอง`,
-  sourceLongRange: 'โจมตีจากระยะ 4 ขึ้นไป: ได้ disadvantage',
+  sourceLongRange: (from: number) => `โจมตีจากระยะ ${from} ขึ้นไป: ได้ disadvantage`,
   sourceTerrainAquatic: 'ยืนบนช่องน้ำ: Aquatic นับช่องน้ำเป็นธาตุตัวเอง',
   sourceTerrainWeak: (terrain: string, own: string) => `ยืนบนช่อง${terrain} ซึ่งชนะธาตุ${own}ของตัวเอง`,
   sourceTargetStatus: (status: string) => `เป้าติด ${status}: ผู้โจมตีทุกตัวได้ advantage`,
@@ -339,7 +339,7 @@ export const th = {
   skillRange: (range: number) => (range === 0 ? 'ตัวเอง' : `ระยะ ${range}`),
   skillRangeAllies: (range: number) => `ตัวเองและพวกในระยะ ${range}`,
   skillDamage: (dice: string) => `damage ${dice}`,
-  skillLongRange: 'attack roll จากระยะ 4 ขึ้นไปได้ disadvantage',
+  skillLongRange: (from: number) => `attack roll จากระยะ ${from} ขึ้นไปได้ disadvantage`,
   skillLineOfSight: 'Unit และภูเขาบังแนวเล็ง ยกเว้นผู้โจมตีเป็น Flying',
   skillAttack: { physical: 'กายภาพ', elemental: 'ธาตุ' },
   skillRetreat: 'ถอยฟรี 1 ช่องหลังโจมตี',
