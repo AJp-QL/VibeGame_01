@@ -882,3 +882,6 @@ body {
 .threat-count.threatened { border-color: #c8a7ff; color: #eadfff; }
 .threat-count p { margin-bottom: 0; }
 .threat-controls button[aria-pressed="true"] { border-color: #c8a7ff; }
+
+.threat-value { display: inline-flex; align-items: center; gap: 8px; }
+.threat-value svg { flex: none; }

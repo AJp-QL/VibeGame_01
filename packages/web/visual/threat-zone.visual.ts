@@ -18,7 +18,7 @@ for (const width of [1280, 360]) {
       const snapshot = s.getSnapshot()
       return { actions: snapshot.actions.length, revision: snapshot.revision, tile, reachable: snapshot.reachable, threat: snapshot.threatZone[tile.y]![tile.x] }
     })
-    await expect(page.locator('.threat-count')).toContainText(th.threatZone.count(before.threat!))
+    await expect(page.locator('.threat-value')).toHaveAttribute('aria-label', th.threatZone.count(before.threat!))
     await expect(page.locator('.threat-count')).toContainText(th.threatZone.estimate)
     const plain = await page.locator('canvas').screenshot()
     await toggle.click()
