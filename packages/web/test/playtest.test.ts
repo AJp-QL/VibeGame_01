@@ -8,7 +8,7 @@ import { createPlayStats, legalActions, openReplay, type BattleChoice, type Batt
 import { loadGameData, serializeReplay } from '@mt/shared'
 import { boardZoom } from '@mt/battle/boardFit'
 import { App } from '../src/App.tsx'
-import { replayToExport, startBattle } from '../src/appScreens.ts'
+import { replayToExport, startBattle, startOver, undoBattle } from '../src/appScreens.ts'
 import { FEEDBACK_FORM_URL, feedbackFormUrl } from '../src/config.ts'
 import { FeedbackLink, Guide } from '../src/Playtest.tsx'
 import { th } from '../src/strings.ts'
@@ -153,4 +153,51 @@ describe('smoke: menu → Battle vs AI → result, with stats in the exported Re
       expect(opened.steps.at(-1)?.state).toEqual(state)
     }, 60000)
   }
+})
+
+// Exercise the web boundary: a Start over is a new Battle, and Undo history survives export.
+describe('Undo and Start over', () => {
+  for (const mode of ['hotseat', 'ai'] as const) {
+    it(`${mode}: preserves choices, changes Dice Seed and records abandonment`, () => {
+      const stats = createPlayStats(null, () => new Date('2026-10-19T10:00:00Z'))
+      const choice: BattleChoice = { scenarioId: 'scenario_1', boardId: 'shallows', mode, humanSide: 'B' }
+      const screen = startBattle(data, choice, stats)
+      if (screen.kind !== 'battle') throw new Error('expected Battle')
+      const next = startOver(screen, stats)
+      if (next.kind !== 'battle') throw new Error('expected new Battle')
+      expect(next.choice).toEqual(choice)
+      expect(next.diceSeed).not.toBe(screen.diceSeed)
+      expect(next.session).not.toBe(screen.session)
+      expect(stats.read().battles).toMatchObject([{ abandonedAt: '2026-10-19T10:00:00.000Z' }, { mode, boardId: 'shallows' }])
+    })
+  }
+
+  it('counts accepted Undos and exports withdrawn actions in a ready format 2 Replay', () => {
+    const stats = createPlayStats(null, () => new Date())
+    const choice: BattleChoice = { scenarioId: 'scenario_1', boardId: 'crossroads', mode: 'hotseat', humanSide: 'A' }
+    const screen = startBattle(data, choice, stats)
+    if (screen.kind !== 'battle') throw new Error('expected Battle')
+    const session = screen.session
+    for (let i = 0; i < 30; i++) {
+      const s = session.getSnapshot()
+      if (s.screen !== 'board') session.continueHotseat()
+      else if (s.state.phase === 'deployment') humanDeploys(session)
+      else if (s.state.pending?.kind === 'inspiration') session.declineInspiration()
+      else break
+    }
+    const move = legalActions(session.getSnapshot().state).find(a => a.type === 'move')
+    if (move?.type !== 'move') throw new Error('expected Move')
+    session.selectUnit(move.unit)
+    session.input({ type: 'tapTile', tile: move.to })
+    expect(session.getSnapshot().undo).not.toBeNull()
+    undoBattle(screen, stats)
+    undoBattle(screen, stats) // no offer: must not count a second Undo
+    expect(stats.read().battles[0]?.undos).toBe(1)
+    const replay = replayToExport(screen, stats, new Date())
+    expect(replay.formatVersion).toBe(2)
+    expect(replay.actions.at(-1)?.type).toBe('undo')
+    const opened = openReplay(serializeReplay(replay), data)
+    if (opened.kind !== 'ready') throw new Error('expected ready Replay')
+    expect(opened.steps.some(step => step.undone)).toBe(true)
+  })
 })
