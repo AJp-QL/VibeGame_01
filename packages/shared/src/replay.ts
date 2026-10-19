@@ -14,6 +14,9 @@
  * types (Defend, skills, Inspiration, …) need no change here.
  *
  * Bump REPLAY_FORMAT_VERSION when the fields of the file change shape.
+ * Format 2 (phase 1.x ticket 06) adds the `undo` entry to `actions`
+ * ({@link UndoRecord}); every other field is as in format 1, and format 1
+ * files are still read (they never hold an `undo`).
  */
 import * as z from 'zod'
 import { SIDES, type Side } from './model.ts'
@@ -25,12 +28,30 @@ export type BattleMode = (typeof BATTLE_MODES)[number]
 
 /** Marks a JSON file as a Monster Tactics Replay. */
 export const REPLAY_FORMAT = 'monster-tactics-replay'
-export const REPLAY_FORMAT_VERSION = 1
+export const REPLAY_FORMAT_VERSION = 2
+/** Every format version this build reads: 1 (v0.1.x, no Undo) and 2. */
+export const REPLAY_FORMAT_VERSIONS = [1, 2] as const
+export type ReplayFormatVersion = (typeof REPLAY_FORMAT_VERSIONS)[number]
 
 /** One recorded action: an engine `Action` as plain JSON. */
 export interface ReplayAction {
   readonly type: string
   readonly [field: string]: unknown
+}
+
+/** `type` of the Undo entry of format 2. */
+export const UNDO_RECORD_TYPE = 'undo'
+
+/**
+ * Format 2: the player went back to the safe point, withdrawing the last
+ * `withdraw` actions still standing (rules §17.5). The withdrawn actions stay
+ * in the file, before this entry, so the analyst can see where the player
+ * changed their mind. The engine checks it against its own Undo rule when it
+ * replays; it is not an action `applyAction` accepts.
+ */
+export interface UndoRecord extends ReplayAction {
+  readonly type: typeof UNDO_RECORD_TYPE
+  readonly withdraw: number
 }
 
 /** Optional facts about where the Replay came from; never used to replay. */
@@ -45,7 +66,7 @@ export interface ReplayMeta {
 
 export interface Replay<A extends ReplayAction = ReplayAction> {
   readonly format: typeof REPLAY_FORMAT
-  readonly formatVersion: typeof REPLAY_FORMAT_VERSION
+  readonly formatVersion: ReplayFormatVersion
   /** `ENGINE_VERSION` of the engine that recorded it. */
   readonly engineVersion: string
   /** `dataHash` of the game data it was played with (64 hex digits). */
@@ -74,10 +95,11 @@ const TileSchema = z.strictObject({ x: z.int(), y: z.int() })
 const TilesSchema = z.tuple([TileSchema, TileSchema, TileSchema])
 
 const ReplayActionSchema = z.looseObject({ type: z.string().min(1) })
+const UndoRecordSchema = z.looseObject({ type: z.literal(UNDO_RECORD_TYPE), withdraw: z.int().min(1) })
 
-export const ReplaySchema: z.ZodType<Replay> = z.strictObject({
+const ReplayShape = z.strictObject({
   format: z.literal(REPLAY_FORMAT),
-  formatVersion: z.literal(REPLAY_FORMAT_VERSION),
+  formatVersion: z.union([z.literal(1), z.literal(2)]),
   engineVersion: z.string().regex(/^\d+\.\d+\.\d+$/, 'engine version must be semver, e.g. "0.1.0"'),
   dataHash: z.string().regex(/^[0-9a-f]{64}$/, 'data hash must be 64 lowercase hex digits'),
   scenarioId: ID,
@@ -99,6 +121,17 @@ export const ReplaySchema: z.ZodType<Replay> = z.strictObject({
     })
     .exactOptional(),
   actions: z.array(ReplayActionSchema),
+})
+
+export const ReplaySchema: z.ZodType<Replay> = ReplayShape.superRefine((replay, ctx) => {
+  for (const [index, action] of replay.actions.entries()) {
+    if (action.type !== UNDO_RECORD_TYPE) continue
+    if (replay.formatVersion < 2) {
+      ctx.addIssue({ code: 'custom', path: ['actions', index, 'type'], message: 'undo needs Replay format 2' })
+    } else if (!UndoRecordSchema.safeParse(action).success) {
+      ctx.addIssue({ code: 'custom', path: ['actions', index, 'withdraw'], message: 'withdraw must be a whole number of 1 or more' })
+    }
+  }
 })
 
 export type ParseReplayResult =

@@ -6,11 +6,19 @@
 
 **Blocked by:** P1X-05 — Undo ใน engine และ session
 
-**Status:** ready-for-agent
+**Status:** done (PR open)
 
-- [ ] Replay format 2 เพิ่ม action undo แบบเพิ่มเท่านั้น; ไฟล์ format 1 เปิดและเล่นได้ (test ด้วยไฟล์ v0.1.5 จริงจาก playtest และ visual fixtures)
-- [ ] เล่นซ้ำ Replay ที่มี undo ได้ state สุดท้ายเท่ากับตอนเล่นจริง
-- [ ] playback snapshot เลือกได้ว่าข้ามหรือแสดง action ที่ถูก Undo (ค่าเริ่มต้นข้าม) มี test ผ่าน session
-- [ ] play stats มีจำนวน Undo ต่อ Battle และสถานะ "ถูกทิ้ง" (format play stats เพิ่มฟิลด์แบบเพิ่มเท่านั้น ข้อมูลเดิมใน localStorage ยังอ่านได้)
-- [ ] ENGINE_VERSION ขยับตามกฎ ถ้า engine รับ action ใหม่; บอกใน ticket 07 ให้ Codex refresh visual fixtures
-- [ ] CONTEXT.md นิยาม Replay ยังตรง; docs ของ format อัปเดต
+- [x] Replay format 2 เพิ่ม action undo แบบเพิ่มเท่านั้น; ไฟล์ format 1 เปิดและเล่นได้ (test ด้วยไฟล์ v0.1.5 จริงจาก playtest และ visual fixtures)
+- [x] เล่นซ้ำ Replay ที่มี undo ได้ state สุดท้ายเท่ากับตอนเล่นจริง
+- [x] playback snapshot เลือกได้ว่าข้ามหรือแสดง action ที่ถูก Undo (ค่าเริ่มต้นข้าม) มี test ผ่าน session
+- [x] play stats มีจำนวน Undo ต่อ Battle และสถานะ "ถูกทิ้ง" (format play stats เพิ่มฟิลด์แบบเพิ่มเท่านั้น ข้อมูลเดิมใน localStorage ยังอ่านได้)
+- [x] ENGINE_VERSION ขยับตามกฎ ถ้า engine รับ action ใหม่; บอกใน ticket 07 ให้ Codex refresh visual fixtures
+- [x] CONTEXT.md นิยาม Replay ยังตรง; docs ของ format อัปเดต
+
+## Comments
+
+- Format 2 = `formatVersion` 2; `actions` may hold `{ "type": "undo", "withdraw": N }` (the N last standing actions; the withdrawn ones stay before it). Format 1 files open unchanged (all visual fixtures are tested) and may not hold an undo. `replayBattle` checks N against `undoPoint`; a mismatch is a broken Replay (`rejected` at the entry). `steps` hold every action with `undone`; `final` is the state the player had.
+- **ENGINE_VERSION bumped 0.11.0 -> 0.12.0** (user decision 2026-10-19): `undo` is a file entry, not an `applyAction` action, so existing data + seed + actions give identical results, but `replayBattle` now accepts files that 0.11.0 rejected. Visual fixtures pin the version, so P1X-30 (Owner: codex, Blocked by this ticket) refreshes fixtures and baselines.
+- `replayBattle` also rejects an undo while the AI is to act (mode `ai`, side other than `humanSide`) and one that crosses a Turn boundary (tests in `packages/session/test/replayUndo.test.ts`).
+- For P1X-07 (Codex): export with `snapshot.recorded` (not `snapshot.actions`) in `replayToExport` so Undo reaches the file; `createReplayPlayer(...).setShowUndone(bool)` + `snapshot.hasUndone/showUndone/undone` for the toggle; after each `session.undo()` call `stats.recordUndo(statsIndex)` (or compare `snapshot.undos`); Start over calls `stats.recordBattleAbandoned(statsIndex)` before the new Battle. Until web switches to `recorded`, exported files contain only the standing actions (as before).
+- Play stats: `BattleRecord.undos?`, `abandonedAt?`, `PlayStats.battlesAbandoned` (additive; old data reads as 0).
