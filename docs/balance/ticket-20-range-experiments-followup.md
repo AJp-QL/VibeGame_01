@@ -1,6 +1,6 @@
 # Ticket 20 (P1X-20): distance metrics, long shots at 2-3 and the safe-tiles metric (phase 1.x)
 
-Follow-up to `docs/balance/ticket-08-range-experiments.md` and `docs/balance/ticket-09-range-rules.md`. **Nothing in the real game changed**: `data/`, the rules and `ENGINE_VERSION` (0.11.0) are as ticket 09 left them. The variants exist only inside a simulator run. Full tables: `ticket-20-distance-experiments.md` / `.json` (same folder). Reproduce: `corepack pnpm sim distance --games 2000 --seed 0`.
+Follow-up to `docs/balance/ticket-08-range-experiments.md` and `docs/balance/ticket-09-range-rules.md`. **Nothing in the real game changed**: `data/`, the rules and `ENGINE_VERSION` (unchanged by this ticket) are as ticket 09 left them. The variants exist only inside a simulator run. Full tables: `ticket-20-distance-experiments.md` / `.json` (same folder). Reproduce: `corepack pnpm sim distance --games 2000 --seed 0`.
 
 ## The question
 
