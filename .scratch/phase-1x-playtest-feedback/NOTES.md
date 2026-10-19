@@ -35,7 +35,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-17 | Release v0.2.0 + next playtest | claude | P1X-07, P1X-10, P1X-12, P1X-16, P1X-19, P1X-24, P1X-29 | waiting |
 | P1X-18 | Move preview session follow-up | claude | P1X-04, P1X-25 | done (PR #29) |
 | P1X-19 | Move preview UI cleanup | codex | P1X-18 | done (PR #46) |
-| P1X-20 | Range experiments follow-up | claude | P1X-09 | ready-for-human (PR #55 merged; report: keep the game) |
+| P1X-20 | Range experiments follow-up | claude | P1X-09 | done (PR #55; 2026-10-19 user accepted: keep the game) |
 | P1X-21 | Enemy range in session (low priority) | claude | P1X-11 | ready |
 | P1X-22 | Enemy range UI (low priority) | codex | P1X-21 | waiting |
 | P1X-23 | Action plan in session | claude | P1X-18 | done (PR #51) |
