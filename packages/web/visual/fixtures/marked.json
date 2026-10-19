@@ -1,7 +1,7 @@
 {
   "format": "monster-tactics-replay",
   "formatVersion": 1,
-  "engineVersion": "0.11.0",
+  "engineVersion": "0.12.0",
   "dataHash": "855303ad07974769bebe258255c03bbff77d5638cf54e565f63d3b920efb1dd7",
   "scenarioId": "scenario_2",
   "boardId": "crossroads",
