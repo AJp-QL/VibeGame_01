@@ -606,6 +606,9 @@ const NO_AIM = {
 /** No Action plan in progress (the Move preview, if any, stays). */
 const NO_PLAN = { planTarget: null, planOrigin: null, planChoice: null } as const
 
+/** Where the Move preview's shadow stands, as a plan origin. */
+const shadowOrigin = (preview: MovePreview): Pick<PlanOrigin, 'tile' | 'via'> => ({ tile: preview.tile, via: preview.skill === null ? 'move' : 'blink' })
+
 const otherSide = (side: Side): Side => (side === 'A' ? 'B' : 'A')
 
 export function createBattleSession(initial: BattleState, options: SessionOptions = {}): BattleSession {
@@ -905,6 +908,16 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     }
   }
 
+  /** Action plan: act from `tile` (one of `plan.originChoices`; a walk is preferred to a Blink to the same tile, `via` forces one). */
+  function chooseOrigin(tile: Tile, via?: PlanOrigin['via']): void {
+    const origin = snapshot.plan?.originChoices.find((o) => sameTile(o.tile, tile) && (via === undefined || o.via === via))
+    if (origin !== undefined) update({ planOrigin: { tile: origin.tile, via: origin.via }, rejection: null })
+  }
+
+  /** A Unit is selected, in play with no decision pending, and the human may act: an Action plan can be made. */
+  const mayPlan = (state: BattleState, selectedUnit: UnitId | null): selectedUnit is UnitId =>
+    humanMayAct(state) && state.phase === 'play' && state.pending === null && selectedUnit !== null
+
   /** The state now (a function, so TypeScript does not keep a narrowing across calls that change it). */
   const currentState = (): BattleState => snapshot.state
 
@@ -1015,6 +1028,12 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       return
     }
     const { tile } = boardInput
+    // Action plan (spec story 61): a tap on the Board never commits. A tile that is one of the plan's
+    // origins moves the shadow there; any other tile does nothing and keeps the plan.
+    if (snapshot.plan !== null) {
+      chooseOrigin(tile)
+      return
+    }
     if (mode === 'skill' && (snapshot.tileChoices.some((t) => sameTile(t, tile)) || isCentre(tile))) {
       // A destination or centre (another centre after one was picked starts over from it).
       update({ pendingTile: tile, chosenTargets: [], pendingElement: null, rejection: null })
@@ -1131,19 +1150,16 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     },
     aimTarget(unit) {
       const { state, selectedUnit, attackable, movePreview } = snapshot
-      if (!humanMayAct(state) || state.phase !== 'play' || state.pending !== null || selectedUnit === null) return
+      if (!mayPlan(state, selectedUnit)) return
       if (!attackable.some((enemy) => enemy.unit === unit)) return
       // Tile-first: the shadow's tile is the place to attack from when it reaches the enemy (else the plan falls back to the rule).
-      const ghost = movePreview === null ? null : { tile: movePreview.tile, via: movePreview.skill === null ? ('move' as const) : ('blink' as const) }
-      update({ ...NO_AIM, movePreviewTile: snapshot.movePreviewTile, planTarget: unit, planOrigin: ghost, rejection: null })
+      const shadow = movePreview === null ? null : shadowOrigin(movePreview)
+      update({ ...NO_AIM, movePreviewTile: snapshot.movePreviewTile, planTarget: unit, planOrigin: shadow, rejection: null })
     },
-    chooseOrigin(tile, via) {
-      const origin = snapshot.plan?.originChoices.find((o) => sameTile(o.tile, tile) && (via === undefined || o.via === via))
-      if (origin !== undefined) update({ planOrigin: { tile: origin.tile, via: origin.via }, rejection: null })
-    },
+    chooseOrigin,
     choosePlanAction(key) {
       const { state, selectedUnit, plan, movePreview } = snapshot
-      if (!humanMayAct(state) || state.phase !== 'play' || state.pending !== null || selectedUnit === null) return
+      if (!mayPlan(state, selectedUnit)) return
       if (plan !== null) {
         const choice = plan.choices.find((c) => c.key === key)
         if (choice === undefined) return
@@ -1154,7 +1170,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       const self = state.units.find((u) => u.id === selectedUnit)
       const origin =
         movePreview !== null
-          ? { tile: movePreview.tile, via: movePreview.skill === null ? ('move' as const) : ('blink' as const) }
+          ? shadowOrigin(movePreview)
           : self === undefined
             ? null
             : { tile: self.tile, via: 'stay' as const }
