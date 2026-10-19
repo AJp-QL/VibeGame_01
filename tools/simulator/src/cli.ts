@@ -6,6 +6,7 @@
  *   corepack pnpm sim parity   [--games 2000] [--other-games 1000] [--seed 0] [--out docs/balance/sim-v4-parity]
  *   corepack pnpm sim baseline [--games 1000] [--seed 0] [--out docs/balance/phase-1-baseline]
  *   corepack pnpm sim ranges   [--games 2000] [--seed 0] [--workers n] [--only baseline,abc] [--out docs/balance/ticket-08-range-experiments]
+ *   corepack pnpm sim boards   [--games 2000] [--seed 0] [--workers n] [--out docs/balance/ticket-15-board-9x9]   (phase 1.x ticket 15: every Board of data/, 7x7 and 9x9)
  *   `run --variant a|b|c|ab|ac|bc|abc` plays a range variant (phase 1.x ticket 08; data/ and the game are unchanged)
  *
  * Profiles: `sim:<mode>` (SIM_PROFILES, sim.py parity) or `game:<mode>`
@@ -19,15 +20,16 @@ import { AI_MODES, GAME_PROFILES, SIM_PROFILES, type AiMode, type AiProfile } fr
 import { ENGINE_VERSION, NO_RANGE_RULES } from '@mt/engine'
 import { dataHash, type GameData } from '@mt/shared'
 import { loadRepoData, REPO_ROOT, simEquivalentData, type DataOverride } from './data.ts'
+import { boardJobs, boardTables } from './boards.ts'
 import { aggregate, metricsTables, skillTable, type LabelledMetrics, type Metrics } from './metrics.ts'
 import { loadSimV4, parityTable, runParity, type ParityResult } from './parity.ts'
 import { distanceCommand } from './distanceExperiment.ts'
-import { rangeJobs, rangeTables, runRangeJobs } from './ranges.ts'
+import { rangeJobs, rangeTables, runRangeJobs, type RangeJob } from './ranges.ts'
 import { simulateGames } from './simulate.ts'
 import { applyVariant, RANGE_VARIANTS, variantById } from './variants.ts'
 import { cpus } from 'node:os'
 
-export const COMMANDS = ['run', 'parity', 'baseline', 'ranges', 'distance'] as const
+export const COMMANDS = ['run', 'parity', 'baseline', 'ranges', 'distance', 'boards'] as const
 export type Command = (typeof COMMANDS)[number]
 
 export interface CliOptions {
@@ -50,7 +52,7 @@ export interface CliOptions {
   readonly out: string | undefined
 }
 
-const USAGE = 'usage: sim run|parity|baseline|ranges|distance [--scenario id] [--board id] [--a sim:greedy] [--b sim:greedy] [--games n] [--other-games n] [--seed hex] [--sim-equivalent] [--variant id] [--workers n] [--only ids] [--format md|json] [--out path]'
+const USAGE = 'usage: sim run|parity|baseline|ranges|distance|boards [--scenario id] [--board id] [--a sim:greedy] [--b sim:greedy] [--games n] [--other-games n] [--seed hex] [--sim-equivalent] [--variant id] [--workers n] [--only ids] [--format md|json] [--out path]'
 
 /** Parse argv (without node and the script). Throws with a usage line on anything unknown. */
 export function parseArgs(argv: readonly string[]): CliOptions {
@@ -248,15 +250,21 @@ function baselineCommand(o: CliOptions, data: GameData) {
   writeReport(out, md, { command: cmd, engine: ENGINE_VERSION, dataHash: dataHash(data), seed: o.seed, games, rows })
 }
 
+/** Play `jobs` on worker threads, logging each finished set. */
+async function playSets(name: string, jobs: readonly RangeJob[], games: number, workers: number) {
+  log(`${name}: ${jobs.length} sets of ${games} Battles (${jobs.length * games} in all) on up to ${workers} threads…`)
+  const started = Date.now()
+  const results = await runRangeJobs(jobs, workers, (r, done) =>
+    log(`${name} ${done}/${jobs.length} ${r.variant} ${r.scenario} ${r.board}: A ${(100 * r.metrics.winA).toFixed(1)}%, limit ${(100 * r.metrics.limit).toFixed(1)}%, first attack after ${r.metrics.turnsBeforeFirstAttack.toFixed(2)} Turns`),
+  )
+  return { results, started }
+}
+
 async function rangesCommand(o: CliOptions, data: GameData): Promise<void> {
   const games = o.games ?? 2000
   const workers = o.workers ?? cpus().length
   const jobs = rangeJobs(games, o.seed).filter((j) => o.only === undefined || o.only.includes(j.variant))
-  log(`ranges: ${jobs.length} sets of ${games} Battles (${jobs.length * games} in all) on up to ${workers} threads…`)
-  const started = Date.now()
-  const results = await runRangeJobs(jobs, workers, (r, done) =>
-    log(`ranges ${done}/${jobs.length} ${r.variant} ${r.scenario} ${r.board}: A ${(100 * r.metrics.winA).toFixed(1)}%, limit ${(100 * r.metrics.limit).toFixed(1)}%, first attack after ${r.metrics.turnsBeforeFirstAttack.toFixed(2)} Turns`),
-  )
+  const { results, started } = await playSets('ranges', jobs, games, workers)
   const out = o.out ?? 'docs/balance/ticket-08-range-experiments'
   const cmd = `corepack pnpm sim ranges --games ${games} --seed ${o.seed}`
   const md = [
@@ -264,6 +272,21 @@ async function rangesCommand(o: CliOptions, data: GameData): Promise<void> {
     `Variants: ${RANGE_VARIANTS.map((v) => `**${v.id}** ${v.label}`).join('; ')}. Game AI (\`game:greedy\`) on both sides, ${games} Battles per set, sets = Scenario 1/2 x Crossroads/Shallows. Variants never touch data/ or the rules of the game; they exist only inside this run (tools/simulator/src/variants.ts).`,
     '',
     rangeTables(results),
+  ].join('\n')
+  writeReport(out, md, { command: cmd, engine: ENGINE_VERSION, dataHash: dataHash(data), seed: o.seed, games, seconds: Math.round((Date.now() - started) / 1000), results })
+}
+
+async function boardsCommand(o: CliOptions, data: GameData): Promise<void> {
+  const games = o.games ?? 2000
+  const workers = o.workers ?? cpus().length
+  const { results, started } = await playSets('boards', boardJobs(data, games, o.seed), games, workers)
+  const out = o.out ?? 'docs/balance/ticket-15-board-9x9'
+  const cmd = `corepack pnpm sim boards --games ${games} --seed ${o.seed}`
+  const md = [
+    ...header('Board 9x9 against 7x7 (phase 1.x ticket 15): tables', cmd, data, o.seed),
+    `The game as it ships (range rules a+b+c, data/ as is), game AI (\`game:greedy\`) on both sides, ${games} Battles per set, sets = Scenario 1/2 x every Board of data/.`,
+    '',
+    boardTables(data, results),
   ].join('\n')
   writeReport(out, md, { command: cmd, engine: ENGINE_VERSION, dataHash: dataHash(data), seed: o.seed, games, seconds: Math.round((Date.now() - started) / 1000), results })
 }
@@ -286,6 +309,10 @@ async function distanceCommandRun(o: CliOptions, data: GameData): Promise<void> 
 export async function main(argv: readonly string[]): Promise<void> {
   const o = parseArgs(argv)
   const data = loadRepoData()
+  if (o.command === 'boards') {
+    await boardsCommand(o, data)
+    return
+  }
   if (o.command === 'distance') {
     await distanceCommandRun(o, data)
     return

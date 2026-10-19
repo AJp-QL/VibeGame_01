@@ -108,7 +108,7 @@ describe('deployment', () => {
       for (const side of ['A', 'B'] as const) {
         const deploys = played.actions.filter((a) => a.type === 'deploy' && a.unit.startsWith(side))
         expect(deploys).toHaveLength(3)
-        for (const d of deploys) if (d.type === 'deploy') expect(isInStartZone(side, d.to)).toBe(true)
+        for (const d of deploys) if (d.type === 'deploy') expect(isInStartZone(side, d.to, 7)).toBe(true)
       }
       expect(played.actions.filter((a) => a.type === 'confirmDeployment')).toHaveLength(2)
     }

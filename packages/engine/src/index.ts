@@ -12,7 +12,7 @@
  *   unitSkills(state, unitId)     → the Unit's loadout: tier, cooldown, implemented yet
  *   unitsVisibleTo(state, side)   → the Units a side may see (deployment is hidden)
  *   lineOfSightTiles(from, to)    → the tiles a line of sight passes (rules §7.3), for tests, AI and UI
- *   areaTiles(skill, centre)      → the tiles an area skill (Burst) covers around a centre, for the UI and AI
+ *   areaTiles(skill, centre, size) → the tiles an area skill (Burst) covers around a centre, for the UI and AI
  *   recordReplay / replayCompatibility / replayBattle → Replay of a Battle (ENGINE_VERSION is stamped in it)
  */
 export {
@@ -57,7 +57,7 @@ export { COMMAND_RANGE, type CommandAction } from './command.ts'
 export type { HealPreview, TerrainPreview } from './tamerSkills.ts'
 export { elementBeats, terrainEffectAt, type RollEffect, type RollMode, type RollModeSource } from './rollMode.ts'
 export type { DerivedValues } from './derived.ts'
-export { isInStartZone, START_ZONE_ROWS, startZoneRows, unitsVisibleTo } from './deployment.ts'
+export { isInStartZone, startZoneRows, unitsVisibleTo } from './deployment.ts'
 export { distance, distanceIn, moveRangeNow, pathTo, reachableTiles, type DistanceMetric } from './movement.ts'
 export { longestAttackReach, threatCount, threatReach, threatZone } from './threat.ts'
 export { drewDice, undoPoint, type UndoLabel, type UndoPoint } from './undo.ts'

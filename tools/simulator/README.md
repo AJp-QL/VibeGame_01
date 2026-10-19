@@ -9,6 +9,7 @@ corepack pnpm sim run --scenario scenario_1 --board crossroads --a sim:greedy --
 corepack pnpm sim parity   [--games 2000] [--other-games 1000] [--seed 0] [--out docs/balance/sim-v4-parity]
 corepack pnpm sim baseline [--games 1000] [--seed 0] [--out docs/balance/phase-1-baseline]
 corepack pnpm sim ranges   [--games 2000] [--seed 0] [--workers n] [--out docs/balance/ticket-08-range-experiments]
+corepack pnpm sim boards   [--games 2000] [--seed 0] [--workers n] [--out docs/balance/ticket-15-board-9x9]
 corepack pnpm sim distance [--games 2000] [--seed 0] [--workers n] [--only ids] [--out docs/balance/ticket-20-distance-experiments]
 ```
 - โปรไฟล์ AI: `sim:<mode>` = `SIM_PROFILES` (port ของ sim.py), `game:<mode>` = `GAME_PROFILES` (AI ในเกม), mode = `greedy` | `tamer_rush` | `neutral`
@@ -17,6 +18,8 @@ corepack pnpm sim distance [--games 2000] [--seed 0] [--workers n] [--only ids] 
 - ความเร็ว ~0.1–0.15 วินาทีต่อ Battle (thread เดียว)
 
 ## Range experiments (phase 1.x ticket 08)
+`sim boards` (ticket 15) เล่นเกมตามที่ส่งจริง (variant `abc`, `game:greedy` ทั้งสองฝั่ง) บน Scenario 1/2 × ทุก Board ใน data/ (7x7 และ 9x9) แล้วสรุปตามขนาด Board เทียบเป้า balance
+
 `sim ranges` (ticket 08; ตั้งแต่ ticket 09 เกมเล่น variant `abc`) วัด variant ของระยะ skill ทุกแบบบนทุกชุด (Scenario 1/2 × Crossroads/Shallows) ด้วย AI ของเกม (`game:greedy`) ทั้งสองฝั่ง กระจายไปหลาย worker thread (`--workers`, ค่าเริ่มต้น = จำนวน CPU) และเขียน `<out>.md` (ตาราง) + `<out>.json` `run --variant <id>` เล่น variant เดียว Variant ไม่แตะ `data/` และกติกาของเกม มีอยู่แค่ในการรันนี้ (`src/variants.ts`) และเขียนเป็นชุดเต็มของสามส่วน (เปิดหรือปิด) ไม่ว่า data/ มีอะไร: `baseline` ยังหมายถึงระยะ, Board และกติกาก่อน ticket 09 และ `abc` = เกมตอนนี้ (test ยืนยันว่าเล่นได้ตัวเลขเดียวกับ run ธรรมดา) ตัวเลือก `--only baseline,abc` วัดเฉพาะบาง variant:
 - `a` ระยะสั้นลงใน data: Long Shot, Element Bolt, Pin 4 → 3, Mark 5 → 4
 - `b` attack roll ที่ระยะ 4 ขึ้นไปได้ disadvantage (กติกา `RangeRules.longRangeDisadvantageFrom` ของ engine (ตั้งแต่ ticket 09 เป็นกติกาของเกม))

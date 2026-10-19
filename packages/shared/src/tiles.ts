@@ -7,16 +7,8 @@
  *
  * The size belongs to each Board (`boardSize(board)`, phase 1.x ticket 13): a
  * Board is a square of 3 to `MAX_BOARD_SIZE` tiles. The helpers here take the
- * size as an optional last argument.
+ * size as their last argument (required).
  */
-
-/**
- * The size of the phase 1 Boards.
- * @deprecated Read the size from the Board (`boardSize`). Kept for battle and
- * web until they move over (phase 1.x ticket 14); it is also the default size
- * of the helpers below.
- */
-export const BOARD_SIZE = 7
 
 /** The smallest and the largest square Board (columns a to o). */
 export const MIN_BOARD_SIZE = 3
@@ -52,7 +44,7 @@ export function tileName(tile: Tile): string {
  * 7x7 a1 ↔ g7, c2 ↔ e6, d4 ↔ d4. Every Board must look the same after the turn
  * (rules §2.1).
  */
-export function rotate180(tile: Tile, size: number = BOARD_SIZE): Tile {
+export function rotate180(tile: Tile, size: number): Tile {
   return { x: size - 1 - tile.x, y: size - 1 - tile.y }
 }
 
@@ -61,6 +53,6 @@ export function sameTile(a: Tile, b: Tile): boolean {
 }
 
 /** Whether `tile` is on a Board of `size` tiles a side. */
-export function isOnBoard(tile: Tile, size: number = BOARD_SIZE): boolean {
+export function isOnBoard(tile: Tile, size: number): boolean {
   return Number.isInteger(tile.x) && Number.isInteger(tile.y) && tile.x >= 0 && tile.x < size && tile.y >= 0 && tile.y < size
 }

@@ -16,7 +16,7 @@
  *   by the generic path): teleport to an empty tile at distance 1–2, fixed
  *   range (no Command or Aquatic bonus), usable while Pinned (D-13).
  */
-import { BOARD_SIZE, isOnBoard, sameTile, tileName, type Skill, type Tile } from '@mt/shared'
+import { isOnBoard, sameTile, tileName, type Skill, type Tile } from '@mt/shared'
 import type { ActionPreview, Rejection, RejectionCode } from './battle.ts'
 import { isFlying, previewAttack, spendAttackRoll } from './combat.ts'
 import { LINE_OF_SIGHT_FROM, unitsOnLine } from './lineOfSight.ts'
@@ -46,9 +46,9 @@ function boardTiles(size: number): Tile[] {
 
 /**
  * The tiles an area skill covers around `centre` (Burst: the centre and its 8
- * neighbours), on a Board of `size` (7x7 unless given), reading order.
+ * neighbours), on a Board of `size`, reading order.
  */
-export function areaTiles(skill: Skill, centre: Tile, size: number = BOARD_SIZE, metric: DistanceMetric = 'chebyshev'): Tile[] {
+export function areaTiles(skill: Skill, centre: Tile, size: number, metric: DistanceMetric = 'chebyshev'): Tile[] {
   const radius = skill.area?.radius ?? 0
   return boardTiles(size).filter((tile) => distance(tile, centre, metric) <= radius)
 }
