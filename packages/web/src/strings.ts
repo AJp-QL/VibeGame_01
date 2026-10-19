@@ -87,6 +87,8 @@ export const th = {
     boardBlurb: {
       crossroads: 'ทางแยกกลาง Board: แสงและมืดเรียงกลางแนวตั้ง ธาตุอื่นกระจายรอบสี่มุม',
       shallows: 'แม่น้ำตื้นพาดทแยงจากมุมถึงมุมผ่านกลาง Board ป่าอยู่สองข้างแม่น้ำ',
+      grand_crossroads: 'ทางแยกกว้าง 9×9 มีแสงและมืดกลาง Board ภูเขาขนาบกลางทาง ป่า น้ำและทะเลทรายกระจายรอบนอก',
+      wide_shallows: 'แม่น้ำตื้นพาดทแยงผ่านกลาง Board ขนาด 9×9 มีป่าริมน้ำและภูเขากระจายสองฝั่ง',
     } as Readonly<Record<string, string>>,
     boardPreview: (name: string) => `แผนที่ Board ${name}`,
     mode: {
