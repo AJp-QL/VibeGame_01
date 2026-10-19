@@ -28,7 +28,7 @@ import { ELEMENTS, isOnBoard, sameTile, tileName, type Dice, type Element, type 
 import type { BattleEvent, RejectionCode } from './battle.ts'
 import { derive, statMod } from './derived.ts'
 import { rollDice } from './dice.ts'
-import { distance } from './movement.ts'
+import { distanceIn } from './movement.ts'
 import { emit } from './resolution.ts'
 import { GENERIC, type SkillHandler, type SkillHandlers, type SkillResolution, type SkillUse } from './skillHandler.ts'
 import type { UseSkillAction } from './skills.ts'
@@ -115,7 +115,7 @@ const ATTUNE: SkillHandler = {
       return rejection('invalid-target', `${skill.name} makes a tile one of ${ELEMENTS.join(', ')}, not "${String(element)}"`)
     }
     if (!isOnBoard(tile, boardSizeOf(state))) return rejection('off-board', `(${tile.x}, ${tile.y}) is not on the Board`)
-    const d = distance(user.tile, tile)
+    const d = distanceIn(state, user.tile, tile)
     if (d < 1 || d > skill.range) {
       return rejection('out-of-range', `${tileName(tile)} is ${d} tiles away; ${skill.name} reaches a tile next to ${user.id}`)
     }
@@ -125,7 +125,7 @@ const ATTUNE: SkillHandler = {
   // Every adjacent tile in reading order, then each of the 6 elements.
   uses(state, user, skill) {
     const uses: UseSkillAction[] = []
-    for (const tile of boardTiles(state).filter((t) => distance(user.tile, t) === 1)) {
+    for (const tile of boardTiles(state).filter((t) => distanceIn(state, user.tile, t) === 1)) {
       for (const element of ELEMENTS) uses.push({ type: 'useSkill', unit: user.id, skill: skill.id, tile, element })
     }
     return uses

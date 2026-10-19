@@ -21,16 +21,16 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-03 | Move preview in session | claude | — | done (PR #22) |
 | P1X-04 | Move preview UI | codex | P1X-03 | done (PR #26) |
 | P1X-05 | Undo in engine and session | claude | P1X-01 | done (PR #30) |
-| P1X-06 | Replay format 2 + playback + play stats | claude | P1X-05 | ready |
+| P1X-06 | Replay format 2 + playback + play stats | claude | P1X-05 | done (PR #50) |
 | P1X-07 | Undo / Start over / playback toggle UI | codex | P1X-06, P1X-02 | waiting |
 | P1X-08 | Range experiments (simulator) | claude | P1X-01 | done (PR #32); user chose a+b+c on 2026-10-18 |
 | P1X-09 | Apply chosen range combination | claude | P1X-08 + user choice | done (PR #34, ENGINE_VERSION 0.11.0); Shallows first-attack target handed to P1X-20 (user, 2026-10-18) |
 | P1X-10 | Fixture refresh after range change + new rule text | codex | P1X-09 | done (PR #45, fixtures 0.11.0) |
-| P1X-11 | Threat zone in session | claude | P1X-03, P1X-09 | ready |
+| P1X-11 | Threat zone in session | claude | P1X-03, P1X-09 | done (PR #54) |
 | P1X-12 | Threat zone UI | codex | P1X-11, P1X-04 | waiting |
 | P1X-13 | Board size per Board: expand engine/AI/simulator | claude | — | done (PR #23) |
 | P1X-14 | Board size per Board: battle/web | codex | P1X-13 | done (PR #27) |
-| P1X-15 | Contract BOARD_SIZE + 9x9 Boards | claude | P1X-13, P1X-14, P1X-09 | PR open |
+| P1X-15 | Contract BOARD_SIZE + 9x9 Boards | claude | P1X-13, P1X-14, P1X-09 | PR #52 on hold (user, 2026-10-19) until Codex P1X-31 (9x9 `boardBlurb`, not blocked) lands; merges last |
 | P1X-16 | 9x9 Boards UI | codex | P1X-15 | waiting |
 | P1X-17 | Release v0.2.0 + next playtest | claude | P1X-07, P1X-10, P1X-12, P1X-16, P1X-19, P1X-24, P1X-29 | waiting |
 | P1X-18 | Move preview session follow-up | claude | P1X-04, P1X-25 | done (PR #29) |
@@ -38,13 +38,14 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-20 | Range experiments follow-up | claude | P1X-09 | ready |
 | P1X-21 | Enemy range in session (low priority) | claude | P1X-11 | waiting |
 | P1X-22 | Enemy range UI (low priority) | codex | P1X-21 | waiting |
-| P1X-23 | Action plan in session | claude | P1X-18 | ready |
+| P1X-23 | Action plan in session | claude | P1X-18 | done (PR #51) |
 | P1X-24 | Action plan UI | codex | P1X-23, P1X-19 | waiting |
 | P1X-25 | Move preview visual test re-select | codex | — | done (PR #41) |
 | P1X-26 | Web test vs range rules | codex | — | done (PR #42) |
 | P1X-27 | Range rules cleanup from the PR #34 review | claude | — | done (PR #53) |
 | P1X-28 | Session: terrain sight blockers + line-of-sight distance export | claude | — | done (PR #49) |
 | P1X-29 | UI: range and sight text from session | codex | P1X-28 (P1X-10 done) | waiting |
+| P1X-30 | Refresh visual fixtures and baselines for engine 0.12.0 | codex | P1X-06 | waiting |
 
 Next: Codex P1X-29 after P1X-28. Claude P1X-06, 11, 15, 20, 23, 27, 28 ready.
 

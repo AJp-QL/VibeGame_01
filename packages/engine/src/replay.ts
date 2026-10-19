@@ -7,6 +7,13 @@
  * records one, checks it against the current engine version and data hash,
  * and replays it. A mismatch is reported, never converted (decision log
  * 2026-10-14).
+ *
+ * Format 2 (phase 1.x ticket 06) also holds the player's Undo: an `undo`
+ * entry withdraws the last N standing actions, back to the safe point
+ * (`undoPoint`, rules §17.5). Replaying applies it, so the final state is the
+ * one the player had; the withdrawn steps stay in `steps`, marked `undone`.
+ * `undo` is a file entry, not an Action: `applyAction` never sees it, so the
+ * rules are unchanged; replaying accepts a file that 0.11.0 rejected, so ENGINE_VERSION moved to 0.12.0.
  */
 import {
   dataHash,
@@ -19,13 +26,19 @@ import {
   type ReplayMeta,
   type Side,
   type Tile,
+  type UndoRecord,
+  UNDO_RECORD_TYPE,
 } from '@mt/shared'
 import { applyAction, createBattle, type Action, type BattleEvent, type BattleSetup, type Rejection } from './battle.ts'
 import type { BattleState } from './state.ts'
+import { undoPoint } from './undo.ts'
 import { ENGINE_VERSION } from './version.ts'
 
-/** A Replay whose actions are the engine's own. */
-export type BattleReplay = Replay<Action>
+/** One entry of a Replay's list: an engine action, or the player's Undo (format 2). */
+export type BattleReplayEntry = Action | UndoRecord
+
+/** A Replay whose entries are the engine's own actions and Undo records. */
+export type BattleReplay = Replay<BattleReplayEntry>
 
 /** How the Battle was created: everything in a Replay but the versions, metadata and actions. */
 export interface ReplayHeader {
@@ -42,14 +55,15 @@ export interface ReplayHeader {
 
 /**
  * The Replay of a Battle created from `header` with `data`, after `actions`
- * (every action applyAction accepted, in order). Stamps the current engine
+ * (every action applyAction accepted, in order, with an `undo` entry where
+ * the player went back; `undoRecord`). Stamps the current engine
  * version and data hash. `meta` (app version, export time, stats) comes from
  * the caller: the engine never reads the clock.
  */
 export function recordReplay(
   header: ReplayHeader,
   data: GameData,
-  actions: readonly Action[],
+  actions: readonly BattleReplayEntry[],
   meta?: ReplayMeta,
 ): BattleReplay {
   return {
@@ -66,6 +80,11 @@ export function recordReplay(
     ...(meta !== undefined ? { meta } : {}),
     actions: [...actions],
   }
+}
+
+/** The Undo entry for a player who withdrew the last `withdraw` standing actions. */
+export function undoRecord(withdraw: number): UndoRecord {
+  return { type: UNDO_RECORD_TYPE, withdraw }
 }
 
 /** One field of a Replay that does not match this build. */
@@ -97,9 +116,13 @@ export function replayCompatibility(replay: Replay, data: GameData): ReplayCompa
 
 /** The Battle right after one replayed action. */
 export interface ReplayStep {
-  /** Position of the action in the Replay, from 0. */
+  /** Position of the action in the Replay's list, from 0 (Undo entries take a place too). */
   readonly index: number
   readonly action: Action
+  /** The state the action was applied to. */
+  readonly before: BattleState
+  /** Format 2: a later Undo withdrew this action (its `state` is not on the way to `final`). Always false in format 1. */
+  readonly undone: boolean
   /** The state after the action. */
   readonly state: BattleState
   /** The events the action produced, in order. */
@@ -114,14 +137,26 @@ export type ReplayError =
   /** The action at `index` was rejected (or is not an action at all): the Replay was changed or is broken. */
   | { readonly kind: 'rejected'; readonly index: number; readonly action: ReplayAction; readonly rejection: Rejection }
 
+/** An Undo entry as it was replayed. */
+export interface ReplayUndo {
+  /** Position of the entry in the Replay's list. */
+  readonly index: number
+  /** How many standing actions it withdrew. */
+  readonly withdrawn: number
+  /** How many of `steps` come before it. */
+  readonly afterSteps: number
+}
+
 export type ReplayResult =
   | {
       readonly ok: true
       /** The Battle before the first action. */
       readonly initial: BattleState
-      /** One step per action, in order: the state and events after it. */
+      /** One step per action, in order, withdrawn ones included (`undone`): the state and events after it. */
       readonly steps: readonly ReplayStep[]
-      /** The state after the last action (`initial` when there is none). */
+      /** Where the player went back (format 2), in order. */
+      readonly undos: readonly ReplayUndo[]
+      /** The state after the last standing action (`initial` when there is none). */
       readonly final: BattleState
     }
   | { readonly ok: false; readonly error: ReplayError }
@@ -144,8 +179,30 @@ export function replayBattle(replay: Replay, data: GameData): ReplayResult {
   }
 
   const steps: ReplayStep[] = []
+  const undos: ReplayUndo[] = []
   let state = initial
+  // The actions still standing, and the state after each (stood[0] is the start): what Undo works on.
+  const stood: Action[] = []
+  const states: BattleState[] = [initial]
+  const standing: number[] = []
+  const undone = new Set<number>()
   for (const [index, recorded] of replay.actions.entries()) {
+    if (recorded.type === UNDO_RECORD_TYPE) {
+      const withdraw = (recorded as Partial<UndoRecord>).withdraw
+      const point = undoPoint(states, stood)
+      // Against the AI the person only takes back their own Turn (rules §17.5): an undo while the AI is to act is refused.
+      const aiTurn = replay.mode === 'ai' && replay.humanSide !== undefined && state.sideToAct !== replay.humanSide
+      if (replay.formatVersion < 2 || aiTurn || point === null || withdraw !== stood.length - point.keep) {
+        const message = replay.formatVersion < 2 ? 'Undo needs Replay format 2' : aiTurn ? 'Undo during the AI Turn' : `Undo of ${String(withdraw)} action(s) does not go back to a safe point`
+        return { ok: false, error: { kind: 'rejected', index, action: recorded, rejection: { code: 'unknown-action', message } } }
+      }
+      for (const step of standing.splice(point.keep)) undone.add(step)
+      stood.length = point.keep
+      states.length = point.keep + 1
+      state = states[point.keep]!
+      undos.push({ index, withdrawn: withdraw, afterSteps: steps.length })
+      continue
+    }
     // The schema only checks that an action is an object with a type; applyAction decides the rest.
     const action = recorded as unknown as Action
     let result: ReturnType<typeof applyAction>
@@ -156,10 +213,20 @@ export function replayBattle(replay: Replay, data: GameData): ReplayResult {
       return { ok: false, error: { kind: 'rejected', index, action: recorded, rejection } }
     }
     if (!result.ok) return { ok: false, error: { kind: 'rejected', index, action: recorded, rejection: result.rejection } }
+    const before = state
     state = result.state
-    steps.push({ index, action, state, events: result.events })
+    standing.push(steps.length)
+    stood.push(action)
+    states.push(state)
+    steps.push({ index, action, before, undone: false, state, events: result.events })
   }
-  return { ok: true, initial, steps, final: state }
+  return {
+    ok: true,
+    initial,
+    steps: undone.size === 0 ? steps : steps.map((step, i) => (undone.has(i) ? { ...step, undone: true } : step)),
+    undos,
+    final: state,
+  }
 }
 
 function replaySetup(replay: Replay, data: GameData): BattleSetup {

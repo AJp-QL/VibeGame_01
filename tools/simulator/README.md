@@ -10,6 +10,7 @@ corepack pnpm sim parity   [--games 2000] [--other-games 1000] [--seed 0] [--out
 corepack pnpm sim baseline [--games 1000] [--seed 0] [--out docs/balance/phase-1-baseline]
 corepack pnpm sim ranges   [--games 2000] [--seed 0] [--workers n] [--out docs/balance/ticket-08-range-experiments]
 corepack pnpm sim boards   [--games 2000] [--seed 0] [--workers n] [--out docs/balance/ticket-15-board-9x9]
+corepack pnpm sim distance [--games 2000] [--seed 0] [--workers n] [--only ids] [--out docs/balance/ticket-20-distance-experiments]
 ```
 - โปรไฟล์ AI: `sim:<mode>` = `SIM_PROFILES` (port ของ sim.py), `game:<mode>` = `GAME_PROFILES` (AI ในเกม), mode = `greedy` | `tamer_rush` | `neutral`
 - `--seed` = Dice Seed ฐาน (hex 1–16 หลัก) Battle ที่ i (นับจาก 0) ใช้ seed = ฐาน + (i+1)·0x9e3779b97f4a7c15 mod 2^64 (ฐาน 0 = `seedOf(i + 1)` ของ packages/ai/test/play.ts) ใส่ค่าเดิมได้ตัวเลขเดิมทุกตัว
@@ -52,3 +53,5 @@ corepack pnpm sim boards   [--games 2000] [--seed 0] [--workers n] [--out docs/b
 
 ## สถานะ
 - ticket 16: รายงาน parity `docs/balance/sim-v4-parity.md`, baseline กติกาจริง `docs/balance/phase-1-baseline.md`
+
+`sim distance` (ticket 20) วัดวิธีวัดระยะ (Chebyshev ของเกม, ไม่มีทแยง, ทแยงสลับ 1/2) คูณระยะ long shot (3 ของเกม หรือ 2) บนเกมหลัง ticket 09 พร้อมตัวชี้วัดช่องปลอดภัย/ถูกคุกคามต้น Turn (`src/threat.ts`, นิยาม Threat zone) Variant อยู่แค่ในการรัน: วิธีวัดระยะเปิดด้วย `withDistanceMetric` ของ engine ผ่าน `Matchup.distanceMetric` (ค่าเริ่มต้น Chebyshev, เกมไม่เคยตั้ง) รายงาน: `docs/balance/ticket-20-range-experiments-followup.md`

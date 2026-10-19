@@ -28,3 +28,5 @@ export {
 export { main, parseArgs, profileOf, type CliOptions, type Command } from './cli.ts'
 export { RANGE_VARIANTS, applyVariant, variantById, type RangeVariant } from './variants.ts'
 export { RANGE_BOARDS, RANGE_SCENARIOS, TARGETS, meetsTargets, rangeJobs, rangeTables, runRangeJobs, runRangeSet, type RangeJob, type RangeSetResult } from './ranges.ts'
+export { DISTANCE_BASELINE, DISTANCE_VARIANTS, distanceJobs, distanceTables, distanceVariantById, runDistanceJobs, runDistanceSet, summarizeThreat, withShotRange, type DistanceJob, type DistanceSetResult, type DistanceVariant, type ThreatSummary } from './distanceExperiment.ts'
+export { sampleThreat, threatenedTiles, type ThreatSample } from './threat.ts'

@@ -21,7 +21,7 @@ import { derive } from './derived.ts'
 import { rollDice } from './dice.ts'
 import { LINE_OF_SIGHT_FROM, unitsOnLine } from './lineOfSight.ts'
 import { longRangeFrom, sightBlockingTiles } from './rangeRules.ts'
-import { distance } from './movement.ts'
+import { distanceIn } from './movement.ts'
 import { emit, rollD20, type Resolution } from './resolution.ts'
 import { combineRollMode, commandSources, rollModeSources, type RollMode, type RollModeSource } from './rollMode.ts'
 import { findUnit, replaceUnit, type BattleState, type PendingDecision, type UnitId, type UnitState } from './state.ts'
@@ -85,7 +85,7 @@ export function checkEnemyTarget(state: BattleState, user: UnitState, skill: Ski
   if (target.side === user.side) {
     return { code: 'not-an-enemy', message: `${targetId} is on the same side as ${user.id}` }
   }
-  const d = distance(user.tile, target.tile)
+  const d = distanceIn(state, user.tile, target.tile)
   if (d < 1 || d > skill.range) {
     return { code: 'out-of-range', message: `${targetId} is ${d} tiles away; ${skill.name} reaches ${skill.range}` }
   }
@@ -319,7 +319,7 @@ function criticalChanceOf(mode: RollMode): Chance {
 export function previewAttack(state: BattleState, plan: AttackPlan, isCounterattack = false): AttackPreview {
   const { attacker, target, skill } = plan
   const sources = rollModeSources(state, attacker, target, isCounterattack)
-  const atDistance = distance(attacker.tile, target.tile)
+  const atDistance = distanceIn(state, attacker.tile, target.tile)
   const farFrom = longRangeFrom(state)
   const longRange = farFrom !== undefined && atDistance >= farFrom
   const mode = combineRollMode(sources, longRange)
@@ -399,7 +399,7 @@ function* counterattackAfter(before: BattleState, attackerId: UnitId, targetId: 
   const attacker = findUnit(before, attackerId)
   const target = findUnit(before, targetId)
   if (attacker === undefined || target === undefined || attacker.side === target.side) return before
-  if (distance(attacker.tile, target.tile) !== 1) return before
+  if (distanceIn(before, attacker.tile, target.tile) !== 1) return before
   const countering = counteringOf(before, target)
   if (countering === null) return before
   const dice = countering.skill.damage ?? { count: 1, sides: 8 }

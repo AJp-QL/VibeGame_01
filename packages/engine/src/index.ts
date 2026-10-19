@@ -58,7 +58,8 @@ export type { HealPreview, TerrainPreview } from './tamerSkills.ts'
 export { elementBeats, terrainEffectAt, type RollEffect, type RollMode, type RollModeSource } from './rollMode.ts'
 export type { DerivedValues } from './derived.ts'
 export { isInStartZone, startZoneRows, unitsVisibleTo } from './deployment.ts'
-export { distance, moveRangeNow } from './movement.ts'
+export { distance, distanceIn, moveRangeNow, pathTo, reachableTiles, type DistanceMetric } from './movement.ts'
+export { longestAttackReach, threatCount, threatReach, threatZone } from './threat.ts'
 export { drewDice, undoPoint, type UndoLabel, type UndoPoint } from './undo.ts'
 export { GAME_RANGE_RULES, NO_RANGE_RULES, type RangeRules, type VariantRules } from './rangeRules.ts'
 export { boardSizeOf, COMMAND_OPTIONS, ROUND_LIMIT } from './state.ts'
@@ -95,13 +96,16 @@ export {
   recordReplay,
   replayBattle,
   replayCompatibility,
+  undoRecord,
   type BattleReplay,
+  type BattleReplayEntry,
   type ReplayCompatibility,
   type ReplayError,
   type ReplayHeader,
   type ReplayMismatch,
   type ReplayResult,
   type ReplayStep,
+  type ReplayUndo,
 } from './replay.ts'
 export { ENGINE_VERSION } from './version.ts'
 

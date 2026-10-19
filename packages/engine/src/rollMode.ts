@@ -8,7 +8,7 @@
  * no advantage or disadvantage, it raises Guard and Ward (§12).
  */
 import type { Element, ElementWheel, Terrain, Tile } from '@mt/shared'
-import { distance } from './movement.ts'
+import { distanceIn } from './movement.ts'
 import { terrainAt, type BattleState, type StatusId, type UnitId, type UnitState, type UnitTemplate } from './state.ts'
 import { attackersRollModeStatus } from './statuses.ts'
 
@@ -122,7 +122,7 @@ function tamerProtectionSources(state: BattleState, target: UnitState): RollMode
   if (target.kind !== 'tamer') return []
   // Units on the Board are the ones still up (rules §10.4).
   const protectors = state.units
-    .filter((u) => u.side === target.side && u.kind === 'monster' && distance(u.tile, target.tile) === 1)
+    .filter((u) => u.side === target.side && u.kind === 'monster' && distanceIn(state, u.tile, target.tile) === 1)
     .map((u) => u.id)
   if (protectors.length === 0) return []
   return [{ kind: 'tamerProtection', effect: 'disadvantage', protectors, cancellableByCommand: false }]

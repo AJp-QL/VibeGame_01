@@ -51,6 +51,17 @@ export interface BattleSnapshot {
    * not provide it.
    */
   readonly movePreview?: MovePreview | null
+  /**
+   * Events of each action the last accepted command sent, in order (phase 1.x ticket 23): one entry
+   * for a single action, a Move's and an Action's for a confirmed Action plan, so the Unit can walk
+   * before it attacks. `events` keeps its meaning. Optional like `movePreview`.
+   */
+  /**
+   * Threat zone (phase 1.x ticket 11): enemies that could attack each tile next Turn, for the side the
+   * Board is shown to, indexed `[y][x]`; empty outside play. Optional like `movePreview`; the Replay player gives none.
+   */
+  readonly threatZone?: readonly (readonly number[])[]
+  readonly eventBatches?: readonly (readonly BattleEvent[])[]
 }
 
 /** A tap or click on the Board. No hover: mobile has none. */
