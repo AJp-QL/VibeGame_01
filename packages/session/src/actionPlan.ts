@@ -94,13 +94,11 @@ const VIA_RANK: Readonly<Record<PlanVia, number>> = { stay: 0, move: 1, blink: 2
  * lower Threat zone, then tile order (y, then x). A Blink comes after every
  * walk: it spends a skill, so the game never picks it over a Move.
  */
-export function compareOrigins(a: PlanOrigin, b: PlanOrigin, threat?: (tile: Tile) => number): number {
+export function compareOrigins(a: PlanOrigin, b: PlanOrigin, threat: (tile: Tile) => number): number {
   if (a.via !== b.via) return VIA_RANK[a.via] - VIA_RANK[b.via]
   if (a.steps !== b.steps) return a.steps - b.steps
-  if (threat !== undefined) {
-    const difference = threat(a.tile) - threat(b.tile)
-    if (difference !== 0) return difference
-  }
+  const difference = threat(a.tile) - threat(b.tile)
+  if (difference !== 0) return difference
   return a.tile.y - b.tile.y || a.tile.x - b.tile.x
 }
 
@@ -192,11 +190,11 @@ function computeViews(state: BattleState, unit: UnitId): OriginView[] {
     const choices = choicesOf(simulated.moved, simulated.actions, unit)
     if (choices.length > 0) views.push({ origin: { tile, via, steps }, via: action, moved: simulated.moved, choices })
   }
-  return views.sort((a, b) => compareOrigins(a.origin, b.origin))
+  return views.sort((a, b) => compareOrigins(a.origin, b.origin, () => 0))
 }
 
 /** Enemies `unit` can attack in this activation, in the order of the Board's units, with the origins that reach each. */
-export function attackableEnemies(state: BattleState, unit: UnitId, threat?: (tile: Tile) => number): AttackableEnemy[] {
+export function attackableEnemies(state: BattleState, unit: UnitId, threat: (tile: Tile) => number): AttackableEnemy[] {
   const views = originViews(state, unit)
   const enemies: AttackableEnemy[] = []
   for (const target of state.units) {
@@ -228,7 +226,7 @@ export function buildPlan(
   unit: UnitId,
   wish: PlanWish,
   abandons: UnitId | null,
-  threat?: (tile: Tile) => number,
+  threat: (tile: Tile) => number,
 ): ActionPlan | null {
   const offers = (view: OriginView) =>
     wish.target !== null

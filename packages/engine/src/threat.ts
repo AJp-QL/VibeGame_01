@@ -34,16 +34,21 @@ export function threatReach(state: BattleState, unit: UnitState): number {
   return derive(unit).move + longestAttackReach(state, unit)
 }
 
+/** Where each enemy of `side` stands and how far it reaches. */
+function threats(state: BattleState, side: Side): { tile: Tile; reach: number }[] {
+  return state.units.filter((u) => u.side !== side).map((u) => ({ tile: u.tile, reach: threatReach(state, u) }))
+}
+
+const countAt = (all: readonly { tile: Tile; reach: number }[], tile: Tile) => all.filter((t) => distance(t.tile, tile) <= t.reach).length
+
 /** The enemies of `side` (Units on the Board of the other side) that could attack `tile` next Turn. */
 export function threatCount(state: BattleState, tile: Tile, side: Side): number {
-  return state.units.filter((u) => u.side !== side && distance(u.tile, tile) <= threatReach(state, u)).length
+  return countAt(threats(state, side), tile)
 }
 
 /** `threatCount` of every tile of the Board, indexed `[y][x]`, for the overlay. */
 export function threatZone(state: BattleState, side: Side): number[][] {
+  const all = threats(state, side)
   const size = boardSizeOf(state)
-  const reaches = state.units.filter((u) => u.side !== side).map((u) => ({ tile: u.tile, reach: threatReach(state, u) }))
-  return Array.from({ length: size }, (_, y) =>
-    Array.from({ length: size }, (_, x) => reaches.filter((r) => distance(r.tile, { x, y }) <= r.reach).length),
-  )
+  return Array.from({ length: size }, (_, y) => Array.from({ length: size }, (_, x) => countAt(all, { x, y })))
 }

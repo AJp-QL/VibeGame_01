@@ -48,7 +48,6 @@ import {
   decidingSide,
   legalActions,
   previewAction,
-  threatCount,
   threatZone,
   undoPoint,
   unitSkills,
@@ -493,7 +492,7 @@ function reachOf(moved: BattleState, actions: readonly Action[], unit: UnitId, s
  * the engine applies the action to a copy of `state` and reads the legal
  * actions of the result (spec: Move preview). `null` if the engine refuses.
  */
-function movePreviewOf(state: BattleState, unit: UnitId, action: Action, side: Side): MovePreview | null {
+function movePreviewOf(state: BattleState, unit: UnitId, action: Action, threatAt: (tile: Tile) => number): MovePreview | null {
   const result = applyAction(state, action)
   if (!result.ok || result.state.pending !== null) return null
   const moved = result.state
@@ -509,7 +508,7 @@ function movePreviewOf(state: BattleState, unit: UnitId, action: Action, side: S
     if (attacks && ready && button.skill !== used) options.push(button.skill)
   }
   const reach = options.map((skill) => reachOf(moved, actions, unit, skill))
-  return { unit, tile: destination, skill: used, reach, options: choicesOf(moved, actions, unit), threat: threatCount(state, destination, side) }
+  return { unit, tile: destination, skill: used, reach, options: choicesOf(moved, actions, unit), threat: threatAt(destination) }
 }
 
 /** Units of the side to act that have at least one legal action. */
@@ -718,7 +717,8 @@ export function createBattleSession(initial: BattleState, options: SessionOption
             ...skill,
             usable: actions.some((a) => a.type === 'useSkill' && a.unit === selected.id && a.skill === skill.skill),
           }))
-    const threatAt = (tile: Tile) => threatCount(state, tile, viewer(state))
+    const zone = state.phase === 'play' ? threatZone(state, viewer(state)) : []
+    const threatAt = (tile: Tile) => zone[tile.y]?.[tile.x] ?? 0
     const planning = state.phase === 'play' && state.pending === null && selectedUnit !== null && humanMayAct(state)
     const attackable = planning ? attackableEnemies(state, selectedUnit, threatAt) : []
     let plan: ActionPlan | null = null
@@ -744,7 +744,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
           ? ready
           : null
       const action = move ?? blink
-      if (action !== null) movePreview = movePreviewOf(state, selectedUnit, action, viewer(state))
+      if (action !== null) movePreview = movePreviewOf(state, selectedUnit, action, threatAt)
     }
     const tilesOf = (ids: readonly UnitId[]) =>
       ids.flatMap((id) => {
@@ -780,7 +780,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       elementChoices,
       movePreview,
       attackable,
-      threatZone: state.phase === 'play' ? threatZone(state, viewer(state)) : [],
+      threatZone: zone,
       plan,
       undo: undoOffer(base, states),
       canCommand: commandTargets(actions, selectedUnit).length > 0,
