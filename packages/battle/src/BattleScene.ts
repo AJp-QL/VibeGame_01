@@ -34,6 +34,9 @@ import {
   SELECTED,
   OUTLINE,
   ORDER_DIGITS,
+  PIXEL_DIGITS,
+  THREAT_FILL,
+  THREAT_TEXT,
   STATUS_DOT,
   STATUS_ICONS,
   STATUS_NEGATIVE,
@@ -70,13 +73,6 @@ const MAX_STATUS_ICONS = 3
 
 type PlanSnapshot = BattleSnapshot & Partial<Pick<SessionSnapshot, 'attackable' | 'plan' | 'mode'>>
 
-const THREAT_DIGITS: Readonly<Record<string, readonly string[]>> = {
-  '0': ['###', '#.#', '#.#', '#.#', '###'], '1': ['.#.', '##.', '.#.', '.#.', '###'],
-  '2': ['##.', '..#', '.#.', '#..', '###'], '3': ['##.', '..#', '.#.', '..#', '##.'],
-  '4': ['#.#', '#.#', '###', '..#', '..#'], '5': ['###', '#..', '##.', '..#', '##.'],
-  '6': ['.##', '#..', '###', '#.#', '###'], '7': ['###', '..#', '.#.', '.#.', '.#.'],
-  '8': ['###', '#.#', '###', '#.#', '###'], '9': ['###', '#.#', '###', '..#', '##.'],
-}
 
 export interface BoardDisplayOptions {
   readonly showThreatZone?: boolean
@@ -126,6 +122,12 @@ export class BattleScene extends Phaser.Scene {
     this.session = data.session
     this.labels = data.labels
     this.showThreatZone = data.display?.showThreatZone === true
+  }
+
+  /** Presentation only: redraw the overlay without touching Units or active tweens. */
+  setDisplay(display: BoardDisplayOptions): void {
+    this.showThreatZone = display.showThreatZone === true
+    if (this.threatLayer) this.drawThreatZone(this.session.getSnapshot())
   }
 
   create(): void {
@@ -291,15 +293,15 @@ export class BattleScene extends Phaser.Scene {
       if (count <= 0) return
       const left = x * TILE_SIZE
       const top = y * TILE_SIZE
-      g.fillStyle(0xb193ed, Math.min(0.12 + count * 0.07, 0.42))
+      g.fillStyle(THREAT_FILL, Math.min(0.12 + count * 0.07, 0.42))
       g.fillRect(left + 1, top + 1, TILE_SIZE - 1, TILE_SIZE - 1)
       const text = String(count)
       const width = text.length * 4 + 2
       g.fillStyle(OUTLINE, 0.95)
       g.fillRect(left + TILE_SIZE - width - 1, top + 2, width, 7)
-      g.fillStyle(0xe4d5ff, 1)
+      g.fillStyle(THREAT_TEXT, 1)
       Array.from(text).forEach((digit, index) => {
-        drawPattern(g, THREAT_DIGITS[digit]!, left + TILE_SIZE - width + index * 4, top + 3)
+        drawPattern(g, PIXEL_DIGITS[digit]!, left + TILE_SIZE - width + index * 4, top + 3)
       })
     }))
   }

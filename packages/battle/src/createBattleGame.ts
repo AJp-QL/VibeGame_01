@@ -41,8 +41,9 @@ export function fitBattleGame(game: Phaser.Game, parent: HTMLElement): void {
  * layout has settled (next frame, web fonts loaded), and before every press.
  * Returns the teardown, which also destroys the game.
  */
-export function mountBattleGame(parent: HTMLElement, session: BattleSessionPort, labels: BoardLabels, display: BoardDisplayOptions = {}): () => void {
-  const game = createBattleGame(parent, session, labels, display)
+export function mountBattleGame(parent: HTMLElement, session: BattleSessionPort, labels: BoardLabels, display: BoardDisplayOptions = {}): (() => void) & { setDisplay(options: BoardDisplayOptions): void } {
+  const currentDisplay = { ...display }
+  const game = createBattleGame(parent, session, labels, currentDisplay)
   const fit = () => fitBattleGame(game, parent)
   fit()
   game.events.once(Phaser.Core.Events.READY, fit)
@@ -55,7 +56,7 @@ export function mountBattleGame(parent: HTMLElement, session: BattleSessionPort,
   observer.observe(parent)
   window.addEventListener('resize', fit)
   const stopAligning = alignInputOnPress(parent, game)
-  return () => {
+  const teardown = () => {
     mounted = false
     cancelAnimationFrame(frame)
     observer.disconnect()
@@ -63,4 +64,12 @@ export function mountBattleGame(parent: HTMLElement, session: BattleSessionPort,
     stopAligning()
     destroyBoard(game)
   }
+  return Object.assign(teardown, {
+    setDisplay(options: BoardDisplayOptions) {
+      Object.assign(currentDisplay, options)
+      if (mounted && game.scene.isActive('battle')) {
+        (game.scene.getScene('battle') as BattleScene).setDisplay(currentDisplay)
+      }
+    },
+  })
 }

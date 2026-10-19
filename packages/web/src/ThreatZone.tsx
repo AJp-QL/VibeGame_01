@@ -15,12 +15,12 @@ export function ThreatCount({ count }: { count: number }) {
   )
 }
 
-export function ThreatZoneToggle({ visible, onChange }: { visible: boolean; onChange: (visible: boolean) => void }) {
+export function ThreatZoneToggle({ visible, previewOpen = false, onChange }: { visible: boolean; previewOpen?: boolean; onChange: (visible: boolean) => void }) {
   return (
     <section className="panel threat-controls">
       <button type="button" className="secondary" aria-pressed={visible} onClick={() => onChange(!visible)}>{th.threatZone.toggle}</button>
       {visible && <p className="muted">{th.threatZone.legend}</p>}
-      <p className="muted">{th.threatZone.estimate}</p>
+      {!previewOpen && <p className="muted">{th.threatZone.boardEstimate}</p>}
     </section>
   )
 }

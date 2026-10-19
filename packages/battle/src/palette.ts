@@ -69,11 +69,17 @@ export const TILE_CHOICE = 0x7fe0ff
 /** The area of an area skill (Burst) around its chosen centre. */
 export const AREA = 0xff8a3d
 /** Order numbers (1, 2) on the targets picked for Burst, 3x5 pixels. */
-export const ORDER_DIGITS: readonly (readonly string[])[] = [
-  ['.#.', '##.', '.#.', '.#.', '###'],
-  ['##.', '..#', '.#.', '#..', '###'],
-  ['##.', '..#', '.#.', '..#', '##.'],
-]
+export const PIXEL_DIGITS: Readonly<Record<string, readonly string[]>> = {
+  '0': ['###', '#.#', '#.#', '#.#', '###'], '1': ['.#.', '##.', '.#.', '.#.', '###'],
+  '2': ['##.', '..#', '.#.', '#..', '###'], '3': ['##.', '..#', '.#.', '..#', '##.'],
+  '4': ['#.#', '#.#', '###', '..#', '..#'], '5': ['###', '#..', '##.', '..#', '##.'],
+  '6': ['.##', '#..', '###', '#.#', '###'], '7': ['###', '..#', '.#.', '.#.', '.#.'],
+  '8': ['###', '#.#', '###', '#.#', '###'], '9': ['###', '#.#', '###', '..#', '##.'],
+}
+
+export const ORDER_DIGITS = [PIXEL_DIGITS['1']!, PIXEL_DIGITS['2']!, PIXEL_DIGITS['3']!] as const
+export const THREAT_FILL = 0xb193ed
+export const THREAT_TEXT = 0xe4d5ff
 /** Enemies in range that line of sight blocks: crossed out, not selectable. */
 export const BLOCKED_TARGET = 0xb0b0b0
 /** Guarded shield icon on a Unit. */

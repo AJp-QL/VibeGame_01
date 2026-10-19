@@ -594,6 +594,10 @@ describe('Threat zone advice', () => {
     expect(toggle).toContain('aria-pressed="false"')
     expect(toggle).toContain(th.threatZone.toggle)
     expect(toggle).not.toContain(th.threatZone.legend)
+    expect(toggle).toContain(th.threatZone.boardEstimate)
+    const previewToggle = renderToStaticMarkup(createElement(ThreatZoneToggle, { visible: true, previewOpen: true, onChange() {} }))
+    expect(previewToggle).not.toContain(th.threatZone.boardEstimate)
+    expect(previewToggle).not.toContain(th.threatZone.estimate)
   })
 })
 
