@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { th } from './strings.ts'
 
 /** The in-Battle menu: export the Replay so far, or leave the Battle (after a second tap to confirm). */
-export function BattleMenu({ onExportReplay, onLeave }: { onExportReplay: () => void; onLeave: () => void }) {
-  const [view, setView] = useState<'closed' | 'open' | 'leaving'>('closed')
+export function BattleMenu({ onExportReplay, onLeave, onStartOver }: { onExportReplay: () => void; onLeave: () => void; onStartOver: () => void }) {
+  const [view, setView] = useState<'closed' | 'open' | 'leaving' | 'restarting'>('closed')
   if (view === 'closed') {
     return (
       <div className="battle-menu-toggle">
@@ -22,6 +22,9 @@ export function BattleMenu({ onExportReplay, onLeave }: { onExportReplay: () => 
             <button type="button" className="secondary" onClick={onExportReplay}>
               {th.replay.export}
             </button>
+            <button type="button" className="secondary" onClick={() => setView('restarting')}>
+              {th.battleMenu.startOver}
+            </button>
             <button type="button" className="secondary" onClick={() => setView('leaving')}>
               {th.battleMenu.leave}
             </button>
@@ -32,13 +35,13 @@ export function BattleMenu({ onExportReplay, onLeave }: { onExportReplay: () => 
         </>
       ) : (
         <div className="warning" role="alertdialog" aria-labelledby="leave-warning">
-          <p id="leave-warning">{th.battleMenu.leaveConfirm}</p>
+          <p id="leave-warning">{view === 'restarting' ? th.battleMenu.startOverConfirm : th.battleMenu.leaveConfirm}</p>
           <div className="buttons">
             <button type="button" className="secondary" onClick={onExportReplay}>
               {th.replay.export}
             </button>
-            <button type="button" className="primary" onClick={onLeave}>
-              {th.battleMenu.leaveYes}
+            <button type="button" className="primary" onClick={view === 'restarting' ? onStartOver : onLeave}>
+              {view === 'restarting' ? th.battleMenu.startOver : th.battleMenu.leaveYes}
             </button>
             <button type="button" className="secondary" onClick={() => setView('closed')}>
               {th.battleMenu.leaveNo}

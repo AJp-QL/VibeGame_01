@@ -31,6 +31,11 @@ export function ReplayScreen({ data, opened, onMenu }: ReplayScreenProps) {
         <p className="muted">{th.replay.readOnly}</p>
       </section>
 
+      <label className="panel replay-undone">
+        <input type="checkbox" checked={snapshot.showUndone} disabled={!snapshot.hasUndone}
+          onChange={event => player.setShowUndone(event.target.checked)} />
+        {th.replay.showUndone}
+      </label>
       <StatusBar state={state} />
 
       <section className="panel controls replay-controls" aria-live="polite">
@@ -42,6 +47,7 @@ export function ReplayScreen({ data, opened, onMenu }: ReplayScreenProps) {
               : describeAction(snapshot.action, snapshot.actor, state, data)}
           </span>
         </p>
+        {snapshot.undone && <p className="warning">{th.replay.undone}</p>}
         <div className="buttons step-buttons">
           <button type="button" className="secondary" disabled={atStart} onClick={() => player.first()}>
             ⏮ {th.replay.first}

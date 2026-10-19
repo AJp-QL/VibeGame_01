@@ -516,10 +516,18 @@ export const th = {
     'already-activated': 'Monster ตัวนี้เริ่มเล่นไปแล้วใน Turn นี้ Command ได้เฉพาะตัวที่เล่นหลัง Tamer',
   } satisfies Record<RejectionCode, string>,
 
+  undo: {
+    button: 'ย้อนกลับ',
+    to: { turnStart: 'ย้อนถึงต้น Turn', lastRoll: 'ย้อนถึงหลังการทอยล่าสุด' },
+    unavailable: 'ยังไม่มี action ที่ย้อนกลับได้ ผลการทอยลูกเต๋าย้อนไม่ได้',
+  },
+
   battleMenu: {
     open: 'เมนู Battle',
     close: 'ปิดเมนู',
     title: 'เมนู Battle',
+    startOver: 'เริ่มใหม่',
+    startOverConfirm: 'เริ่ม Battle ใหม่ด้วย Scenario, Board, โหมดและฝั่งเดิม แต่ Dice Seed ใหม่? Battle นี้จะนับเป็นถูกทิ้ง หากต้องการเก็บไว้ให้ Export Replay ก่อน',
     leave: 'ออกจาก Battle',
     leaveConfirm: 'ออกจาก Battle นี้แล้วกลับไปเมนู? Battle นี้จะหายไป ถ้าจะเก็บไว้ให้ export Replay ก่อน',
     leaveYes: 'ออกจาก Battle',
@@ -527,6 +535,8 @@ export const th = {
   },
 
   replay: {
+    showUndone: 'แสดง action ที่ถูก Undo',
+    undone: 'action นี้ถูก Undo แล้ว',
     export: 'Export Replay',
     exportHint: 'บันทึกไฟล์ Replay ของ Battle นี้ (Dice Seed และทุก action) ส่งให้ผู้พัฒนาเล่นซ้ำได้',
     open: 'เปิดไฟล์ Replay',
