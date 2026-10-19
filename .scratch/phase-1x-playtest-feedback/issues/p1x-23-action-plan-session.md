@@ -6,12 +6,16 @@
 
 **Blocked by:** P1X-18 — Move preview ใน session: แตะ Unit ยกเลิกแค่ preview และ movePreview ใน BattleSnapshot (ไฟล์ session เดียวกัน)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] snapshot บอกศัตรูที่ Unit ที่เลือกโจมตีได้ใน activation นี้ และช่องที่ยืนโจมตีแต่ละตัวได้ ตรงกับ legal actions ที่จะมีจริงหลังเดิน (test เทียบกับการเล่นจริงหลายตำแหน่ง รวม line of sight, Taunted, Pin, Blink, Burst)
-- [ ] คำสั่งเลือกเป้า, เปลี่ยนช่องที่ยืนโจมตี, เปลี่ยน skill/Action และยืนยัน plan; ช่องที่ session เลือกตามกฎ: ช่องเดิมถ้าอยู่ในระยะ (โจมตีก่อนเดินและ Hit and Run ยังใช้ได้) → ก้าวน้อยสุด → ลำดับช่อง
-- [ ] รายการรวม Action ที่ไม่ใช่การโจมตีที่ทำได้จากช่องนั้นด้วย (เช่น Defend, skill ช่วยพวกเดียวกัน)
-- [ ] ยืนยันแล้วได้ state เท่ากับการเล่น Move แล้ว Action ทีละขั้นทุกฟิลด์; ผ่าน guard เปลี่ยน Unit ของ ticket 02 (ถ้าการยืนยันจะจบ activation ของ Unit อื่นที่ยังมี Action)
-- [ ] view ได้ events ของทั้ง Move และ Action (ตอนนี้ snapshot มีแค่ events ของ action ล่าสุด Unit จะกระโดดแทนการเดิน) โดยเพิ่มแบบเพิ่มเท่านั้น
-- [ ] Undo หลังยืนยัน plan ทำงานตามกฎจุดปลอดภัยเดิม (ย้อนได้ถึงหลังการทอยล่าสุด)
-- [ ] ENGINE_VERSION ไม่เปลี่ยน (ไม่มี action ใหม่); package README ของ session อธิบาย API ใหม่
+- [x] snapshot บอกศัตรูที่ Unit ที่เลือกโจมตีได้ใน activation นี้ และช่องที่ยืนโจมตีแต่ละตัวได้ ตรงกับ legal actions ที่จะมีจริงหลังเดิน (test เทียบกับการเล่นจริงหลายตำแหน่ง รวม line of sight, Taunted, Pin, Blink, Burst)
+- [x] คำสั่งเลือกเป้า, เปลี่ยนช่องที่ยืนโจมตี, เปลี่ยน skill/Action และยืนยัน plan; ช่องที่ session เลือกตามกฎ: ช่องเดิมถ้าอยู่ในระยะ (โจมตีก่อนเดินและ Hit and Run ยังใช้ได้) → ก้าวน้อยสุด → ลำดับช่อง
+- [x] รายการรวม Action ที่ไม่ใช่การโจมตีที่ทำได้จากช่องนั้นด้วย (เช่น Defend, skill ช่วยพวกเดียวกัน)
+- [x] ยืนยันแล้วได้ state เท่ากับการเล่น Move แล้ว Action ทีละขั้นทุกฟิลด์; ผ่าน guard เปลี่ยน Unit ของ ticket 02 (ถ้าการยืนยันจะจบ activation ของ Unit อื่นที่ยังมี Action)
+- [x] view ได้ events ของทั้ง Move และ Action (ตอนนี้ snapshot มีแค่ events ของ action ล่าสุด Unit จะกระโดดแทนการเดิน) โดยเพิ่มแบบเพิ่มเท่านั้น
+- [x] Undo หลังยืนยัน plan ทำงานตามกฎจุดปลอดภัยเดิม (ย้อนได้ถึงหลังการทอยล่าสุด)
+- [x] ENGINE_VERSION ไม่เปลี่ยน (ไม่มี action ใหม่); package README ของ session อธิบาย API ใหม่
+
+## Comments
+
+- Session API (all additive): `snapshot.attackable`, `snapshot.plan`, `aimTarget`, `chooseOrigin`, `choosePlanAction`, `confirmPlan`, `snapshot.eventBatches`, `MovePreview.options`. Engine: only a new `pathTo` export. Origin order: stay, then walks by steps, then (ticket 11 slots Threat zone in here, `compareOrigins` already takes a `threat` callback), then tile order; Blink after all walks. Tests: `packages/session/test/sessionActionPlan.test.ts` (compared with real play for LOS, Taunted, Pin, Blink, Burst). The switch-Unit guard stays in the UI; `plan.abandons` tells it when to ask. ENGINE_VERSION unchanged.
