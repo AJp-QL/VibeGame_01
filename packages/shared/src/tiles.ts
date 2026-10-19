@@ -7,7 +7,7 @@
  *
  * The size belongs to each Board (`boardSize(board)`, phase 1.x ticket 13): a
  * Board is a square of 3 to `MAX_BOARD_SIZE` tiles. The helpers here take the
- * size as an optional last argument.
+ * size as their last argument (required).
  */
 
 /** The smallest and the largest square Board (columns a to o). */

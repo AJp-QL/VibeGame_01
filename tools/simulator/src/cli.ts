@@ -23,7 +23,7 @@ import { loadRepoData, REPO_ROOT, simEquivalentData, type DataOverride } from '.
 import { boardJobs, boardTables } from './boards.ts'
 import { aggregate, metricsTables, skillTable, type LabelledMetrics, type Metrics } from './metrics.ts'
 import { loadSimV4, parityTable, runParity, type ParityResult } from './parity.ts'
-import { rangeJobs, rangeTables, runRangeJobs } from './ranges.ts'
+import { rangeJobs, rangeTables, runRangeJobs, type RangeJob } from './ranges.ts'
 import { simulateGames } from './simulate.ts'
 import { applyVariant, RANGE_VARIANTS, variantById } from './variants.ts'
 import { cpus } from 'node:os'
@@ -247,15 +247,21 @@ function baselineCommand(o: CliOptions, data: GameData) {
   writeReport(out, md, { command: cmd, engine: ENGINE_VERSION, dataHash: dataHash(data), seed: o.seed, games, rows })
 }
 
+/** Play `jobs` on worker threads, logging each finished set. */
+async function playSets(name: string, jobs: readonly RangeJob[], games: number, workers: number) {
+  log(`${name}: ${jobs.length} sets of ${games} Battles (${jobs.length * games} in all) on up to ${workers} threads…`)
+  const started = Date.now()
+  const results = await runRangeJobs(jobs, workers, (r, done) =>
+    log(`${name} ${done}/${jobs.length} ${r.variant} ${r.scenario} ${r.board}: A ${(100 * r.metrics.winA).toFixed(1)}%, limit ${(100 * r.metrics.limit).toFixed(1)}%, first attack after ${r.metrics.turnsBeforeFirstAttack.toFixed(2)} Turns`),
+  )
+  return { results, started }
+}
+
 async function rangesCommand(o: CliOptions, data: GameData): Promise<void> {
   const games = o.games ?? 2000
   const workers = o.workers ?? cpus().length
   const jobs = rangeJobs(games, o.seed).filter((j) => o.only === undefined || o.only.includes(j.variant))
-  log(`ranges: ${jobs.length} sets of ${games} Battles (${jobs.length * games} in all) on up to ${workers} threads…`)
-  const started = Date.now()
-  const results = await runRangeJobs(jobs, workers, (r, done) =>
-    log(`ranges ${done}/${jobs.length} ${r.variant} ${r.scenario} ${r.board}: A ${(100 * r.metrics.winA).toFixed(1)}%, limit ${(100 * r.metrics.limit).toFixed(1)}%, first attack after ${r.metrics.turnsBeforeFirstAttack.toFixed(2)} Turns`),
-  )
+  const { results, started } = await playSets('ranges', jobs, games, workers)
   const out = o.out ?? 'docs/balance/ticket-08-range-experiments'
   const cmd = `corepack pnpm sim ranges --games ${games} --seed ${o.seed}`
   const md = [
@@ -270,12 +276,7 @@ async function rangesCommand(o: CliOptions, data: GameData): Promise<void> {
 async function boardsCommand(o: CliOptions, data: GameData): Promise<void> {
   const games = o.games ?? 2000
   const workers = o.workers ?? cpus().length
-  const jobs = boardJobs(data, games, o.seed)
-  log(`boards: ${jobs.length} sets of ${games} Battles (${jobs.length * games} in all) on up to ${workers} threads…`)
-  const started = Date.now()
-  const results = await runRangeJobs(jobs, workers, (r, done) =>
-    log(`boards ${done}/${jobs.length} ${r.scenario} ${r.board}: A ${(100 * r.metrics.winA).toFixed(1)}%, limit ${(100 * r.metrics.limit).toFixed(1)}%, first attack after ${r.metrics.turnsBeforeFirstAttack.toFixed(2)} Turns`),
-  )
+  const { results, started } = await playSets('boards', boardJobs(data, games, o.seed), games, workers)
   const out = o.out ?? 'docs/balance/ticket-15-board-9x9'
   const cmd = `corepack pnpm sim boards --games ${games} --seed ${o.seed}`
   const md = [

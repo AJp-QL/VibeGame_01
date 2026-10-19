@@ -46,7 +46,7 @@ function boardTiles(size: number): Tile[] {
 
 /**
  * The tiles an area skill covers around `centre` (Burst: the centre and its 8
- * neighbours), on a Board of `size` (7x7 unless given), reading order.
+ * neighbours), on a Board of `size`, reading order.
  */
 export function areaTiles(skill: Skill, centre: Tile, size: number): Tile[] {
   const radius = skill.area?.radius ?? 0
