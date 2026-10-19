@@ -155,12 +155,12 @@ export class Ctx {
    * `skillId` as they stand in `st` (cached). The cache key holds what an
    * attack preview depends on that a hypothetical move of our Units can
    * change: the attacker's tile (terrain), melee or not (damage mod,
-   * counterattack), long range (variant rules only) and Tamer protection of the target. Statuses, HP and
+   * counterattack), long range (range rules, D-31) and Tamer protection of the target. Statuses, HP and
    * Command are the same for the whole decision.
    */
   preview(st: BattleState, attacker: UnitState, target: UnitState, skillId: string): AttackPreview {
     const d = distance(attacker.tile, target.tile)
-    // Distance class: melee, near or (variant rules, ticket 08) far enough for the long-range disadvantage.
+    // Distance class: melee, near or (range rules, D-31) far enough for the long-range disadvantage.
     const far = st.rangeRules?.longRangeDisadvantageFrom
     const reach = d <= 1 ? d : far !== undefined && d >= far ? 3 : 2
     const key = `${attacker.id}@${attacker.tile.x},${attacker.tile.y}>${target.id}:${reach}:${skillId}:${protectedNow(st, target) ? 1 : 0}`

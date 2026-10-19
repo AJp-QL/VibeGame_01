@@ -9,20 +9,26 @@ import type { Terrain, Tile } from '@mt/shared'
 import { lineOfSightTiles } from './lineOfSight.ts'
 import type { BattleState } from './state.ts'
 
-/** The rules of the game (rules §5.1, §7.3, D-31). */
+/** The rules of the game (rules §5.1, §7.2, D-31). */
 export const GAME_RANGE_RULES: RangeRules = { longRangeDisadvantageFrom: 4, sightBlockedBy: ['mountain'] }
 
 /** Neither rule: how Battles were played before ticket 09 (sim-equivalent conditions, ticket 08 baseline). */
 export const NO_RANGE_RULES: RangeRules = {}
 
+/**
+ * The name `RangeRules` had in the experiments of phase 1.x ticket 08.
+ * @deprecated Use `RangeRules`.
+ */
+export type VariantRules = RangeRules
+
 export interface RangeRules {
   /** Attack rolls from this distance or more get disadvantage (it cancels advantage, rules §5.2). Not for saves, which have no attack roll. */
   readonly longRangeDisadvantageFrom?: number
-  /** A line of sight (rules §7.3) that passes through a tile of one of these terrains is blocked, like one that passes a Unit. A Flying user still sees over everything. */
+  /** A line of sight (rules §7.2) that passes through a tile of one of these terrains is blocked, like one that passes a Unit. A Flying user still sees over everything. */
   readonly sightBlockedBy?: readonly Terrain[]
 }
 
-/** The distance from which attack rolls get the long-range disadvantage, or `undefined` (the game). */
+/** The distance from which attack rolls get the long-range disadvantage, or `undefined` when the Battle has none (`NO_RANGE_RULES`; the game has 4). */
 export function longRangeFrom(state: BattleState): number | undefined {
   return state.rangeRules?.longRangeDisadvantageFrom
 }
