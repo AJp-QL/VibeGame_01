@@ -6,6 +6,7 @@
  * to play the rules as they were before.
  */
 import type { Terrain, Tile } from '@mt/shared'
+import type { DistanceMetric } from './movement.ts'
 import { lineOfSightTiles } from './lineOfSight.ts'
 import type { BattleState } from './state.ts'
 
@@ -26,6 +27,8 @@ export interface RangeRules {
   readonly longRangeDisadvantageFrom?: number
   /** A line of sight (rules §7.2) that passes through a tile of one of these terrains is blocked, like one that passes a Unit. A Flying user still sees over everything. */
   readonly sightBlockedBy?: readonly Terrain[]
+  /** Experiment only (phase 1.x ticket 20): how distance and Move are counted; absent = Chebyshev, the game. */
+  readonly distanceMetric?: DistanceMetric
 }
 
 /** The distance from which attack rolls get the long-range disadvantage, or `undefined` when the Battle has none (`NO_RANGE_RULES`; the game has 4). */

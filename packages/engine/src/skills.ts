@@ -12,7 +12,7 @@ import type { ActionPreview, ApplyResult, Rejection } from './battle.ts'
 import { attackOnce, checkActor, checkEnemyTarget, isRejection, previewAttack, type AttackPreview } from './combat.ts'
 import { FANGREL_SKILLS } from './fangrelSkills.ts'
 import { emit } from './resolution.ts'
-import { distance } from './movement.ts'
+import { distanceIn } from './movement.ts'
 import { QUILLFOX_SKILLS } from './quillfoxSkills.ts'
 import type { SkillHandler, SkillHandlers, SkillResolution, SkillUse } from './skillHandler.ts'
 import { findUnit, type BattleState, type StatusId, type UnitId, type UnitState, boardSizeOf } from './state.ts'
@@ -152,7 +152,7 @@ function genericTargets(state: BattleState, user: UnitState, skill: Skill, actio
       return [user]
     case 'selfAndAllies':
       // Unit order (rules §21.4): the user is among them.
-      return state.units.filter((u) => u.side === user.side && distance(u.tile, user.tile) <= skill.range)
+      return state.units.filter((u) => u.side === user.side && distanceIn(state, u.tile, user.tile) <= skill.range)
     case 'enemy': {
       const target = checkEnemyTarget(state, user, skill, action.target ?? '')
       return isRejection(target) ? target : [target]
@@ -165,7 +165,7 @@ function genericTargets(state: BattleState, user: UnitState, skill: Skill, actio
       if (skill.target === 'allyMonster' && (target.kind !== 'monster' || target.id === user.id)) {
         return rejection('invalid-target', `${skill.name} needs another allied Monster`)
       }
-      const d = distance(user.tile, target.tile)
+      const d = distanceIn(state, user.tile, target.tile)
       if (d > skill.range) return rejection('out-of-range', `${target.id} is ${d} tiles away; ${skill.name} reaches ${skill.range}`)
       return [target]
     }

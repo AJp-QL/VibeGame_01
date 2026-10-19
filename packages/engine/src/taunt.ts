@@ -20,7 +20,7 @@
 import type { Tile } from '@mt/shared'
 import type { Action, Rejection } from './battle.ts'
 import { BASIC_ATTACK, checkAttack, isRejection } from './combat.ts'
-import { distance, reachableTiles } from './movement.ts'
+import { distanceIn, reachableTiles } from './movement.ts'
 import { skillUsesOf } from './skills.ts'
 import { statusType } from './statuses.ts'
 import { findUnit, replaceUnit, type BattleState, type TauntDuty, type UnitId, type UnitState } from './state.ts'
@@ -86,7 +86,7 @@ export function tauntDuty(state: BattleState, unitId: UnitId): TauntDuty | undef
 
 /** Rules §14.3 item 2: the shortest distance to the taunter among the tiles the Unit can end on (staying included). */
 function closestDistance(state: BattleState, unit: UnitState, taunter: UnitState): number {
-  return Math.min(distance(unit.tile, taunter.tile), ...destinations(state, unit).map((t) => distance(t, taunter.tile)))
+  return Math.min(distanceIn(state, unit.tile, taunter.tile), ...destinations(state, unit).map((t) => distanceIn(state, t, taunter.tile)))
 }
 
 /**
@@ -120,7 +120,7 @@ export function tauntCheck(state: BattleState): (action: Action) => Rejection | 
       const to = action.type === 'move' ? action.to : action.type === 'useSkill' ? action.tile : undefined
       if (duty.mustAttack || to === undefined) return null
       entry.closest ??= closestDistance(state, unit, taunter)
-      if (distance(to, taunter.tile) <= entry.closest) return null
+      if (distanceIn(state, to, taunter.tile) <= entry.closest) return null
       return {
         code: 'taunted',
         message: `${unit.id} is Taunted by ${taunter.id} and cannot reach it: it may only move to a tile ${entry.closest} from it`,

@@ -52,6 +52,8 @@ export interface Matchup {
   readonly profiles: Readonly<Record<Side, AiProfile>>
   /** Experiment switches of the engine (phase 1.x ticket 08); absent = the game's rules. */
   readonly rangeRules?: RangeRules
+  /** Called with the state when a Turn starts, for `side`, before it acts (phase 1.x ticket 20). */
+  readonly onTurnStart?: (state: BattleState, side: Side) => void
 }
 
 const MASK64 = (1n << 64n) - 1n
@@ -103,7 +105,13 @@ export function playBattle(data: GameData, matchup: Matchup, seed: string, maxAc
   }
   const actions: Action[] = []
   const events: BattleEvent[] = []
+  let turnsStarted = 0
   while (state.outcome === null) {
+    const started = state.turnNumber.A + state.turnNumber.B
+    if (started !== turnsStarted) {
+      turnsStarted = started
+      matchup.onTurnStart?.(state, decidingSide(state))
+    }
     if (actions.length >= maxActions) throw new Error(`No outcome after ${maxActions} actions (seed ${seed})`)
     const side = decidingSide(state)
     const choice = chooseAction(state, ais[side])

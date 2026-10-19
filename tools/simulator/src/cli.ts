@@ -21,12 +21,14 @@ import { dataHash, type GameData } from '@mt/shared'
 import { loadRepoData, REPO_ROOT, simEquivalentData, type DataOverride } from './data.ts'
 import { aggregate, metricsTables, skillTable, type LabelledMetrics, type Metrics } from './metrics.ts'
 import { loadSimV4, parityTable, runParity, type ParityResult } from './parity.ts'
+import { distanceCommand } from './distanceExperiment.ts'
 import { rangeJobs, rangeTables, runRangeJobs } from './ranges.ts'
 import { simulateGames } from './simulate.ts'
 import { applyVariant, RANGE_VARIANTS, variantById } from './variants.ts'
 import { cpus } from 'node:os'
 
-export type Command = 'run' | 'parity' | 'baseline' | 'ranges'
+export const COMMANDS = ['run', 'parity', 'baseline', 'ranges', 'distance'] as const
+export type Command = (typeof COMMANDS)[number]
 
 export interface CliOptions {
   readonly command: Command
@@ -48,12 +50,13 @@ export interface CliOptions {
   readonly out: string | undefined
 }
 
-const USAGE = 'usage: sim run|parity|baseline|ranges [--scenario id] [--board id] [--a sim:greedy] [--b sim:greedy] [--games n] [--other-games n] [--seed hex] [--sim-equivalent] [--variant id] [--workers n] [--only ids] [--format md|json] [--out path]'
+const USAGE = 'usage: sim run|parity|baseline|ranges|distance [--scenario id] [--board id] [--a sim:greedy] [--b sim:greedy] [--games n] [--other-games n] [--seed hex] [--sim-equivalent] [--variant id] [--workers n] [--only ids] [--format md|json] [--out path]'
 
 /** Parse argv (without node and the script). Throws with a usage line on anything unknown. */
 export function parseArgs(argv: readonly string[]): CliOptions {
-  const [command, ...rest] = argv
-  if (command !== 'run' && command !== 'parity' && command !== 'baseline' && command !== 'ranges') throw new Error(USAGE)
+  const [first, ...rest] = argv
+  const command = COMMANDS.find((c) => c === first)
+  if (command === undefined) throw new Error(USAGE)
   const opts: Record<string, string | true> = {}
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i] ?? ''
@@ -265,9 +268,28 @@ async function rangesCommand(o: CliOptions, data: GameData): Promise<void> {
   writeReport(out, md, { command: cmd, engine: ENGINE_VERSION, dataHash: dataHash(data), seed: o.seed, games, seconds: Math.round((Date.now() - started) / 1000), results })
 }
 
+async function distanceCommandRun(o: CliOptions, data: GameData): Promise<void> {
+  const games = o.games ?? 2000
+  const cmd = `corepack pnpm sim distance --games ${games} --seed ${o.seed}`
+  const done = await distanceCommand({
+    data,
+    games,
+    seed: o.seed,
+    workers: o.workers ?? cpus().length,
+    only: o.only,
+    header: header('Distance and long-shot experiments (phase 1.x ticket 20): tables', cmd, data, o.seed),
+    log,
+  })
+  writeReport(o.out ?? 'docs/balance/ticket-20-distance-experiments', done.md, { command: cmd, engine: ENGINE_VERSION, dataHash: dataHash(data), seed: o.seed, games, seconds: done.seconds, results: done.results })
+}
+
 export async function main(argv: readonly string[]): Promise<void> {
   const o = parseArgs(argv)
   const data = loadRepoData()
+  if (o.command === 'distance') {
+    await distanceCommandRun(o, data)
+    return
+  }
   if (o.command === 'ranges') {
     await rangesCommand(o, data)
     return

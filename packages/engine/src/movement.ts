@@ -7,9 +7,33 @@ import { baseMoveRange } from './derived.ts'
 import { terrainAt, type BattleState, type UnitState, boardSizeOf } from './state.ts'
 import { isImmobile } from './statuses.ts'
 
-/** Distance between two tiles: Chebyshev, diagonals count 1 (rules §2.3). */
-export function distance(a: Tile, b: Tile): number {
-  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y))
+/**
+ * How distance is measured. The game plays 'chebyshev' (rules §2.3) always; the
+ * other two exist only for the simulator's range experiments (phase 1.x ticket
+ * 20), set through `RangeRules.distanceMetric` of a Battle:
+ *  - 'orthogonal': no diagonals, distance = |dx| + |dy|, Move steps in 4 directions.
+ *  - 'alternating': a diagonal costs 1, then 2, then 1 ... along a path (a
+ *    straight line of k diagonals costs k + floor(k/2)); distance = max + floor(min / 2).
+ */
+export type DistanceMetric = 'chebyshev' | 'orthogonal' | 'alternating'
+
+/** Distance between two tiles: Chebyshev, diagonals count 1 (rules §2.3), unless a `metric` is given. */
+export function distance(a: Tile, b: Tile, metric: DistanceMetric = 'chebyshev'): number {
+  const dx = Math.abs(a.x - b.x)
+  const dy = Math.abs(a.y - b.y)
+  if (metric === 'chebyshev') return Math.max(dx, dy)
+  if (metric === 'orthogonal') return dx + dy
+  return Math.max(dx, dy) + Math.floor(Math.min(dx, dy) / 2)
+}
+
+/** The metric of this Battle (Chebyshev unless its range rules say otherwise). */
+export function metricOf(state: BattleState): DistanceMetric {
+  return state.rangeRules?.distanceMetric ?? 'chebyshev'
+}
+
+/** `distance` in the metric of `state`. */
+export function distanceIn(state: BattleState, a: Tile, b: Tile): number {
+  return distance(a, b, metricOf(state))
 }
 
 /**
@@ -45,6 +69,8 @@ const key = (tile: Tile): number => tile.y * 100 + tile.x
  * path is the fewest steps; ties broken by the fixed neighbour order.
  */
 export function reachableTiles(state: BattleState, unit: UnitState): ReadonlyMap<number, readonly Tile[]> {
+  const metric = metricOf(state)
+  if (metric !== 'chebyshev') return reachableCosted(state, unit, metric)
   const range = moveRangeNow(state, unit)
   const size = boardSizeOf(state)
   const canPassOver = unit.kind === 'monster' && unit.movement === 'flying'
@@ -71,6 +97,53 @@ export function reachableTiles(state: BattleState, unit: UnitState): ReadonlyMap
       }
     }
     frontier = next
+  }
+  return destinations
+}
+
+/**
+ * `reachableTiles` for the experiment metrics: Dijkstra by cost over (tile, parity of diagonals taken).
+ * 'orthogonal' uses the 4 straight steps; 'alternating' makes the 1st, 3rd ... diagonal cost 1 and the 2nd, 4th ... cost 2.
+ */
+function reachableCosted(state: BattleState, unit: UnitState, metric: Exclude<DistanceMetric, 'chebyshev'>): ReadonlyMap<number, readonly Tile[]> {
+  const range = moveRangeNow(state, unit)
+  const size = boardSizeOf(state)
+  const canPassOver = unit.kind === 'monster' && unit.movement === 'flying'
+  const occupied = new Set(state.units.filter((u) => u.id !== unit.id).map((u) => key(u.tile)))
+  const steps = metric === 'orthogonal' ? STEPS.filter((d) => d.x === 0 || d.y === 0) : STEPS
+  interface Node {
+    readonly tile: Tile
+    readonly parity: number
+    readonly path: readonly Tile[]
+  }
+  const best = new Map<number, number>([[key(unit.tile) * 2, 0]])
+  const buckets: Node[][] = Array.from({ length: range + 1 }, () => [])
+  buckets[0]!.push({ tile: unit.tile, parity: 0, path: [] })
+  const destinations = new Map<number, readonly Tile[]>()
+  const destinationCost = new Map<number, number>()
+  for (let cost = 0; cost <= range; cost++) {
+    for (const node of buckets[cost]!) {
+      if (best.get(key(node.tile) * 2 + node.parity) !== cost) continue
+      for (const d of steps) {
+        const diagonal = d.x !== 0 && d.y !== 0
+        const nextCost = cost + (diagonal && metric === 'alternating' && node.parity === 1 ? 2 : 1)
+        if (nextCost > range) continue
+        const to = { x: node.tile.x + d.x, y: node.tile.y + d.y }
+        if (!isOnBoard(to, size)) continue
+        const parity = diagonal && metric === 'alternating' ? 1 - node.parity : node.parity
+        const stateKey = key(to) * 2 + parity
+        if ((best.get(stateKey) ?? Infinity) <= nextCost) continue
+        const isOccupied = occupied.has(key(to))
+        if (isOccupied && !canPassOver) continue
+        best.set(stateKey, nextCost)
+        const path = [...node.path, to]
+        if (!isOccupied && !sameTile(to, unit.tile) && (destinationCost.get(key(to)) ?? Infinity) > nextCost) {
+          destinations.set(key(to), path)
+          destinationCost.set(key(to), nextCost)
+        }
+        buckets[nextCost]!.push({ tile: to, parity, path })
+      }
+    }
   }
   return destinations
 }
