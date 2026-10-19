@@ -8,7 +8,7 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** done (PR TBD)
+**Status:** done (PR #69)
 
 - [x] snapshot บอกได้ว่า Undo ใช้ได้ / ปิด (พร้อมเหตุผล: ต้น Turn, หลังการทอยหรือคำตอบ Inspiration ล่าสุด) / ซ่อน (Turn ของ AI, หน้าส่งเครื่อง, Battle จบ, deployment); `undo` เดิมความหมายเดิม
 - [x] test ทุกกรณีรวม Hotseat ทั้งสองฝั่งและ vs AI
