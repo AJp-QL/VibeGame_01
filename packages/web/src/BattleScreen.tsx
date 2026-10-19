@@ -6,6 +6,7 @@ import { decidingSide, type BattleOutcome, type BattleSession } from '@mt/sessio
 import type { GameData } from '@mt/shared'
 import { ThreatZoneToggle } from './ThreatZone.tsx'
 import { BattleView } from './BattleView.tsx'
+import { UndoControls } from './UndoControls.tsx'
 import { BattleMenu } from './BattleMenu.tsx'
 import { StatusBar, ResultSummary } from './BattleStatus.tsx'
 import { DeploymentPanel, InitiativeResult } from './DeploymentPanel.tsx'
@@ -25,6 +26,8 @@ interface BattleScreenProps {
   diceSeed: string
   /** A new Battle with the same menu choices (and a new Dice Seed). */
   onPlayAgain: () => void
+  onStartOver: () => void
+  onUndo: () => void
   onMenu: () => void
   /** Download the Replay of this Battle so far. */
   onExportReplay: () => void
@@ -33,7 +36,7 @@ interface BattleScreenProps {
   feedbackUrl: string | null
 }
 
-export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAgain, onMenu, onExportReplay, onFinished, feedbackUrl }: BattleScreenProps) {
+export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAgain, onStartOver, onUndo, onMenu, onExportReplay, onFinished, feedbackUrl }: BattleScreenProps) {
   const confirmation = useMemo(() => createActionConfirmation(sourceSession), [sourceSession])
   const session = useMemo(() => withMovePreview(confirmation.session), [confirmation])
   const snapshot = useBattleSession(session, onFinished)
@@ -48,7 +51,7 @@ export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAga
       <StatusBar state={state} />
       {snapshot.aiSide !== null && <p className="muted vs-ai">{th.ai.sides(otherSide(snapshot.aiSide), snapshot.aiSide)}</p>}
 
-      {state.outcome === null && <BattleMenu onExportReplay={onExportReplay} onLeave={onMenu} />}
+      {state.outcome === null && <BattleMenu onExportReplay={onExportReplay} onLeave={onMenu} onStartOver={onStartOver} />}
 
       {state.outcome !== null && (
         <section className={`panel result side-${state.outcome.winner ?? 'draw'}`} role="status">
@@ -70,6 +73,7 @@ export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAga
         </section>
       )}
 
+      <UndoControls snapshot={snapshot} onUndo={onUndo} />
       {state.phase === 'play' && state.outcome === null && snapshot.screen === 'board' && (
         <ThreatZoneToggle visible={showThreatZone} onChange={setShowThreatZone} />
       )}
