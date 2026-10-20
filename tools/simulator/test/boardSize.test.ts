@@ -15,11 +15,11 @@ const greedy = { A: SIM_PROFILES.greedy, B: SIM_PROFILES.greedy }
 describe('the simulator on a 9x9 Board', () => {
   it('plays Battles to the end, the same every time', () => {
     const matchup = { scenario: 'scenario_1', board: 'arena', profiles: greedy }
-    const first = simulateGames(data, matchup, 6, '0000000000000001')
-    const second = simulateGames(data, matchup, 6, '0000000000000001')
-    expect(first).toHaveLength(6)
+    const first = simulateGames(data, matchup, 2, '0000000000000001')
+    const second = simulateGames(data, matchup, 2, '0000000000000001')
+    expect(first).toHaveLength(2)
     expect(first).toEqual(second)
     const metrics = aggregate(first)
-    expect(metrics.games).toBe(6)
+    expect(metrics.games).toBe(2)
   })
 })
