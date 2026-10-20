@@ -4,7 +4,7 @@
 
 **What to build:** playtester รอบถัดไปได้เล่นเวอร์ชันที่มีทุกอย่างของ phase 1.x: release v0.2.0 ด้วย tag หลัง CI บน main เขียว ตรวจเว็บ live และเตรียมโน้ตสำหรับ playtest ว่ามีอะไรใหม่และอยากให้ลองอะไร (Move preview, Undo, Start over, ระยะใหม่, Board 9x9) (spec user story 52)
 
-**Blocked by:** P1X-07 — UI Undo/Start over, P1X-10 — fixtures หลังแก้ระยะ, P1X-12 — UI Threat zone, P1X-16 — UI Board 9x9, P1X-19 — UI Move preview cleanup, P1X-24 — UI Action plan, P1X-29 — UI ข้อความระยะจาก session, P1X-34 — Board plan จาก port, P1X-35 — Undo เหตุผลจาก session, P1X-36 — ปรับ Board 9x9 ให้ผ่านเป้า balance (ผู้ใช้ 2026-10-19: v0.2.0 ออกเมื่อ 9x9 balance แล้วเท่านั้น)
+**Blocked by:** P1X-07 — UI Undo/Start over, P1X-10 — fixtures หลังแก้ระยะ, P1X-12 — UI Threat zone, P1X-19 — UI Move preview cleanup, P1X-24 — UI Action plan, P1X-29 — UI ข้อความระยะจาก session, P1X-34 — Board plan จาก port, P1X-35 — Undo เหตุผลจาก session, P1X-37 — ซ่อน Board 9x9 จากเมนู (2026-10-20: v0.2.0 ใช้ 7x7, 9x9 อยู่ backlog)
 
 **Status:** ready-for-agent
 

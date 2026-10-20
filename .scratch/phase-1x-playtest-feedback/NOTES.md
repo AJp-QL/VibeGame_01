@@ -31,8 +31,8 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-13 | Board size per Board: expand engine/AI/simulator | claude | — | done (PR #23) |
 | P1X-14 | Board size per Board: battle/web | codex | P1X-13 | done (PR #27) |
 | P1X-15 | Contract BOARD_SIZE + 9x9 Boards | claude | P1X-13, P1X-14, P1X-09 | PR #52 on hold (user, 2026-10-19) until Codex P1X-31 (9x9 `boardBlurb`, not blocked) lands; merges last |
-| P1X-16 | 9x9 Boards UI | codex | P1X-15 | PR #67 reviewed; user accepted 32 px tiles on 375 px (2026-10-20); human merges |
-| P1X-17 | Release v0.2.0 + next playtest | claude | P1X-07, P1X-10, P1X-12, P1X-16, P1X-19, P1X-24, P1X-29, P1X-34, P1X-35, P1X-36 | waiting |
+| P1X-16 | 9x9 Boards UI | codex | P1X-15 | backlog with P1X-36 (PR #67 on hold) |
+| P1X-17 | Release v0.2.0 + next playtest | claude | P1X-07, P1X-10, P1X-12, P1X-19, P1X-24, P1X-29, P1X-34, P1X-35, P1X-37 | waiting |
 | P1X-18 | Move preview session follow-up | claude | P1X-04, P1X-25 | done (PR #29) |
 | P1X-19 | Move preview UI cleanup | codex | P1X-18 | done (PR #46) |
 | P1X-20 | Range experiments follow-up | claude | P1X-09 | done (PR #55; 2026-10-19 user accepted: keep the game) |
@@ -51,7 +51,8 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-33 | Session: Undo hidden/disabled + reason | claude | — | ready (from PR #60 review) |
 | P1X-34 | UI: Board reads plan fields from port | codex | P1X-32 (P1X-24 done) | waiting |
 | P1X-35 | UI: Undo hide/disable + reason from session | codex | P1X-33, P1X-07 | waiting |
-| P1X-36 | Tune 9x9 Boards (balance targets) + AI approach on 9x9 | claude | — | ready (user, 2026-10-19: approach phase via 9x9 after P1X-20) |
+| P1X-36 | Tune 9x9 Boards (balance targets) + AI approach on 9x9 | claude | — | backlog (user 2026-10-20; PR #70 on hold) |
+| P1X-37 | Hide 9x9 Boards from the menu for v0.2.0 | claude | — | ready |
 
 Next: human merges #58, #59, #60, then #61 and #62 after fixes; #52 after #58. Claude P1X-21, 32, 33 ready.
 
