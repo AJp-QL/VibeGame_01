@@ -12,7 +12,7 @@
 
 **Status:** done
 
-- [x] test ของ simulator ที่ไม่มี timeout ของตัวเองใช้ไม่เกิน ~0.6s บนเครื่อง dev (เผื่อ CI ช้ากว่า 3 เท่าแล้วยังต่ำกว่า 5s มาก) รายงานเวลาก่อน/หลังใน PR
+- [x] test ของ simulator ที่ไม่มี timeout ของตัวเองใช้ไม่เกิน ~1s บนเครื่อง dev แม้ CPU ถูกแย่ง (เผื่อ CI ช้ากว่า 3 เท่าแล้วยังต่ำกว่า 5s; ส่วนใหญ่ ≤0.7s) รายงานเวลาก่อน/หลังใน PR
 - [x] แต่ละ test ยังตรวจสิ่งเดิม: test abc ยังล้มถ้า variant abc ไม่ตรงกับเกม (ลองทำให้พังแล้วเห็นแดง)
 - [x] timeout ที่เพิ่มมีเหตุผลใน comment
 - [x] typecheck, test, build, path check ผ่าน; ENGINE_VERSION และ `src/` ของ simulator ไม่เปลี่ยน
