@@ -6,7 +6,7 @@
  */
 import { DEFAULT_GAME_PROFILE } from '@mt/ai'
 import type { BattleSetup } from '@mt/engine'
-import { BATTLE_MODES, type BattleMode, type Board, type GameData, type Scenario, type Side } from '@mt/shared'
+import { BATTLE_MODES, boardSize, type BattleMode, type Board, type GameData, type Scenario, type Side } from '@mt/shared'
 import type { AiOpponent } from './session.ts'
 
 /** The modes live in @mt/shared because every Replay records one. */
@@ -41,9 +41,18 @@ export function menuScenarios(data: GameData): Scenario[] {
   return byId(data.scenarios)
 }
 
-/** Boards in id order. */
+/**
+ * The side of the Boards the menu offers. The 9x9 Boards (`grand_crossroads`,
+ * `wide_shallows`) miss the balance targets, so v0.2.0 plays on 7x7 only
+ * (user, 2026-10-20; P1X-37). Their data stays in data/ and a Battle created
+ * on them directly (simulator, tests, a Replay) still works. To offer them
+ * again once P1X-36 meets its targets, drop this filter.
+ */
+const MENU_BOARD_SIZE = 7
+
+/** The Boards the menu offers, in id order: the 7x7 Boards (see MENU_BOARD_SIZE). */
 export function menuBoards(data: GameData): Board[] {
-  return byId(data.boards)
+  return byId(data.boards).filter((board) => boardSize(board) === MENU_BOARD_SIZE)
 }
 
 /** First Scenario on its own default Board, Hotseat, human as team A. */
