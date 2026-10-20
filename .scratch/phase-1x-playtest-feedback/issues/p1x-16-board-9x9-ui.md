@@ -6,7 +6,7 @@
 
 **Blocked by:** P1X-15 — contract ค่าคงที่ขนาด Board และเพิ่ม Board 9x9
 
-**Status:** ready-for-agent
+**Status:** ready-for-human (backlog, 2026-10-20: ผู้ใช้พัก 9x9 ไว้กับ P1X-36) PR #67 ค้างไว้ ไม่ merge
 
 - [ ] เมนูแสดง Board 9x9 พร้อม mini Board
 - [ ] Board 9x9 เล่นได้ที่ desktop และ 360/375 px ไม่มี horizontal scroll, แตะถูกช่อง

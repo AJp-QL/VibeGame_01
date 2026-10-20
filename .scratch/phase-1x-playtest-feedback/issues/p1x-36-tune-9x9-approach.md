@@ -22,7 +22,7 @@
 
 **Blocked by:** None — P1X-15 merged (PR #52)
 
-**Status:** ready-for-agent
+**Status:** ready-for-human (backlog, 2026-10-20: ผู้ใช้พัก 9x9 ไว้; v0.2.0 ใช้ 7x7) PR #70 ค้างไว้ ไม่ merge
 
 - [ ] ขั้น 1 (data) วัดแล้ว ผลอยู่ในรายงานใหม่ `docs/balance/ticket-36-tune-9x9.md` เทียบกับ ticket 15 ทุกชุด รวม 7x7
 - [ ] ขั้น 2 (AI เดินเข้าหาเมื่อยิงไม่ได้) มี test ใน `packages/ai` และวัดแล้วทั้ง 9x9 และ 7x7; 7x7 ยังผ่านเป้าทุกชุด; sim-v4 parity ผ่าน
