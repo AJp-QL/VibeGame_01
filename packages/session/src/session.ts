@@ -46,6 +46,7 @@ import {
   areaTiles,
   boardSizeOf,
   decidingSide,
+  drewDice,
   legalActions,
   previewAction,
   threatZone,
@@ -157,6 +158,24 @@ export interface UndoOffer {
   readonly actions: number
 }
 
+/**
+ * Why Undo is shown but cannot be used now: nothing lies after the safe point.
+ * `turn-start`: no action yet in this Turn. `after-roll`: the last action rolled dice
+ * or answered a roll (an Inspiration decision), and a roll cannot be taken back.
+ * Codes only; the player-facing text lives in the web package.
+ */
+export type UndoDisabledReason = 'turn-start' | 'after-roll'
+
+/**
+ * What the Undo control should look like (ticket P1X-33). `hidden`: do not draw it
+ * (the AI's Turn, a hand-over screen, deployment, Battle over). `disabled`: draw it
+ * greyed out and say why. `available`: draw it with `offer`.
+ */
+export type UndoState =
+  | { readonly kind: 'hidden' }
+  | { readonly kind: 'disabled'; readonly reason: UndoDisabledReason }
+  | { readonly kind: 'available'; readonly offer: UndoOffer }
+
 /** A loadout skill button of the selected Unit. */
 export interface SkillButton extends SkillAvailability {
   /** The engine has at least one legal use of it right now. */
@@ -196,6 +215,12 @@ export interface SessionSnapshot extends BattleSnapshot {
    * always during the AI's Turn or a hand-over screen (spec stories 14-22).
    */
   readonly undo: UndoOffer | null
+  /**
+   * Undo for the view, additive (P1X-33): tells hiding the control from disabling it, with a
+   * reason code. `available` carries the same offer as `undo`; otherwise `undo` is `null`. A view
+   * must not work out the hiding rule itself (side to act, phase, outcome, screen); read this.
+   */
+  readonly undoState: UndoState
   /**
    * Events of each action the last accepted command sent, in order. A command that sends one
    * action (almost all) has one entry equal to `events`; `confirmPlan` sends a Move and an
@@ -285,9 +310,9 @@ export interface BattleSession extends BattleSessionPort {
   /**
    * Go back to the safe point of this Turn (`snapshot.undo`): the Battle, its
    * activations and the actions list return to that point; the dice are as they
-   * were. Does nothing when `snapshot.undo` is `null`.
+   * were. Does nothing when `snapshot.undo` is `null`. Returns whether it went back.
    */
-  undo(): void
+  undo(): boolean
   /** Move preview: look at a reachable tile with the selected Unit as if it stood there; another tile replaces it. Nothing moves. */
   previewMove(tile: Tile): void
   /** Move preview: drop the previewed tile. */
@@ -348,6 +373,7 @@ type Computed =
   | 'threatZone'
   | 'plan'
   | 'undo'
+  | 'undoState'
   | 'canCommand'
   | 'actionAtStake'
   | 'movedWithoutAction'
@@ -690,6 +716,26 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     return point === null ? null : { to: point.label, actions: base.actions.length - point.keep }
   }
 
+  /** Undo for the view: hidden, disabled with a reason, or available (the same offer as `undoOffer`). */
+  function undoStateOf(base: Omit<SessionSnapshot, Computed>, history: readonly BattleState[], offer: UndoOffer | null): UndoState {
+    const { state, actions } = base
+    if (base.screen !== 'board' || !humanMayAct(state) || state.phase !== 'play' || state.outcome !== null) return { kind: 'hidden' }
+    if (offer !== null) return { kind: 'available', offer }
+    // Nothing after the safe point: only the last action tells which one it is.
+    const n = actions.length
+    const last = actions[n - 1]
+    const before = history[n - 1]
+    const after = history[n]
+    const afterRoll =
+      last !== undefined &&
+      before !== undefined &&
+      after !== undefined &&
+      last.type !== 'endTurn' &&
+      before.phase === 'play' &&
+      (last.type === 'useInspiration' || last.type === 'declineInspiration' || drewDice(before, after))
+    return { kind: 'disabled', reason: afterRoll ? 'after-roll' : 'turn-start' }
+  }
+
   function snapshotOf(base: Omit<SessionSnapshot, Computed>): SessionSnapshot {
     const { state, selectedUnit, mode, pendingSkill, pendingTile, chosenTargets } = base
     const actions = legalActions(state)
@@ -773,6 +819,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
         }
       }
     }
+    const undo = undoOffer(base, states)
     return {
       ...base,
       // Hotseat: the player holding the device is the side to act. Against the AI: the human's team.
@@ -795,7 +842,8 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       attackable,
       threatZone: zone,
       plan,
-      undo: undoOffer(base, states),
+      undo,
+      undoState: undoStateOf(base, states, undo),
       canCommand: commandTargets(actions, selectedUnit).length > 0,
       actionAtStake: actionAtStake(state, actions),
       movedWithoutAction: movedWithoutAction(state, actions),
@@ -1124,9 +1172,9 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     },
     undo() {
       const offer = snapshot.undo
-      if (offer === null) return
+      if (offer === null) return false
       const point = undoPoint(states, snapshot.actions)
-      if (point === null) return
+      if (point === null) return false
       states.length = point.keep + 1
       logLengths.length = point.keep + 1
       const state = states[point.keep]!
@@ -1145,6 +1193,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
         undos: snapshot.undos + 1,
         screen: 'board',
       })
+      return true
     },
     previewMove(tile) {
       const { state, selectedUnit, mode, reachable } = snapshot
