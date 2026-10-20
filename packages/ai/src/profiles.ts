@@ -37,6 +37,13 @@ export interface AiHeuristics {
    * (Blink still moves a Pinned Unit). 0 = sim.py's estimates.
    */
   readonly lookahead: number
+  /**
+   * Approach (P1X-36): a healthy Monster (share of its maximum HP at least
+   * this) that can attack nothing this Turn closes on the nearest enemy,
+   * until that enemy is within the Monster's own Threat reach (Move range plus
+   * its longest attack), instead of waiting outside the enemy's reach. 0 = off.
+   */
+  readonly approach: number
 }
 
 export interface AiProfile {
@@ -54,10 +61,10 @@ export interface AiProfile {
   readonly simQuirks: boolean
 }
 
-export const NO_HEURISTICS: AiHeuristics = { protectTamer: 0, focusFire: 0, lookahead: 0 }
+export const NO_HEURISTICS: AiHeuristics = { protectTamer: 0, focusFire: 0, lookahead: 0, approach: 0 }
 
 /** The in-game heuristics' strength. */
-export const GAME_HEURISTICS: AiHeuristics = { protectTamer: 0.5, focusFire: 0.5, lookahead: 0.6 }
+export const GAME_HEURISTICS: AiHeuristics = { protectTamer: 0.5, focusFire: 0.5, lookahead: 0.6, approach: 0.5 }
 
 export const AI_MODES: readonly AiMode[] = ['greedy', 'tamer_rush', 'neutral']
 

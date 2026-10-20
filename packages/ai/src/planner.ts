@@ -14,6 +14,7 @@ import {
   distanceIn,
   moveRangeNow,
   previewAction,
+  threatReach,
   type Action,
   type AttackPreview,
   type BattleState,
@@ -772,6 +773,7 @@ export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[], de
 
   let best: Scored | undefined
   for (const s of pool) if (best === undefined || s.score > best.score) best = s
+  if (taunter === undefined) best = approachPick(ctx, st, unit, scored, validDests, destValue) ?? best
   if (debug !== undefined) {
     for (const [k, v] of pv) debug.pv[k] = v
     debug.cands = [...pool]
@@ -796,6 +798,43 @@ export function planUnit(ctx: Ctx, unit: UnitState, legal: readonly Action[], de
     ...(free !== null ? { free } : {}),
     gain: best.score - pvOrigin,
   }
+}
+
+/**
+ * Approach (P1X-36, heuristics.approach): a healthy Monster that can attack
+ * nothing this Turn from any tile it can reach, and is still outside its own
+ * Threat reach of every enemy, walks to the reachable tile nearest an enemy
+ * (ties: the better position value) instead of waiting outside the enemy's
+ * reach. Once an enemy is within its Threat reach the usual plan decides.
+ * Returns the best Move-then-nothing/utility plan to that tile, or undefined.
+ */
+function approachPick(
+  ctx: Ctx,
+  st: BattleState,
+  unit: UnitState,
+  scored: readonly Scored[],
+  dests: readonly Dest[],
+  destValue: (d: Dest) => number,
+): Scored | undefined {
+  const share = ctx.profile.heuristics.approach
+  if (share <= 0 || unit.kind !== 'monster' || unit.hp < share * ctx.maxHp(unit)) return undefined
+  if (scored.some((s) => s.candidate !== null && s.candidate.targets.length > 0)) return undefined
+  const enemies = enemiesOf(st, unit)
+  if (enemies.length === 0) return undefined
+  const nearest = (t: Tile) => Math.min(...enemies.map((e) => distanceIn(st, t, e.tile)))
+  if (nearest(unit.tile) <= threatReach(st, unit)) return undefined
+  let target: Dest | undefined
+  for (const d of dests) {
+    if (target === undefined) target = d
+    else {
+      const dd = nearest(d.tile) - nearest(target.tile)
+      if (dd < 0 || (dd === 0 && destValue(d) > destValue(target))) target = d
+    }
+  }
+  if (target === undefined || nearest(target.tile) >= nearest(unit.tile)) return undefined
+  let best: Scored | undefined
+  for (const s of scored) if (s.order === 'mf' && sameTile(s.dest.tile, target.tile) && (best === undefined || s.score > best.score)) best = s
+  return best
 }
 
 function debugKey(action: Action): string {
