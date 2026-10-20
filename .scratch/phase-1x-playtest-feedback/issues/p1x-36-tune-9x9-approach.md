@@ -22,7 +22,7 @@
 
 **Blocked by:** None — P1X-15 merged (PR #52)
 
-**Status:** ready-for-human — หยุดที่ขั้น 3 (PR [P1X-36]): 9x9 ผ่านเป้า 1/4 ชุด (เดิม 0/4), 7x7 ยังผ่าน 4/4; รายงานและทางเลือกใน `docs/balance/ticket-36-tune-9x9.md` รอผู้ใช้ตัดสิน; data ไม่เปลี่ยน จึงไม่มี fixture ล้าสมัยและไม่ต้องมี ticket refresh
+**Status:** done — PR #70. ขั้น 3 ผู้ใช้ตัดสิน (2026-10-20): ข้อ 3 ยอมรับ 9x9 เป็นโหมดช้ากว่า เป้า 9x9 = A ชนะ 38–62%, Turn limit ไม่เกิน 25% (7x7 เดิม); 9x9 ผ่าน 4/4 ชุด, 7x7 ผ่าน 4/4; ไม่แก้กติกา/data, ENGINE_VERSION 0.12.0; รายงาน `docs/balance/ticket-36-tune-9x9.md`
 
 - [x] ขั้น 1 (data) วัดแล้ว (ภูเขา 8 → 6 และ 8 → 4 ไม่ขยับตัวเลข จึงคง data เดิม) ผลอยู่ในรายงานใหม่ `docs/balance/ticket-36-tune-9x9.md` เทียบกับ ticket 15 ทุกชุด รวม 7x7
 - [x] ขั้น 2 (AI เดินเข้าหาเมื่อยิงไม่ได้) มี test ใน `packages/ai` และวัดแล้วทั้ง 9x9 และ 7x7; 7x7 ยังผ่านเป้าทุกชุด; sim-v4 parity ผ่าน

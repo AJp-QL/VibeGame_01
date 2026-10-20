@@ -2,7 +2,14 @@
 
 Tables: `docs/balance/ticket-36-board-9x9.md` (`.json`), made by `corepack pnpm sim boards --games 2000 --seed 0` (engine 0.12.0, data unchanged, game AI `game:greedy` on both sides, 2,000 Battles per set). Baseline: `ticket-15-board-9x9.md`, `ticket-15-findings.md`. Targets: team A win 40-60%, 10-turn limit at most 15%, in every set.
 
-**Verdict: the AI approach fixes most of the 9x9 gap but not all of it. 1 of 4 sets on 9x9 is within targets (was 0 of 4); 7x7 stays 4 of 4. Per the ticket the work stops here (step 3): the rest needs a rules or target decision by the user (options at the end). No game rule was changed.**
+**Verdict (updated 2026-10-20): the user chose option 3 below: 9x9 is accepted as a slower mode with relaxed targets (team A win 38-62%, Turn limit at most 25%; 7x7 keeps 40-60% / 15%). Against the relaxed targets 4 of 4 sets on 9x9 pass and 7x7 stays 4 of 4. Against the original targets 9x9 passes 1 of 4 (was 0 of 4). No game rule, no data, and not `ENGINE_VERSION` (0.12.0) changed.**
+
+| 9x9 set | A win (38-62%) | 10-turn limit (at most 25%) | Within relaxed targets |
+|---|---|---|---|
+| S1 grand_crossroads | 40.8% | 22.5% | yes |
+| S1 wide_shallows | 39.95% | 11.8% | yes |
+| S2 grand_crossroads | 62.0% (0.620) | 11.8% | yes (at the edge) |
+| S2 wide_shallows | 50.2% | 6.0% | yes |
 
 ## What was done
 
@@ -45,11 +52,11 @@ Why it works: the old plan prices a tile by the damage the enemy could do there 
 
 The HP share and the mountains do not matter. "Always close in" brings every limit under 15% but pushes A win down to 33-43% in three sets (the side that walks into reach first loses the first strike), so it trades one miss for another; a late start (3rd or 5th Turn) sits between and misses in both. The shipped version was kept because it is the least invasive one that moved all four sets in the right direction.
 
-## Options for the user (step 3; none applied)
+## Options for the user (step 3; option 3 chosen 2026-10-20, none of the others applied)
 
 1. **Turn limit by Board size** (rule, e.g. 10 → 14 on 9x9): removes the S1 Grand Crossroads limit miss (the Battles that run out are chases that would end), probably not the A-win edges. `ENGINE_VERSION` bump, data/rule change, `rules.md` update, refresh ticket for Codex.
 2. **Start zones nearer on 9x9** (rule/data): the second row further forward; shortens the approach and the chase room. Same follow-ups as 1.
 3. **Accept 9x9 as a slower mode and relax the targets for it** (user decision), e.g. limit up to 25% and A win 38-62% on 9x9. With the numbers above 4 of 4 sets pass; the AI work is already in.
 4. **More AI work** (no rule): pursue a fleeing wounded Monster or finish it with a focused plan. Not tried: it widens the AI change beyond "approach" and needs its own ticket.
 
-Recommendation: 3 for now (the game plays reasonably: first attack by Turn ~2, 9x9 sets within 2 pp of the A-win line) and 1 if the user wants the limit column green.
+Chosen: 3. Recommendation was: 3 for now (the game plays reasonably: first attack by Turn ~2, 9x9 sets within 2 pp of the A-win line) and 1 if the user wants the limit column green.
