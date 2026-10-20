@@ -8,10 +8,14 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `menuBoards` คืนแค่ `crossroads`, `shallows`; test ใน `packages/session/test/battleChoice.test.ts` อัปเดต; `defaultChoice` ไม่เปลี่ยน
-- [ ] Board 9x9 ยังอยู่ใน `data/` และ `sim boards` / test ของ 9x9 ยังผ่าน; Replay บน 9x9 ยังเปิดได้
-- [ ] web test ที่วนตาม `menuBoards` ยังผ่าน (ไม่ต้องแก้ Codex path); ถ้าต้องแก้ไฟล์ของ Codex ให้เปิด ticket `Owner: codex`
-- [ ] decision log และ README ของ session บอกว่า 9x9 ซ่อนจากเมนูจนกว่า P1X-36 จะผ่านเป้า และวิธีเปิดกลับ
-- [ ] typecheck, test, build, path check, `check-replays` ผ่าน; ENGINE_VERSION ไม่เปลี่ยน
+- [x] `menuBoards` คืนแค่ `crossroads`, `shallows`; test ใน `packages/session/test/battleChoice.test.ts` อัปเดต; `defaultChoice` ไม่เปลี่ยน
+- [x] Board 9x9 ยังอยู่ใน `data/` และ `sim boards` / test ของ 9x9 ยังผ่าน; Replay บน 9x9 ยังเปิดได้
+- [x] web test ที่วนตาม `menuBoards` ยังผ่าน (ไม่ต้องแก้ Codex path); ถ้าต้องแก้ไฟล์ของ Codex ให้เปิด ticket `Owner: codex`
+- [x] decision log และ README ของ session บอกว่า 9x9 ซ่อนจากเมนูจนกว่า P1X-36 จะผ่านเป้า และวิธีเปิดกลับ
+- [x] typecheck, test, build, path check, `check-replays` ผ่าน; ENGINE_VERSION ไม่เปลี่ยน
+
+## Comments
+
+- 2026-10-20 (claude): `menuBoards` filters to 7x7 Boards (`MENU_BOARD_SIZE`, doc comment says why and how to show 9x9 again); `data/` untouched, ENGINE_VERSION unchanged; 9x9 Battles still start in `battleChoice.test.ts`; no Codex file needed a change. PR `[P1X-37] Hide 9x9 Boards from the menu`.

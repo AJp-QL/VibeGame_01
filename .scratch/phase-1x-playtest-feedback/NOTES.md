@@ -52,7 +52,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-34 | UI: Board reads plan fields from port | codex | P1X-32 (P1X-24 done) | waiting |
 | P1X-35 | UI: Undo hide/disable + reason from session | codex | P1X-33, P1X-07 | waiting |
 | P1X-36 | Tune 9x9 Boards (balance targets) + AI approach on 9x9 | claude | — | backlog (user 2026-10-20; PR #70 on hold) |
-| P1X-37 | Hide 9x9 Boards from the menu for v0.2.0 | claude | — | ready |
+| P1X-37 | Hide 9x9 Boards from the menu for v0.2.0 | claude | — | done (menu offers 7x7 only; PR open) |
 
 Next: human merges #58, #59, #60, then #61 and #62 after fixes; #52 after #58. Claude P1X-21, 32, 33 ready.
 
