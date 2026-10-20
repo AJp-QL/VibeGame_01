@@ -10,11 +10,13 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] test ของ simulator ที่ไม่มี timeout ของตัวเองใช้ไม่เกิน ~0.6s บนเครื่อง dev (เผื่อ CI ช้ากว่า 3 เท่าแล้วยังต่ำกว่า 5s มาก) รายงานเวลาก่อน/หลังใน PR
-- [ ] แต่ละ test ยังตรวจสิ่งเดิม: test abc ยังล้มถ้า variant abc ไม่ตรงกับเกม (ลองทำให้พังแล้วเห็นแดง)
-- [ ] timeout ที่เพิ่มมีเหตุผลใน comment
-- [ ] typecheck, test, build, path check ผ่าน; ENGINE_VERSION และ `src/` ของ simulator ไม่เปลี่ยน
+- [x] test ของ simulator ที่ไม่มี timeout ของตัวเองใช้ไม่เกิน ~0.6s บนเครื่อง dev (เผื่อ CI ช้ากว่า 3 เท่าแล้วยังต่ำกว่า 5s มาก) รายงานเวลาก่อน/หลังใน PR
+- [x] แต่ละ test ยังตรวจสิ่งเดิม: test abc ยังล้มถ้า variant abc ไม่ตรงกับเกม (ลองทำให้พังแล้วเห็นแดง)
+- [x] timeout ที่เพิ่มมีเหตุผลใน comment
+- [x] typecheck, test, build, path check ผ่าน; ENGINE_VERSION และ `src/` ของ simulator ไม่เปลี่ยน
 
 ## Comments
+
+- 2026-10-21 (claude): Battles per test: 9x9 6→2, ranges `job` 6→2, determinism 3→2, distance 3→2 and 8→2; distance worker-thread test on 2 sets + 60s timeout (fixed cost of starting threads). Local, pinned to 2 cores, whole suite: 9x9 1715→338ms, abc 1301→528ms, determinism 902→765ms, distance baseline 948→318ms; at 16 workers abc 4791→696ms, simulator project 50.2s→25.9s. Breaking abc's long-range rule in `applyVariant` still turns the abc test red. `src/`, parity and ENGINE_VERSION unchanged.
