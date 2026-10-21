@@ -9,7 +9,7 @@ argument-hint: <CODE>-<NN>
 
 Run the "start a ticket" rules from `AGENTS.md` (Workflow, Concurrency) and `docs/agents/issue-tracker.md` for ticket `$ARGUMENTS`, then create its worktree.
 
-- Run every command from the current checkout with the Bash tool (POSIX sh, also on Windows). Read only: never check out, switch branches, pull or commit in it. It may be the main checkout other sessions share.
+- Run every command from the current checkout with the Bash tool (POSIX sh, also on Windows). Start each Bash call with `export MSYS_NO_PATHCONV=1`: without it Git Bash on Windows rewrites `origin/main:<path>` into a Windows path and `git show` fails. Read only: never check out, switch branches, pull or commit in it. It may be the main checkout other sessions share.
 - Steps 1–5 are hard checks. Do them all, then report every failure at once with its reason and **stop**: create nothing. Steps 6–7 are warnings: report them and continue.
 - Do not edit the ticket file or any other file. Starting a ticket changes nothing in the repo; the ticket's `Status:` is updated in its own PR.
 
@@ -47,8 +47,8 @@ Read its `**Status:**` line. `ready-for-agent` passes. `done…` or `wontfix…`
 
 Parse the `**Blocked by:**` line:
 
-- `None` (with or without text after it) → no blockers.
-- Otherwise split on `,`. In each entry take the ticket reference before any ` — ` text: `<CODE>-<NN>`, or a bare `NN`, which means the same phase as this ticket (old P1 tickets write `05 — Basic Attack ครบวง` = `P1-05`). Note any `PR #N` written in the entry too.
+- `None` → no blocker tickets. Read any text after it: a condition there still applies. A start date (`None — เริ่มได้ตั้งแต่ 2026-10-28`, "from 2026-10-28") later than today fails ("`ID` may start from <date>"); any other condition you cannot check, quote it and ask.
+- Otherwise split on `,` and `;`. In each entry take the ticket reference before any ` — ` text: `<CODE>-<NN>`, or a bare `NN`, which means the same phase as this ticket (old P1 tickets write `05 — Basic Attack ครบวง` = `P1-05`). Note any `PR #N` written in the entry too.
 
 For each blocker, find its ticket file on `origin/main` as in step 1 (missing → fails) and read its `Status:`:
 
@@ -80,7 +80,7 @@ In-progress work = open PRs plus local `claude/*` and `codex/*` branches that ar
 - open PR: `gh pr diff <N> --name-only`
 - local branch: `git diff --name-only origin/main...<branch>`
 
-Paths this ticket will touch = the paths, packages and folders named in its text (`packages/engine`, `data/`, `tools/path-check`, `.claude/skills/…`, …) plus, if the ticket names files, those files. Report every in-progress item that touches the same file or the same folder, as `<branch or PR #N> (<ID if any>): <shared paths>`. If there are any, add: "Whoever merges second merges `origin/main` into its branch and re-runs all checks before its PR." If you cannot tell which paths the ticket touches, say so and list all in-progress items with their top-level folders.
+Paths this ticket will touch = the paths, packages and folders named in its text (`packages/engine`, `data/`, `tools/path-check`, `.claude/skills/…`, …) plus, if the ticket names files, those files. Report every in-progress item that touches the same file or the same folder (under `.scratch/` only the same file counts: every ticket edits its own ticket file in the shared phase folder), as `<branch or PR #N> (<ID if any>): <shared paths>`. If there are any, add: "Whoever merges second merges `origin/main` into its branch and re-runs all checks before its PR." If you cannot tell which paths the ticket touches, say so and list all in-progress items with their top-level folders.
 
 ## 7. Lockfile (warning)
 
