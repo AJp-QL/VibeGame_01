@@ -16,6 +16,8 @@
     { "path": "tools/simulator" },
     { "path": "tools/simulator/test" },
     { "path": "tools/path-check" },
-    { "path": "tools/path-check/test" }
+    { "path": "tools/path-check/test" },
+    { "path": "tools/claude-hooks" },
+    { "path": "tools/claude-hooks/test" }
   ]
 }

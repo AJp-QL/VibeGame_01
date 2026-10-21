@@ -82,6 +82,13 @@ function parseRef(branch: string): { kind: 'tag' | 'branch'; name: string } {
   return { kind: 'branch', name: branch }
 }
 
+/** Which side a branch belongs to by its prefix (`refs/heads/` stripped); null for main, tags and any other name. */
+export function branchOwner(branch: string): 'claude' | 'codex' | null {
+  const ref = parseRef(branch.trim())
+  if (ref.kind === 'tag') return null
+  return ref.name.startsWith('claude/') ? 'claude' : ref.name.startsWith('codex/') ? 'codex' : null
+}
+
 /**
  * Decide whether `branch` may change `files` (repo-relative, forward slashes).
  * `isTag` covers CI runs triggered by a tag, whose ref name has no prefix.
@@ -96,7 +103,7 @@ export function checkPaths(
   if (options.isTag || ref.kind === 'tag') return { status: 'skipped', reason: `tag ${ref.name}` }
   if (ref.name === 'main') return { status: 'skipped', reason: 'main branch' }
 
-  const owner = ref.name.startsWith('claude/') ? 'claude' : ref.name.startsWith('codex/') ? 'codex' : null
+  const owner = branchOwner(ref.name)
   const changed = [...new Set(files.map((f) => f.trim().replace(/\\/g, '/')).filter((f) => f.length > 0))]
   if (owner === null) {
     return {
