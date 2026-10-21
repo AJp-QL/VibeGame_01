@@ -6,10 +6,10 @@
 
 **Blocked by:** CA-01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] refuses a Codex-owned ticket, a missing ticket file and an unmerged blocker, each with the reason
-- [ ] lists overlapping in-progress tickets and warns about lockfile changes
-- [ ] creates the worktree and branch; the branch name passes the path check's branch-name rule
-- [ ] manual dry run on a real ticket written in the PR description
-- [ ] path check passes
+- [x] refuses a Codex-owned ticket, a missing ticket file and an unmerged blocker, each with the reason
+- [x] lists overlapping in-progress tickets and warns about lockfile changes
+- [x] creates the worktree and branch; the branch name passes the path check's branch-name rule
+- [x] manual dry run on a real ticket written in the PR description
+- [x] path check passes
