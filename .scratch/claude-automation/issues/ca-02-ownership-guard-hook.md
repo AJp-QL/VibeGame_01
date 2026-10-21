@@ -10,11 +10,12 @@ Adds a workspace package, so `pnpm-lock.yaml` changes: don't run in parallel wit
 
 **Blocked by:** CA-01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `guard` reads hook JSON on stdin; exit 0 = allow, exit 2 = block with message on stderr
-- [ ] CLI tests in a temp git repo cover: claude/claudeOnly/shared allowed, codex blocked, unclassified blocked, `main` and `codex/*` blocked, outside-repo allowed, backslash path same verdict, missing `ownership.json` allows with warning, worktree root resolution
-- [ ] no glob logic copied from path-check; path-check exports changed additively only
-- [ ] hook registered in shared project settings; manual check: an edit to a Codex path in a real session is refused
-- [ ] `tools/README.md` status list mentions the new tool
-- [ ] typecheck, test, build, path check pass; ENGINE_VERSION unchanged
+- [x] `guard` reads hook JSON on stdin; exit 0 = allow, exit 2 = block with message on stderr
+- [x] CLI tests in a temp git repo cover: claude/claudeOnly/shared allowed, codex blocked, unclassified blocked, `main` and `codex/*` blocked, outside-repo allowed, backslash path same verdict, missing `ownership.json` allows with warning, worktree root resolution
+- [x] no glob logic copied from path-check; path-check exports changed additively only
+- [x] hook registered in shared project settings
+- [ ] manual check: an edit to a Codex path in a real session is refused — not possible on the current machine: the account's server-managed settings set `allowManagedHooksOnly`, so Claude Code loads no project hooks (debug log: "Found 0 total hooks"). Checked instead by running the registered command with real Windows hook JSON (codex path → exit 2, claude path → 0, `main` checkout → 2).
+- [x] `tools/README.md` status list mentions the new tool
+- [x] typecheck, test, build, path check pass; ENGINE_VERSION unchanged

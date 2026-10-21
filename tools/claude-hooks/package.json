@@ -1,0 +1,16 @@
+{
+  "name": "@mt/claude-hooks",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "guard": "node src/bin.ts guard"
+  },
+  "dependencies": {
+    "@mt/path-check": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
