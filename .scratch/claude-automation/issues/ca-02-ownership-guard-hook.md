@@ -18,4 +18,4 @@ Adds a workspace package, so `pnpm-lock.yaml` changes: don't run in parallel wit
 - [x] hook registered in shared project settings
 - [ ] manual check: an edit to a Codex path in a real session is refused — not done yet. Headless `claude -p` (v2.1.199) on this account loads no project hooks: the server-managed settings set `allowManagedHooksOnly: true` (debug log: "Found 0 total hooks"). Desktop sessions are not verified; check in a fresh desktop session after merge. What was checked: the registered command string run via `bash -c` with hook JSON (forward-slash Windows paths) blocks a codex path with exit 2, and the bin run with backslash Windows paths gives codex → 2, claude → 0, unclassified → 2, main checkout → 2.
 - [x] `tools/README.md` status list mentions the new tool
-- [ ] typecheck, test, build, path check pass; ENGINE_VERSION unchanged
+- [x] typecheck, test, build, path check pass (CI green on Linux, push + pull_request; locally `pnpm test` had load timeouts in unrelated packages, see PR); ENGINE_VERSION unchanged
