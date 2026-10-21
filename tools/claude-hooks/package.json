@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "guard": "node src/bin.ts guard"
+    "guard": "node src/bin.ts guard",
+    "engine-version": "node src/bin.ts engine-version"
   },
   "dependencies": {
     "@mt/path-check": "workspace:*"

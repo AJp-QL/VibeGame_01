@@ -6,11 +6,13 @@
 
 **Blocked by:** CA-02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] engine source changed without version → exit 2 with reminder (mentions fixture-refresh ticket)
-- [ ] version changed, or only engine tests/docs changed → exit 0
-- [ ] only `data/` changed → exit 2; uncommitted engine change counts
-- [ ] `stop_hook_active: true` → exit 0
-- [ ] CLI tests in a temp git repo cover the cases above
-- [ ] typecheck, test, build, path check pass; ENGINE_VERSION unchanged
+- [x] engine source changed without version → exit 2 with reminder (mentions fixture-refresh ticket)
+- [x] version changed, or only engine tests/docs changed → exit 0
+- [x] only `data/` changed → exit 2; uncommitted engine change counts
+- [x] `stop_hook_active: true` → exit 0
+- [x] CLI tests in a temp git repo cover the cases above
+- [x] typecheck, test, build, path check pass; ENGINE_VERSION unchanged
+
+**Notes:** Whether project hooks load for this account (managed `allowManagedHooksOnly: true`) is still unproven. In the CA-03 desktop session, plugin hooks ran (SessionStart, PreToolUse) although `~/.claude/remote-settings.json` lists no `enabledPlugins`, which suggests the policy is not applied there. A probe Write to `packages/web/` was not blocked, but that session's hook snapshot predates the guard (#81), so the probe is inconclusive. Check in a fresh desktop session.

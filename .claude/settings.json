@@ -10,6 +10,16 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/tools/claude-hooks/src/bin.ts\" engine-version"
+          }
+        ]
+      }
     ]
   }
 }
