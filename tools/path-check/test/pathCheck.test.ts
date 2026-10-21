@@ -60,7 +60,7 @@ describe('the repo ownership map', () => {
   it('gives each area the owner from ADR 0004 / decision log 2026-10-16', () => {
     expect(classify(map, '.scratch/phase-1-battle-slice/issues/21-ci.md')).toBe('shared')
     expect(classify(map, 'pnpm-lock.yaml')).toBe('shared')
-    for (const f of ['package.json', 'AGENTS.md', 'CONTEXT.md', '.github/workflows/ci.yml', 'docs/decisions/decision-log.md', 'tsconfig.json']) {
+    for (const f of ['package.json', 'AGENTS.md', 'CONTEXT.md', '.github/workflows/ci.yml', 'docs/decisions/decision-log.md', 'tsconfig.json', '.claude/settings.json', '.claude/skills/start-ticket/SKILL.md']) {
       expect(classify(map, f), f).toBe('claudeOnly')
     }
     for (const f of ['packages/engine/src/index.ts', 'packages/session/package.json', 'tools/simulator/src/cli.ts', 'data/species/x.json', 'docs/rules/rules.md', 'docs/balance/phase-1-baseline.md']) {
@@ -132,6 +132,13 @@ describe('checkPaths', () => {
     ])
   })
 
+  it('lets claude/* change shared Claude Code config under .claude/ and stops codex/* (CA-01)', () => {
+    expect(checkPaths(map, 'claude/ca-01-claude-config-ownership', ['.claude/settings.json'])).toEqual({ status: 'pass', owner: 'claude', checked: 1 })
+    const r = checkPaths(map, 'codex/x', ['.claude/settings.json', 'packages/web/src/App.tsx'])
+    expect(r.status).toBe('fail')
+    expect(r.status === 'fail' && r.offending).toEqual([{ file: '.claude/settings.json', category: 'claudeOnly' }])
+  })
+
   it('fails any other branch name, even with no changes', () => {
     for (const branch of ['feature/x', 'claude', 'codex', 'Claude/x', 'dev', 'main2']) {
       const r = checkPaths(map, branch, ['.scratch/a.md'])
@@ -177,6 +184,7 @@ describe('branch name rule (decision log 2026-10-18)', () => {
     '.scratch/phase-1-battle-slice/issues/32-node-26.md',
     '.scratch/phase-1x-playtest-feedback/issues/p1x-24-action-plan-ui.md',
     '.scratch/phase-1x-playtest-feedback/spec.md',
+    '.scratch/claude-automation/issues/ca-01-claude-config-ownership.md',
   ]
   const status = (branch: string, files: readonly string[] = tickets, isTag = false) => checkBranchName(branch, files, { isTag }).status
 
@@ -195,6 +203,17 @@ describe('branch name rule (decision log 2026-10-18)', () => {
     expect(result.status).toBe('fail')
     expect(formatBranchResult(result)).toContain('.scratch/*/issues/p1x-42-*.md')
     expect(status('codex/p2-01-new-phase')).toBe('fail')
+  })
+
+  it('accepts any phase code from the issue tracker table, not just P<N> (CA-01)', () => {
+    expect(checkBranchName('claude/ca-01-claude-config-ownership', tickets)).toEqual({
+      status: 'pass',
+      branch: 'claude/ca-01-claude-config-ownership',
+      ticket: '.scratch/claude-automation/issues/ca-01-claude-config-ownership.md',
+    })
+    expect(status('codex/ca-01-x')).toBe('pass')
+    expect(formatBranchResult(checkBranchName('claude/ca-99-x', tickets))).toContain('.scratch/*/issues/ca-99-*.md')
+    expect(status('codex/docs-12-x')).toBe('fail')
   })
 
   it('finds phase 1 tickets under their old NN-slug.md names', () => {

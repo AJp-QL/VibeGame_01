@@ -126,7 +126,7 @@ export const CLAUDE_BRANCH_KINDS = ['research', 'spec', 'docs', 'chore'] as cons
  */
 const LEGACY_TICKET_DIRS: Readonly<Record<string, string>> = { p1: '.scratch/phase-1-battle-slice/issues/' }
 
-const TICKET_BRANCH = /^(claude|codex)\/(p\d+[a-z]*)-(\d{2,})-[a-z0-9][a-z0-9-]*$/
+const TICKET_BRANCH = /^(claude|codex)\/([a-z][a-z0-9]*)-(\d{2,})-[a-z0-9][a-z0-9-]*$/
 const KIND_BRANCH = new RegExp(`^claude\\/(?:${CLAUDE_BRANCH_KINDS.join('|')})-[a-z0-9][a-z0-9-]*$`)
 
 export type BranchNameResult =
@@ -149,7 +149,8 @@ export function findTicketFile(code: string, number: string, ticketFiles: readon
  * Branch naming rule (decision log 2026-10-18): ticket branches are
  * `claude/<code>-<NN>-<slug>` or `codex/<code>-<NN>-<slug>` and the ticket file
  * must exist; other Claude branches are `claude/<research|spec|docs|chore>-<slug>`.
- * Compared in lower case.
+ * A code is any phase code from docs/agents/issue-tracker.md (P1X, CA, …); the kinds
+ * are matched first, so `claude/docs-12-notes` is a docs branch. Compared in lower case.
  */
 export function checkBranchName(branch: string, ticketFiles: readonly string[], options: { isTag?: boolean } = {}): BranchNameResult {
   const ref = parseRef(branch.trim())
@@ -159,6 +160,7 @@ export function checkBranchName(branch: string, ticketFiles: readonly string[], 
   const forms =
     'expected claude/<code>-<NN>-<slug> or codex/<code>-<NN>-<slug> for a ticket (e.g. claude/p1x-24-action-plan), ' +
     `or claude/<${CLAUDE_BRANCH_KINDS.join('|')}>-<slug>`
+  if (KIND_BRANCH.test(name)) return { status: 'pass', branch: ref.name, ticket: null }
   const ticket = TICKET_BRANCH.exec(name)
   if (ticket) {
     const [, , code, number] = ticket as unknown as [string, string, string, string]
@@ -169,7 +171,6 @@ export function checkBranchName(branch: string, ticketFiles: readonly string[], 
     }
     return { status: 'pass', branch: ref.name, ticket: file }
   }
-  if (KIND_BRANCH.test(name)) return { status: 'pass', branch: ref.name, ticket: null }
   return { status: 'fail', reason: `branch "${ref.name}" does not follow the naming rule: ${forms}` }
 }
 

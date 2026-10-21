@@ -23,7 +23,7 @@ Two agents share this repo: **Claude** owns the rules and everything without UI;
 | Owner | Paths (summary) |
 | --- | --- |
 | `claude` | `packages/shared`, `packages/engine`, `packages/ai`, `packages/session`, `packages/server`, `tools/`, `data/`, `docs/rules/`, `docs/balance/` |
-| `claudeOnly` (Claude only) | root config (`package.json`, `pnpm-workspace.yaml`, `tsconfig*.json`, `vitest.config.ts`, `.gitignore`, `.gitattributes`), `.github/`, `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `README.md`, `packages/README.md`, the other `docs/` folders, `prototype/` |
+| `claudeOnly` (Claude only) | root config (`package.json`, `pnpm-workspace.yaml`, `tsconfig*.json`, `vitest.config.ts`, `.gitignore`, `.gitattributes`), `.github/`, `.claude/` (shared Claude Code config; `settings.local.json` and `worktrees/` stay ignored), `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `README.md`, `packages/README.md`, the other `docs/` folders, `prototype/` |
 | `codex` | `packages/battle`, `packages/web`, `art/` |
 | `shared` (both) | `.scratch/**`, `pnpm-lock.yaml` |
 
