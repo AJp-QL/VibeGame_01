@@ -11,6 +11,7 @@
     "pnpm-lock.yaml"
   ],
   "claudeOnly": [
+    ".claude/**",
     ".github/**",
     ".gitattributes",
     ".gitignore",

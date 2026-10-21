@@ -42,5 +42,6 @@ coverage/
 .tsbuild/
 *.tsbuildinfo
 
-# Claude Code agent worktrees
+# Claude Code agent worktrees and personal local settings (.claude/** is otherwise tracked, claudeOnly)
 .claude/worktrees/
+.claude/settings.local.json
