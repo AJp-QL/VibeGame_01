@@ -15,4 +15,4 @@
 - [x] CLI tests in a temp git repo cover the cases above
 - [x] typecheck, test, build, path check pass; ENGINE_VERSION unchanged
 
-**Notes:** Whether project hooks load for this account (managed `allowManagedHooksOnly: true`) is still unproven. In the CA-03 desktop session, plugin hooks ran (SessionStart, PreToolUse) although managed settings force-enable no plugin, which suggests the policy is not applied there. A probe Write to `packages/web/` was not blocked, but that session's hook snapshot predates the guard (#81), so the probe is inconclusive. Check in a fresh desktop session.
+**Notes:** Whether project hooks load for this account (managed `allowManagedHooksOnly: true`) is still unproven. In the CA-03 desktop session, plugin hooks ran (SessionStart, PreToolUse) although `~/.claude/remote-settings.json` lists no `enabledPlugins`, which suggests the policy is not applied there. A probe Write to `packages/web/` was not blocked, but that session's hook snapshot predates the guard (#81), so the probe is inconclusive. Check in a fresh desktop session.
