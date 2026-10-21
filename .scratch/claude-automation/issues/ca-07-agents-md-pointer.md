@@ -6,8 +6,10 @@
 
 **Blocked by:** CA-02, CA-03, CA-04, CA-05, CA-06
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] AGENTS.md mentions all hooks, skills and subagents in at most a few lines
-- [ ] wording says the guard is a convenience; CI path check is the source of truth
-- [ ] path check passes
+- [x] AGENTS.md mentions all hooks, skills and subagents in at most a few lines
+- [x] wording says the guard is a convenience; CI path check is the source of truth
+- [x] path check passes
+
+**Notes:** Project hooks did not run in the CA-07 desktop session (started after #82 merged, deps installed): a Write to `packages/web/` was not blocked, while the same guard command run by hand with the hook JSON (backslash Windows paths) exits 2 for that path. `~/.claude/remote-settings.json` sets `allowManagedHooksOnly: true`. So for this account the hooks loaded neither headless (CA-02) nor in this desktop session; AGENTS.md says not to rely on them.
