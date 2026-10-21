@@ -17,6 +17,7 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 | --- | --- | --- |
 | `P1` | `.scratch/phase-1-battle-slice/` | `issues/NN-<slug>.md` (named before IDs existed; P1-NN = `issues/NN-*.md`) |
 | `P1X` | `.scratch/phase-1x-playtest-feedback/` | `issues/p1x-NN-<slug>.md` |
+| `CA` | `.scratch/claude-automation/` | `issues/ca-NN-<slug>.md` (Claude Code automation, not a game phase) |
 
 - Branches: `claude/<code>-<NN>-<slug>` / `codex/<code>-<NN>-<slug>` for ticket work (the ticket file must exist); other Claude work is `claude/<research|spec|docs|chore>-<slug>` — PRs that only change ticket Status or close tickets use `chore`. The path check in CI enforces this (`tools/path-check`).
 - "ticket NN" in prose written before 2026-10-18 is not rewritten; read it in the context of its phase.
