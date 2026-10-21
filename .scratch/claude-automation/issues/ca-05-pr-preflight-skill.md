@@ -6,11 +6,11 @@
 
 **Blocked by:** CA-01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] runs every check from AGENTS.md Commands and reports each result
-- [ ] check-replays exit 3 reported as stale; visual tests reported skipped on Windows
-- [ ] stops before the PR when a check fails or the ENGINE_VERSION rule is broken
-- [ ] PR title and description follow the workflow rule; no merge
-- [ ] manual dry run written in the PR description
-- [ ] path check passes
+- [x] runs every check from AGENTS.md Commands and reports each result
+- [x] check-replays exit 3 reported as stale; visual tests reported skipped on Windows
+- [x] stops before the PR when a check fails or the ENGINE_VERSION rule is broken
+- [x] PR title and description follow the workflow rule; no merge
+- [x] manual dry run written in the PR description
+- [x] path check passes

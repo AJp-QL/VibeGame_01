@@ -21,6 +21,7 @@ git status --short
 - Stop if the branch is `main` or does not start with `claude/`.
 - Stop if `git status --short` shows uncommitted changes: the checks must test what gets pushed. Ask the user to commit or set them aside first.
 - Ticket branch `claude/<code>-<NN>-<slug>`: the ticket ID is `<CODE>-<NN>` in upper case. Find the ticket file `.scratch/*/issues/<code>-<NN>-*.md` and read it (title, `**Owner:**`, checkboxes).
+- Ticket status: check that the ticket's `**Status:**` and checkboxes match what this PR delivers (the PR that closes a ticket sets `**Status:** done`). If they are stale, tell the user and offer to update and commit them now, before the checks; do not change them silently.
 - Kind branch `claude/<research|spec|docs|chore>-<slug>`: no ticket.
 - If `origin/main` has commits the branch lacks (`git rev-list --count HEAD..origin/main` > 0), say so. When another merged ticket touched the same files, merge `origin/main` in before the checks (`AGENTS.md`, Concurrency).
 
@@ -37,7 +38,9 @@ Run each command in order from the repo root and record the command, its exit co
 | 5 | `node tools/path-check/src/bin.ts --branch <branch> --base origin/main` | exit 0; `<branch>` is the real name from step 1, never a placeholder |
 | 6 | `corepack pnpm --dir tools/simulator --silent check-replays` | exit 0 = fixtures current; **exit 3 = stale** (see below); any other code = failure |
 
-`check-replays` exit 3 is not a bug: the Replay fixtures pin `engineVersion` and `dataHash`, and this branch changed one of them. Report it as "Replay fixtures stale (exit 3)", keep going, and make sure step 3 finds the `Owner: codex` refresh ticket. CI's visual job will be green with the warning "Visual fixtures are stale" and will not compare screenshots.
+`pnpm test` failing only with `Test timed out in 5000ms` in the heavy AI / simulator / session tests usually means CPU contention (other worktrees running tests at the same time). Re-run each failing file alone (`corepack pnpm exec vitest run <file>`). If they all pass, you may continue, but the PR must report both runs honestly (full run: N timeouts; each failing file alone: pass). A failure that is not a timeout, or a timeout that repeats when run alone, is a real failure: stop.
+
+`check-replays` exit 3 is not a bug (pnpm also prints `ELIFECYCLE Command failed with exit code 3`; that is expected): the Replay fixtures pin `engineVersion` and `dataHash`, and this branch changed one of them. Report it as "Replay fixtures stale (exit 3)", keep going, and make sure step 3 finds the `Owner: codex` refresh ticket. CI's visual job will be green with the warning "Visual fixtures are stale" and will not compare screenshots.
 
 Board visual tests (`corepack pnpm --filter @mt/web test:visual`) run on Linux only, with Playwright's pinned Chromium:
 
@@ -63,11 +66,11 @@ If a bump or the follow-up ticket is missing, stop and say exactly what is missi
 
 When the branch does not change results: record "ENGINE_VERSION unchanged (no rules or data change)".
 
-## 4. Ticket status
+If `check-replays` exited 3, the follow-up `Owner: codex` refresh ticket is required even when no bump is needed (e.g. a `data/` change argued as not changing results).
 
-For a ticket branch, check that the ticket's `**Status:**` and checkboxes match what this PR delivers (the PR that closes a ticket sets `**Status:** done`). If they are stale, tell the user and offer to update them before pushing; do not change them silently.
+If anything was committed after step 2 (a fix, a ticket edit), run the checks again: the PR must list results for the commit that gets pushed.
 
-## 5. Push and open the PR
+## 4. Push and open the PR
 
 ```sh
 git push -u origin <branch>
@@ -105,6 +108,6 @@ Ticket: `.scratch/<feature>/issues/<code>-<NN>-<slug>.md` (closed in this PR | p
 
 Use the exact commands you ran and the real results; never list a check you did not run.
 
-## 6. Report
+## 5. Report
 
 Give the user the PR link and the check summary. Remind them that the merge waits for both CI runs (push and pull_request) to pass all three jobs: build, path check and Board visual regression. Do not merge.
