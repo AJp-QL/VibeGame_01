@@ -11,9 +11,9 @@ Spec: `.scratch/claude-automation/spec.md`.
 
 **Blocked by:** CA-01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] both agents have read-only tools and a clear verdict format
-- [ ] dry run of `contract-guard` on a past PR that changed `@mt/session`, written in the PR description
-- [ ] dry run of `determinism-reviewer` on a past rules PR (one that bumped ENGINE_VERSION) gives "bump needed"
-- [ ] path check passes
+- [x] both agents have read-only tools and a clear verdict format
+- [x] dry run of `contract-guard` on a past PR that changed `@mt/session`, written in the PR description
+- [x] dry run of `determinism-reviewer` on a past rules PR (one that bumped ENGINE_VERSION) gives "bump needed"
+- [x] path check passes
