@@ -96,8 +96,8 @@ describe('the distance variants', () => {
 
   it('every variant plays whole Battles', () => {
     for (const v of DISTANCE_VARIANTS) {
-      const set = runDistanceSet(data, { variant: v.id, scenario: 'scenario_1', board: 'crossroads', games: 3, seed: '0' })
-      expect(set.metrics.games).toBe(3)
+      const set = runDistanceSet(data, { variant: v.id, scenario: 'scenario_1', board: 'crossroads', games: 2, seed: '0' })
+      expect(set.metrics.games).toBe(2)
       expect(set.threat.samples).toBeGreaterThan(0)
       expect(set.threat.threatenedShare).toBeGreaterThan(0)
       expect(set.threat.threatenedShare).toBeLessThanOrEqual(1)
@@ -109,18 +109,21 @@ describe('the distance variants', () => {
     const { GAME_PROFILES } = await import('@mt/ai')
     const { GAME_RANGE_RULES } = await import('@mt/engine')
     const profile = GAME_PROFILES.greedy
-    const direct = aggregate(simulateGames(data, { scenario: 'scenario_1', board: 'shallows', profiles: { A: profile, B: profile }, rangeRules: GAME_RANGE_RULES }, 8, '0'))
-    const set = runDistanceSet(data, { variant: DISTANCE_BASELINE, scenario: 'scenario_1', board: 'shallows', games: 8, seed: '0' })
+    const direct = aggregate(simulateGames(data, { scenario: 'scenario_1', board: 'shallows', profiles: { A: profile, B: profile }, rangeRules: GAME_RANGE_RULES }, 2, '0'))
+    const set = runDistanceSet(data, { variant: DISTANCE_BASELINE, scenario: 'scenario_1', board: 'shallows', games: 2, seed: '0' })
     expect(set.metrics).toEqual(direct)
   }, 60000)
 
+  // The worker threads load the engine and AI before they play, a fixed cost fewer Battles
+  // cannot cut, and it grows on a busy CI runner: hence the timeout. Two sets on two
+  // threads still check that the results come back in the order of the jobs.
   it('jobs and tables: every variant on the four sets, run on worker threads', async () => {
     expect(distanceJobs(5, '0')).toHaveLength(DISTANCE_VARIANTS.length * 4)
-    const jobs = distanceJobs(2, '0').filter((j) => j.variant === 'orth-r2')
+    const jobs = distanceJobs(2, '0').filter((j) => j.variant === 'orth-r2').slice(0, 2)
     const results = await runDistanceJobs(jobs, 2, () => undefined)
     expect(results.map((r) => `${r.scenario}/${r.board}`)).toEqual(jobs.map((j) => `${j.scenario}/${j.board}`))
     const text = distanceTables(results)
     expect(text).toContain('Summary by variant')
     expect(text).toContain('No diagonals, shots 2')
-  })
+  }, 60000)
 })

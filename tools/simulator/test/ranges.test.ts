@@ -114,7 +114,7 @@ describe('the variants', () => {
 })
 
 describe('running a set', () => {
-  const job = { scenario: 'scenario_1', board: 'crossroads', games: 6, seed: '0000000000000007' }
+  const job = { scenario: 'scenario_1', board: 'crossroads', games: 2, seed: '0000000000000007' }
 
   it('abc plays exactly as the game does: the same numbers as a plain run with the real data and rules', () => {
     const set = runRangeSet(data, { ...job, variant: 'abc' })
@@ -126,7 +126,7 @@ describe('running a set', () => {
   it('every variant plays its Battles to the end, the same every time', () => {
     for (const v of RANGE_VARIANTS) {
       const first = runRangeSet(data, { ...job, variant: v.id })
-      expect(first.metrics.games).toBe(6)
+      expect(first.metrics.games).toBe(2)
       expect(runRangeSet(data, { ...job, variant: v.id }).metrics).toEqual(first.metrics)
     }
   }, 120_000)

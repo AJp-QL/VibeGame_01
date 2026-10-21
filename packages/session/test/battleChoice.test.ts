@@ -35,9 +35,9 @@ describe('menu: what it offers (spec user stories 8–9)', () => {
     expect(menuScenarios(data).map((s) => s.id)).toEqual(['scenario_1', 'scenario_2'])
   })
 
-  it('offers every Board in data/, in id order', () => {
-    const boards = menuBoards(data)
-    expect(boards.map((b) => b.id)).toEqual(['crossroads', 'grand_crossroads', 'shallows', 'wide_shallows'])
+  it('offers only the 7x7 Boards, in id order; the 9x9 Boards stay in data/ (P1X-37)', () => {
+    expect(menuBoards(data).map((b) => b.id)).toEqual(['crossroads', 'shallows'])
+    expect(Object.keys(data.boards).sort()).toEqual(['crossroads', 'grand_crossroads', 'shallows', 'wide_shallows'])
   })
 
   it('starts on Scenario 1, its own Board, Hotseat, human as team A', () => {

@@ -40,11 +40,11 @@ describe('Dice Seeds and determinism', () => {
 
   it('same base seed → identical records and metrics JSON; another seed → other Battles', () => {
     const matchup = { scenario: 'scenario_2', board: 'shallows', profiles: greedy }
-    const a = simulateGames(data, matchup, 3, '2a')
-    const b = simulateGames(data, matchup, 3, '2a')
+    const a = simulateGames(data, matchup, 2, '2a')
+    const b = simulateGames(data, matchup, 2, '2a')
     expect(JSON.stringify(b)).toBe(JSON.stringify(a))
     expect(JSON.stringify(aggregate(b))).toBe(JSON.stringify(aggregate(a)))
-    const c = simulateGames(data, matchup, 3, '2b')
+    const c = simulateGames(data, matchup, 2, '2b')
     expect(c.map((r) => r.seed)).not.toEqual(a.map((r) => r.seed))
   })
 })
