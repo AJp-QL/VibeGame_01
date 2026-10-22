@@ -630,15 +630,26 @@ describe('Threat zone advice', () => {
 })
 
 describe('Undo text', () => {
-  it('names the session safe point, disables unavailable Undo, and hides it during AI Turns', () => {
-    const session = createBattleSession(playing({ A: ['a1', 'd4', 'g1'], B: ['a7', 'd5', 'g7'] }))
-    const render = (snapshot: ReturnType<typeof session.getSnapshot>) => renderToStaticMarkup(createElement(UndoControls, { snapshot, onUndo() {} }))
-    const snapshot = session.getSnapshot()
-    expect(render(snapshot)).toContain(th.undo.unavailable)
-    expect(render(snapshot)).toContain('disabled')
-    expect(render({ ...snapshot, undo: { to: 'turnStart', actions: 1 } })).toContain(th.undo.to.turnStart)
-    expect(render({ ...snapshot, undo: { to: 'lastRoll', actions: 1 } })).toContain(th.undo.to.lastRoll)
-    expect(render({ ...snapshot, aiSide: snapshot.state.sideToAct })).toBe('')
+  const session = createBattleSession(playing({ A: ['a1', 'd4', 'g1'], B: ['a7', 'd5', 'g7'] }))
+  const snapshot = session.getSnapshot()
+  const render = (undoState: typeof snapshot.undoState) => renderToStaticMarkup(createElement(UndoControls, { snapshot: { ...snapshot, undoState }, onUndo() {} }))
+
+  it.each(['turn-start', 'after-roll'] as const)('explains disabled Undo at %s', reason => {
+    const html = render({ kind: 'disabled', reason })
+    expect(html).toContain(th.undo.disabled[reason])
+    expect(html).toContain('disabled=""')
+    expect(html).toContain('aria-describedby="undo-point"')
+    expect(html).not.toContain(th.undo.disabled[reason === 'turn-start' ? 'after-roll' : 'turn-start'])
+  })
+
+  it.each(['turnStart', 'lastRoll'] as const)('names the available %s safe point from the session offer', to => {
+    const html = render({ kind: 'available', offer: { to, actions: 1 } })
+    expect(html).toContain(th.undo.to[to])
+    expect(html).not.toContain('disabled=""')
+  })
+
+  it('hides Undo when the session says hidden, even on a human Turn', () => {
+    expect(render({ kind: 'hidden' })).toBe('')
     expect(th.battleMenu.startOverConfirm).toContain('Dice Seed ใหม่')
     expect(th.replay.showUndone).toContain('Undo')
   })

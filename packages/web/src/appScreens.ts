@@ -102,7 +102,5 @@ export function startOver(screen: Extract<Screen, { kind: 'battle' }>, stats: Pl
 
 /** Count an Undo only when the session accepted it. */
 export function undoBattle(screen: Extract<Screen, { kind: 'battle' }>, stats: PlayStatsStore): void {
-  const before = screen.session.getSnapshot().undos
-  screen.session.undo()
-  if (screen.session.getSnapshot().undos > before) stats.recordUndo(screen.statsIndex)
+  if (screen.session.undo()) stats.recordUndo(screen.statsIndex)
 }
