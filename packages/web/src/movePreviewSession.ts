@@ -11,9 +11,7 @@ export function withMovePreview(session: BattleSession): BattleSession {
         session.aimTarget(input.unit)
       } else if (snapshot.plan !== null && input.type === 'tapUnit' && input.unit === snapshot.plan.unit) {
         session.cancel()
-      } else if (snapshot.plan !== null && input.type === 'tapTile') {
-        session.chooseOrigin(input.tile)
-      } else if (input.type === 'tapTile' && snapshot.state.phase === 'play' && snapshot.state.pending === null &&
+      } else if (snapshot.plan === null && input.type === 'tapTile' && snapshot.state.phase === 'play' && snapshot.state.pending === null &&
         snapshot.mode === 'move' && snapshot.reachable.some(tile => tile.x === input.tile.x && tile.y === input.tile.y)) {
         session.previewMove(input.tile)
       } else session.input(input)

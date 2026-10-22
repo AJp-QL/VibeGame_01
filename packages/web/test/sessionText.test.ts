@@ -591,6 +591,13 @@ describe('Action plan UI', () => {
     const enemy = s.getSnapshot().attackable[0]!
     s.aimTarget(enemy.unit)
     const before = s.getSnapshot().state
+    const origin = s.getSnapshot().plan!.originChoices.find(origin =>
+      s.getSnapshot().reachable.some(tile => tile.x === origin.tile.x && tile.y === origin.tile.y))!
+    expect(origin).toBeDefined()
+    s.input({ type: 'tapTile', tile: origin.tile })
+    expect(s.getSnapshot().plan?.origin.tile).toEqual(origin.tile)
+    expect(s.getSnapshot().state).toBe(before)
+    expect(confirmation.getPending()).toBeNull()
     s.confirmPlan()
     expect(s.getSnapshot().state).toBe(before)
     expect(confirmation.getPending()).toMatchObject({ current: 'A.m1', next: 'A.m2' })

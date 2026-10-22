@@ -16,7 +16,7 @@
 import * as Phaser from 'phaser'
 import type { Tile } from '@mt/shared'
 import { boardPixels, tileAtPoint, tileCentre, TILE_SIZE } from './boardGeometry.ts'
-import { derivedValues, type BattleSessionPort, type BattleSnapshot, type BattleState, type SessionSnapshot, type UnitId, type UnitState } from '@mt/session'
+import { derivedValues, type BattleSessionPort, type BattleSnapshot, type BattleState, type UnitId, type UnitState } from '@mt/session'
 import {
   AREA,
   ATTUNED,
@@ -70,9 +70,6 @@ const SPENT_ALPHA = 0.5
 
 /** Status icons drawn on a Unit; the Unit card lists them all. */
 const MAX_STATUS_ICONS = 3
-
-type PlanSnapshot = BattleSnapshot & Partial<Pick<SessionSnapshot, 'attackable' | 'plan' | 'mode'>>
-
 
 export interface BoardDisplayOptions {
   readonly showThreatZone?: boolean
@@ -185,7 +182,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private render(): void {
-    const snapshot: PlanSnapshot = this.session.getSnapshot()
+    const snapshot: BattleSnapshot = this.session.getSnapshot()
     this.drawBoard(snapshot.state)
     this.drawThreatZone(snapshot)
     this.drawHighlights(snapshot)
@@ -306,7 +303,7 @@ export class BattleScene extends Phaser.Scene {
     }))
   }
 
-  private drawHighlights(snapshot: PlanSnapshot): void {
+  private drawHighlights(snapshot: BattleSnapshot): void {
     const g = this.highlights
     g.clear()
     for (const tile of snapshot.reachable) {
