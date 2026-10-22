@@ -32,7 +32,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-14 | Board size per Board: battle/web | codex | P1X-13 | done (PR #27) |
 | P1X-15 | Contract BOARD_SIZE + 9x9 Boards | claude | P1X-13, P1X-14, P1X-09 | done (PR #52, 2026-10-19; 9x9 hidden from the menu by P1X-37) |
 | P1X-16 | 9x9 Boards UI | codex | P1X-15 | backlog with P1X-36 (PR #67 on hold) |
-| P1X-17 | Release v0.2.0 + next playtest | claude | P1X-07, P1X-10, P1X-12, P1X-19, P1X-24, P1X-29, P1X-34, P1X-35, P1X-37 | ready: prep PR (playtest notes, `docs/playtest/v0.2.0-playtest-notes.md`); tag and deploy only when the user says so |
+| P1X-17 | Release v0.2.0 + next playtest | claude | P1X-07, P1X-10, P1X-12, P1X-19, P1X-24, P1X-29, P1X-34, P1X-35, P1X-37 | done (tag `v0.2.0` at `d91ffb0`, deploy run 39772135570, live: https://monster-tactics.claudejpql01.workers.dev; user played a Battle there 2026-10-22; `FEEDBACK_FORM_URL` not set) |
 | P1X-18 | Move preview session follow-up | claude | P1X-04, P1X-25 | done (PR #29) |
 | P1X-19 | Move preview UI cleanup | codex | P1X-18 | done (PR #46) |
 | P1X-20 | Range experiments follow-up | claude | P1X-09 | done (PR #55; 2026-10-19 user accepted: keep the game) |
@@ -54,7 +54,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-36 | Tune 9x9 Boards (balance targets) + AI approach on 9x9 | claude | — | backlog (user 2026-10-20): PR #70 (AI approach, option 3 relaxed 9x9 targets) is a draft on hold until the user confirms |
 | P1X-37 | Hide 9x9 Boards from the menu for v0.2.0 | claude | — | done (PR #73; menu offers 7x7 only) |
 
-Next (2026-10-22, main = 506aee8): every blocker of P1X-17 is merged and main's CI is green with screenshots compared. Prep PR for P1X-17 (playtest notes + this table) is open; then the user says when to tag v0.2.0, plays one Battle on the live site, and only then the URL goes to playtesters. Backlog: P1X-36 (PR #70 draft), P1X-16 (Codex, PR #67), P1X-21/22 (low priority).
+Next (2026-10-22): v0.2.0 is live and the user has played a Battle on it. The URL can go to playtesters with `docs/playtest/v0.2.0-playtest-notes.md`; the feedback button stays hidden until `FEEDBACK_FORM_URL` is set. Backlog: P1X-36 (PR #70 draft, on hold), P1X-16 (Codex, PR #67), P1X-21/22 (low priority). After the playtest: read the Replays and decide the next phase.
 
 ## Lead's job
 
