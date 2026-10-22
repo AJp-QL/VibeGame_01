@@ -8,6 +8,13 @@
 
 **Status:** ready-for-agent
 
-- [ ] `UndoControls` ไม่มีกติกาการซ่อนของตัวเอง; ใช้ field ของ session
-- [ ] ข้อความเหตุผลแยกต้น Turn กับหลังทอย มี text test ทุกกรณี
+- [x] `UndoControls` ไม่มีกติกาการซ่อนของตัวเอง; ใช้ field ของ session
+- [x] ข้อความเหตุผลแยกต้น Turn กับหลังทอย มี text test ทุกกรณี
 - [ ] screenshot ไม่เปลี่ยน (หรือ update baseline และตรวจทุกภาพถ้าเปลี่ยน); CI เขียวทั้งสาม job
+
+## Implementation notes
+
+- Render only the session `undoState`: hidden, disabled with the matching Thai reason, or available with its offer.
+- Use the boolean returned by `undo()` to record accepted Undos; cover accepted/rejected commands and every display state in text tests.
+- Browser coverage captures turn-start and after-roll reasons at 1280 px and 360 px. Board baselines remain unchanged.
+- Validation and PR CI are pending.

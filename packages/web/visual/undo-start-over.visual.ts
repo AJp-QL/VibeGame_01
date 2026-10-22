@@ -12,7 +12,8 @@ for (const width of [1280, 360]) {
     await expect(page.locator('canvas')).toBeVisible()
     const undo = page.getByRole('button', { name: th.undo.button, exact: true })
     await expect(undo).toBeDisabled()
-    await expect(page.locator('.undo-controls')).toContainText(th.undo.unavailable)
+    await expect(page.locator('.undo-controls')).toContainText(th.undo.disabled['turn-start'])
+    await test.info().attach(`undo-turn-start-${width}`, { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' })
     await page.evaluate(() => {
       const s = window.undoReview.session
       s.selectUnit('A.m2')
@@ -24,6 +25,15 @@ for (const width of [1280, 360]) {
     await undo.click()
     expect(await page.evaluate(() => window.undoReview.stats.read().battles[0]?.undos)).toBe(1)
     await expect(undo).toBeDisabled()
+    await page.evaluate(() => {
+      const s = window.undoReview.session
+      s.selectUnit('A.m1')
+      s.aimTarget('B.m1')
+      s.confirmPlan()
+    })
+    await expect(undo).toBeDisabled()
+    await expect(page.locator('.undo-controls')).toContainText(th.undo.disabled['after-roll'])
+    await test.info().attach(`undo-after-roll-${width}`, { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' })
     await page.getByRole('button', { name: th.battleMenu.open }).click()
     await page.getByRole('button', { name: th.battleMenu.startOver, exact: true }).click()
     const dialog = page.getByRole('alertdialog')

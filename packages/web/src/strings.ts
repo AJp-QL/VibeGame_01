@@ -536,7 +536,10 @@ export const th = {
   undo: {
     button: 'ย้อนกลับ',
     to: { turnStart: 'ย้อนถึงต้น Turn', lastRoll: 'ย้อนถึงหลังการทอยล่าสุด' },
-    unavailable: 'ยังไม่มี action ที่ย้อนกลับได้ ผลการทอยลูกเต๋าย้อนไม่ได้',
+    disabled: {
+      'turn-start': 'ยังไม่มี action ให้ย้อน',
+      'after-roll': 'ผลการทอยลูกเต๋าย้อนไม่ได้',
+    },
   },
 
   battleMenu: {

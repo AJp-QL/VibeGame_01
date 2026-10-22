@@ -172,6 +172,18 @@ describe('Undo and Start over', () => {
     })
   }
 
+  it.each([true, false])('records Undo only when the session returns %s', accepted => {
+    const stats = createPlayStats(null, () => new Date())
+    const screen = startBattle(data, { scenarioId: 'scenario_1', boardId: 'crossroads', mode: 'hotseat', humanSide: 'A' }, stats)
+    if (screen.kind !== 'battle') throw new Error('expected Battle')
+    const undo = vi.spyOn(screen.session, 'undo').mockReturnValue(accepted)
+    const record = vi.spyOn(stats, 'recordUndo')
+    undoBattle(screen, stats)
+    expect(undo).toHaveBeenCalledOnce()
+    expect(record).toHaveBeenCalledTimes(accepted ? 1 : 0)
+    if (accepted) expect(record).toHaveBeenCalledWith(screen.statsIndex)
+  })
+
   it('counts accepted Undos and exports withdrawn actions in a ready format 2 Replay', () => {
     const stats = createPlayStats(null, () => new Date())
     const choice: BattleChoice = { scenarioId: 'scenario_1', boardId: 'crossroads', mode: 'hotseat', humanSide: 'A' }
