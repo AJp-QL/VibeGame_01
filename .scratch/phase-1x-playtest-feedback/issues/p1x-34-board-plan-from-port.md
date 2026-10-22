@@ -15,4 +15,4 @@
 
 - Read Action plan fields directly from `BattleSnapshot`; Replay ports retain the optional-field fallback. No rendering behavior change.
 - Plan tile taps go through session input; Move preview only intercepts tile taps when no plan is active.
-- Validation: frozen install, typecheck, production build, 1,086 tests passed (one existing skip), and Replay checks passed. Board visual comparison and PR CI are pending.
+- Validation: frozen install, typecheck, production build, 1,086 tests passed (one existing skip), and Replay checks passed. Board visual comparison passed (37/37, unchanged baselines); path ownership check passed. PR CI is pending.
