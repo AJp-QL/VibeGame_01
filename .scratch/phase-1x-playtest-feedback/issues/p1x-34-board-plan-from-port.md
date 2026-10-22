@@ -8,5 +8,11 @@
 
 **Status:** ready-for-agent
 
-- [ ] ไม่มี type ที่ขยาย `BattleSnapshot` เองใน packages/battle; อ่านจาก port ที่ P1X-32 เพิ่ม
+- [x] ไม่มี type ที่ขยาย `BattleSnapshot` เองใน packages/battle; อ่านจาก port ที่ P1X-32 เพิ่ม
 - [ ] screenshot ไม่เปลี่ยน (หรือ update baseline และตรวจทุกภาพถ้าเปลี่ยน); CI เขียวทั้งสาม job
+
+## Implementation notes
+
+- Read Action plan fields directly from `BattleSnapshot`; Replay ports retain the optional-field fallback. No rendering behavior change.
+- Plan tile taps go through session input; Move preview only intercepts tile taps when no plan is active.
+- Validation: frozen install, typecheck, production build, 1,086 tests passed (one existing skip), and Replay checks passed. Board visual comparison and PR CI are pending.
