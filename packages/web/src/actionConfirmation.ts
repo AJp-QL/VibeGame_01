@@ -44,7 +44,7 @@ export function createActionConfirmation(session: BattleSession) {
       ...session,
       input(input) {
         const snapshot = session.getSnapshot()
-        if (input.type === 'tapTile' && snapshot.mode === 'move' &&
+        if (snapshot.plan === null && input.type === 'tapTile' && snapshot.mode === 'move' &&
           snapshot.reachable.some(tile => tile.x === input.tile.x && tile.y === input.tile.y)) {
           guard(() => session.input(input))
         } else session.input(input)

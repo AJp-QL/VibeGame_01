@@ -14,5 +14,5 @@
 ## Implementation notes
 
 - Read Action plan fields directly from `BattleSnapshot`; Replay ports retain the optional-field fallback. No rendering behavior change.
-- Plan tile taps go through session input; Move preview only intercepts tile taps when no plan is active.
+- Plan tile taps go through session input; Move preview and action confirmation only intercept tile taps when no plan is active. A regression test verifies origin selection does not ask to abandon another Unit before confirmation.
 - Validation: frozen install, typecheck, production build, 1,086 tests passed (one existing skip), and Replay checks passed. Board visual comparison passed (37/37, unchanged baselines); path ownership check passed. PR CI is pending.
