@@ -17,4 +17,5 @@
 - Render only the session `undoState`: hidden, disabled with the matching Thai reason, or available with its offer.
 - Use the boolean returned by `undo()` to record accepted Undos; cover accepted/rejected commands and every display state in text tests.
 - Browser coverage captures turn-start and after-roll reasons at 1280 px and 360 px. Board baselines remain unchanged.
-- Validation and PR CI are pending.
+- Validation: frozen install, typecheck, 1,092 tests passed (one existing skip), production build, path ownership check, Replay checks, and 37/37 visual tests passed. PR CI is pending.
+- Inspected all four [desktop/mobile captures](../evidence/p1x-35-undo-reason-ui/README.md); both reasons are readable with no horizontal overflow.
