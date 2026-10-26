@@ -16,12 +16,12 @@
 
 **Blocked by:** P1X-39 — session: action ระหว่าง Move preview คิดจากช่องของเงา
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] ดาบ/จาง/กากบาทระหว่าง preview ตาม `movePreview.reach`; แตะศัตรูที่มีดาบได้การ์ด plan จากช่องเงา
 - [x] hint ของเป้านอกระยะและของ Camouflage ที่ปิด มี text test
 - [x] bottom sheet บนมือถือ ไม่มี horizontal scroll ไม่ต้องเลื่อนหาปุ่ม; "actions from here" หลังเดิน + ปุ่ม "เสร็จ"
-- [ ] screenshot ที่ 360/375 px และ desktop ของ preview, การ์ด plan และ sheet หลังเดิน; update baseline และตรวจทุกภาพ; CI เขียวทั้งสาม job
+- [x] screenshot ที่ 360/375 px และ desktop ของ preview, การ์ด plan และ sheet หลังเดิน; update baseline และตรวจทุกภาพ; CI เขียวทั้งสาม job
 
 ## Implementation / validation
 
@@ -30,4 +30,6 @@
 - Undo, Battle menu and Threat zone controls move into the sheet while it is open.
 - A move-only confirm offers attacks with session-provided odds, Defend, skills and UI-only Done. A free Command preserves the continuation while the session reports an Action left.
 - [Desktop, 360 px and 375 px captures](../evidence/p1x-40/README.md). Linux pinned Chromium 151.0.7922.34; every baseline inspected, including all 20 new/updated images.
-- Final CI checkbox remains open until all three PR jobs pass.
+- Final local comparison: 43/43 visual tests passed. Full unit suite: 1,114 passed, one existing skip.
+- [CI run 418](https://github.com/AJp-QL/VibeGame_01/actions/runs/40292375833): Typecheck/test/build, Path ownership check and Board visual regression all passed.
+- [PR #90](https://github.com/AJp-QL/VibeGame_01/pull/90) targets main; human review/merge per repo workflow.

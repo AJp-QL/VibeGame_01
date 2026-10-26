@@ -26,7 +26,9 @@ Checks:
 - Full unit suite: 1,114 passed; one existing skipped test. Cloud run used two
   workers and a 30-second timeout to accommodate simulation tests on this CPU.
 - Replay fixtures match this build; no engine/data fixture refresh was needed.
-- Visual update and comparison results are recorded in the PR.
+- Final visual comparison: 43/43 passed.
+- [CI run 418](https://github.com/AJp-QL/VibeGame_01/actions/runs/40292375833): all three jobs passed, including the actual screenshot comparison.
+- [PR #90](https://github.com/AJp-QL/VibeGame_01/pull/90).
 
 Image review: all 39 baselines inspected, including the 20 new/updated PNGs.
 Board marks, dimming, blocked crosses, ghost/target visibility, attack odds and
