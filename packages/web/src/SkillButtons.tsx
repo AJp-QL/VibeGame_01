@@ -11,25 +11,30 @@ export function SkillButtons({ snapshot, session, data }: { snapshot: SessionSna
     <div className="skills">
       <strong>{th.skillsTitle}</strong>
       <ul>
-        {snapshot.skills.map((button) => {
+        {snapshot.skills.filter(button => button.skill !== snapshot.movePreview?.skill).map((button) => {
           const skill = data.skills[button.skill]
-          const reason = !button.implemented
-            ? button.tier === 'passive'
-              ? th.skillPassive
-              : th.skillNotYet
-            : button.usedThisActivation === true
-              ? th.skillUsedThisActivation
-              : button.spent
-                ? th.skillSpent
-                : button.cooldown > 0
-                  ? th.cooldownTitle(button.cooldown)
-                  : null
+          const reason = button.fromMovePreview === 'move-first'
+            ? th.skillMoveFirst(skillName(data, button.skill))
+            : button.fromMovePreview === 'out-of-reach'
+              ? th.skillPreviewOutOfReach
+              : !button.implemented
+                ? button.tier === 'passive'
+                  ? th.skillPassive
+                  : th.skillNotYet
+                : button.usedThisActivation === true
+                  ? th.skillUsedThisActivation
+                  : button.spent
+                    ? th.skillSpent
+                    : button.cooldown > 0
+                      ? th.cooldownTitle(button.cooldown)
+                      : null
           return (
             <li key={button.skill}>
               <button
                 type="button"
                 className={`skill tier-${button.tier}`}
-                disabled={!button.usable}
+                disabled={!button.implemented || button.fromMovePreview === 'move-first' || (button.fromMovePreview == null && !button.usable)}
+                aria-describedby={`skill-reason-${button.skill}`}
                 aria-pressed={snapshot.pendingSkill === button.skill}
                 onClick={() => session.chooseSkill(button.skill)}
               >
@@ -40,7 +45,7 @@ export function SkillButtons({ snapshot, session, data }: { snapshot: SessionSna
                   </span>
                 )}
               </button>
-              <span className="skill-info">
+              <span className="skill-info" id={`skill-reason-${button.skill}`}>
                 {skill !== undefined && skillSummary(skill, statuses)}
                 {reason !== null && <span className="reason"> · {reason}</span>}
               </span>

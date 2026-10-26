@@ -654,3 +654,106 @@ describe('Undo text', () => {
     expect(th.replay.showUndone).toContain('Undo')
   })
 })
+
+describe('P1X-40 actions from the Move preview', () => {
+  it('shows previewRefusal independently of rejection, retaining the shadow', () => {
+    const s = withMovePreview(createBattleSession(playing({ A: ['a1', 'c5', 'c6'], B: ['g7', 'e5', 'c2'] })))
+    s.selectUnit('A.m1')
+    s.previewMove(t('a4'))
+    const before = s.getSnapshot()
+    s.input({ type: 'tapUnit', unit: 'B.tamer' })
+    const snapshot = s.getSnapshot()
+    expect(snapshot.previewRefusal).toBe('out-of-reach-from-preview')
+    expect(snapshot.rejection).toBeNull()
+    expect(snapshot.state).toBe(before.state)
+    expect(snapshot.movePreview?.tile).toEqual(before.movePreview?.tile)
+    const html = renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))
+    expect(html).toContain(th.previewOutOfReach)
+  })
+
+  it('uses preview availability even when a skill is unusable at the real origin; disables move-first with its hint', () => {
+    const s = createBattleSession(playing({ A: ['a1', 'c5', 'c6'], B: ['g7', 'e5', 'c2'] }))
+    s.selectUnit('A.m1')
+    const snapshot = s.getSnapshot()
+    const skills = [
+      { ...snapshot.skills[0]!, skill: 'camouflage', usable: true, fromMovePreview: 'move-first' as const },
+      { ...snapshot.skills[0]!, skill: 'cover', usable: false, fromMovePreview: 'plannable' as const },
+      { ...snapshot.skills[0]!, skill: 'first_aid', usable: true, fromMovePreview: 'out-of-reach' as const },
+    ]
+    const html = renderToStaticMarkup(createElement(SkillButtons, { snapshot: { ...snapshot, skills }, session: s, data }))
+    expect(html).toContain(th.skillMoveFirst('Camouflage'))
+    expect(html).toContain(th.skillPreviewOutOfReach)
+    const buttons = html.match(/<button[^>]*>/g)!
+    expect(buttons[0]).toContain('disabled')
+    expect(buttons[1]).not.toContain('disabled')
+    expect(buttons[2]).not.toContain('disabled')
+  })
+
+  it('renders Command options as Command and guards only the final preview Defend confirmation', () => {
+    const raw = createBattleSession(playing({ A: ['c3', 'c4', 'c6'], B: ['g7', 'e5', 'g1'] }))
+    raw.selectUnit('A.m1')
+    raw.previewMove(raw.getSnapshot().reachable[0]!)
+    raw.confirmMove()
+    const c = createActionConfirmation(raw)
+    const s = withMovePreview(c.session)
+    s.selectUnit('A.tamer')
+    s.previewMove(s.getSnapshot().reachable[0]!)
+    const before = s.getSnapshot()
+    s.defend()
+    expect(s.getSnapshot().plan?.choice?.kind).toBe('defend')
+    expect(c.getPending()).toBeNull()
+    expect(s.getSnapshot().state).toBe(before.state)
+    s.confirmPlan()
+    expect(c.getPending()).not.toBeNull()
+    c.cancel()
+    const commandSession = createBattleSession(playing({ A: ['c3', 'c4', 'c6'], B: ['g7', 'e5', 'g1'] }))
+    commandSession.endTurn()
+    commandSession.endTurn()
+    commandSession.selectUnit('A.tamer')
+    const destination = commandSession.getSnapshot().reachable.find(tile => {
+      commandSession.previewMove(tile)
+      commandSession.chooseCommand()
+      return commandSession.getSnapshot().plan?.choice?.kind === 'command'
+    })
+    expect(destination).toBeDefined()
+    const snapshot = commandSession.getSnapshot()
+    const html = renderToStaticMarkup(createElement(ActionPlanPanel, { snapshot, session: commandSession, data }))
+    expect(html).toContain(th.command)
+    for (const choice of snapshot.plan!.choices.filter(choice => choice.kind === 'command')) {
+      if (choice.action.type === 'command') expect(html).toContain(th.commandOption[choice.action.option])
+    }
+  })
+})
+
+it('after a move with no attack, still offers Defend and the UI-only Done control', () => {
+  const s = createBattleSession(playing({ A: ['a1', 'a2', 'b1'], B: ['g7', 'g6', 'f7'] }))
+  s.selectUnit('A.m1')
+  s.previewMove(t('a3'))
+  s.confirmMove()
+  const snapshot = s.getSnapshot()
+  expect(snapshot.attackable).toHaveLength(0)
+  const html = renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))
+  expect(html).toContain(th.actionsFromHere)
+  expect(html).toContain(th.defend)
+  expect(html).toContain(th.finishUnit)
+  expect(s.getSnapshot().state).toBe(snapshot.state)
+})
+
+it('keeps actions from here open after a post-move Command that leaves the Action available', () => {
+  const s = createBattleSession(playing({ A: ['d2', 'c3', 'e2'], B: ['d7', 'c5', 'e6'] }))
+  s.endTurn()
+  s.endTurn()
+  s.selectUnit('A.tamer')
+  s.previewMove(t('d3'))
+  s.confirmMove()
+  s.chooseCommand()
+  s.input({ type: 'tapUnit', unit: 'A.m1' })
+  s.chooseCommandOption('advantage')
+  s.confirmAttack()
+  const snapshot = s.getSnapshot()
+  expect(snapshot.actions.at(-1)?.type).toBe('command')
+  expect(snapshot.movedWithoutAction).toContain('A.tamer')
+  const html = renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))
+  expect(html).toContain(th.actionsFromHere)
+  expect(html).toContain(th.finishUnit)
+})

@@ -50,7 +50,8 @@ export function createActionConfirmation(session: BattleSession) {
         } else session.input(input)
       },
       defend() {
-        if (session.getSnapshot().canDefend) guard(() => session.defend())
+        if (session.getSnapshot().movePreview !== null) session.defend()
+        else if (session.getSnapshot().canDefend) guard(() => session.defend())
       },
       confirmPlan() {
         const { plan } = session.getSnapshot()

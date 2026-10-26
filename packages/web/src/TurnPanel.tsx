@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
+import { ActionsFromHere, isAfterMove, isActionSheetOpen } from './ActionsFromHere.tsx'
 import { COMMAND_OPTIONS, decidingSide, idleUnits, type BattleSession, type SessionSnapshot, type UnitState } from '@mt/session'
 import { tileName, type GameData } from '@mt/shared'
 import { unitName, namer, skillName } from './battleText.ts'
@@ -13,12 +14,14 @@ import { th } from './strings.ts'
 
 function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, current: UnitState | undefined, data: GameData) {
   const { state } = snapshot
+  if (snapshot.previewRefusal === 'out-of-reach-from-preview') return th.previewOutOfReach
   if (snapshot.rejection !== null) return th.rejection[snapshot.rejection]
   if (state.pending?.kind === 'inspiration') return th.inspiration.hint(state.pending.side)
   if (state.pending !== null) return th.hintRetreat(selected === undefined ? state.pending.unit : unitName(selected, data))
   if (selected === undefined) return th.hintSelect(state.sideToAct)
   if (snapshot.plan !== null) return th.actionPlan.hint
   if (snapshot.movePreview !== null) return th.hintMovePreview
+  if (isAfterMove(snapshot) && snapshot.mode === 'move') return th.actionsFromHereHint
   if (snapshot.mode === 'attack') {
     if (snapshot.preview !== null) return th.hintConfirm
     return snapshot.canAttack ? th.hintChooseTarget : th.hintAllBlocked
@@ -68,7 +71,7 @@ function turnHint(snapshot: SessionSnapshot, selected: UnitState | undefined, cu
   return snapshot.canDefend ? th.hintMoveOrDefend : th.hintMove
 }
 
-export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapshot; session: BattleSession; data: GameData }) {
+export function TurnPanel({ snapshot, session, data, tools }: { snapshot: SessionSnapshot; session: BattleSession; data: GameData; tools?: ReactNode }) {
   const [warning, setWarning] = useState<readonly string[] | null>(null)
   const { state } = snapshot
   const selected = state.units.find((u) => u.id === snapshot.selectedUnit)
@@ -101,10 +104,22 @@ export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapsh
     )
   }
 
+  if (isActionSheetOpen(snapshot) && (snapshot.plan !== null || snapshot.movePreview !== null || snapshot.mode === 'move')) {
+    return (
+      <section className="panel controls action-sheet">
+        <p className="hint" role="status">{turnHint(snapshot, selected, current, data)}</p>
+        {snapshot.plan !== null ? <ActionPlanPanel snapshot={snapshot} session={session} data={data} tools={tools} />
+          : snapshot.movePreview !== null ? <MovePreviewPanel snapshot={snapshot} session={session} data={data} tools={tools} />
+            : <ActionsFromHere snapshot={snapshot} session={session} data={data} tools={tools} />}
+      </section>
+    )
+  }
+
   return (
-    <section className="panel controls">
+    <section className={`panel controls${isActionSheetOpen(snapshot) ? ' action-sheet continuation-sheet' : ''}`}>
       {snapshot.attackable.length > 0 && <p className="muted">{th.actionPlan.legend}</p>}
       <p className="hint">{turnHint(snapshot, selected, current, data)}</p>
+      {tools}
       {selected !== undefined && <UnitCard unit={selected} state={state} data={data} />}
       {inspected !== undefined && <UnitCard unit={inspected} state={state} data={data} />}
       {selected !== undefined && snapshot.mode === 'move' && !deciding && snapshot.plan === null && snapshot.skills.length > 0 && (
@@ -145,8 +160,8 @@ export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapsh
       {snapshot.mode !== 'move' && snapshot.blocked.length > 0 && (
         <BlockedTargets blocked={snapshot.blocked} name={namer(state, data)} />
       )}
-      {snapshot.plan !== null && <ActionPlanPanel snapshot={snapshot} session={session} data={data} />}
-      {snapshot.plan === null && snapshot.movePreview !== null && <MovePreviewPanel snapshot={snapshot} session={session} data={data} />}
+      {snapshot.plan !== null && <ActionPlanPanel snapshot={snapshot} session={session} data={data} tools={tools} />}
+      {snapshot.plan === null && snapshot.movePreview !== null && <MovePreviewPanel snapshot={snapshot} session={session} data={data} tools={tools} />}
       {snapshot.plan === null && snapshot.preview !== null && snapshot.movePreview === null && (
         <PreviewCard preview={snapshot.preview} action={snapshot.ready} name={namer(state, data)} data={data} />
       )}
@@ -159,7 +174,7 @@ export function TurnPanel({ snapshot, session, data }: { snapshot: SessionSnapsh
           </button>
         </div>
       ) : warning === null ? (
-        <div className="buttons">
+        <div className="buttons sheet-footer">
           {selected !== undefined && snapshot.mode === 'move' && snapshot.plan === null && (
             <button
               type="button"

@@ -217,7 +217,9 @@ export class BattleScene extends Phaser.Scene {
       const view = this.unitView(unit)
       const spent = state.phase === 'play' && unit.side === state.sideToAct && !snapshot.canAct.includes(unit.id)
       // A running animation (Blink's fade) owns the alpha until it ends.
-      if (!this.animating.has(unit.id)) view.container.setAlpha(spent ? SPENT_ALPHA : 1)
+      const outOfPreviewReach = snapshot.movePreview != null && unit.side !== state.sideToAct &&
+        !snapshot.movePreview.reach.some(reach => reach.targets.includes(unit.id))
+      if (!this.animating.has(unit.id)) view.container.setAlpha(spent || outOfPreviewReach ? SPENT_ALPHA : 1)
       // Units being placed are not on the Board yet, and are at full HP.
       const maxHp = state.phase === 'play' ? derivedValues(state, unit.id).maxHp : unit.hp
       this.drawHpBar(view.hpBar, unit.hp, maxHp)
@@ -313,7 +315,10 @@ export class BattleScene extends Phaser.Scene {
       g.strokeRect(tile.x * TILE_SIZE + 2.5, tile.y * TILE_SIZE + 2.5, TILE_SIZE - 4, TILE_SIZE - 4)
     }
     // Attack origins and enemies come entirely from the session's Action plan data.
-    const enemies = snapshot.mode === 'move' ? snapshot.attackable ?? [] : []
+    const shadowTargets = snapshot.movePreview == null ? null : new Set(snapshot.movePreview.reach.flatMap(reach => reach.targets))
+    const enemies = shadowTargets !== null
+      ? snapshot.units.filter(unit => shadowTargets.has(unit.id)).map(unit => ({ unit: unit.id, tile: unit.tile, origins: [] }))
+      : snapshot.mode === 'move' ? snapshot.attackable ?? [] : []
     const origins = snapshot.plan?.originChoices ?? enemies.flatMap(enemy => enemy.origins)
     for (const origin of origins) {
       const centre = tileCentre(origin.tile)
@@ -354,7 +359,11 @@ export class BattleScene extends Phaser.Scene {
       g.lineStyle(1, TARGET, 1)
       g.strokeRect(tile.x * TILE_SIZE + 2.5, tile.y * TILE_SIZE + 2.5, TILE_SIZE - 4, TILE_SIZE - 4)
     }
-    for (const tile of snapshot.blockedTargets) {
+    const blockedTiles = snapshot.movePreview == null ? snapshot.blockedTargets : snapshot.movePreview.reach
+      .flatMap(reach => reach.blocked)
+      .filter(blocked => !shadowTargets?.has(blocked.unit))
+      .map(blocked => blocked.tile)
+    for (const tile of blockedTiles) {
       // Crossed out: in range, but a Unit stands in the line of sight.
       const left = tile.x * TILE_SIZE + 4
       const top = tile.y * TILE_SIZE + 4

@@ -11,7 +11,7 @@ async function tapTile(page: Page, tile: { x: number; y: number }) {
   await page.mouse.click(box.x + (tile.x + 0.5) * box.width / 7, box.y + (tile.y + 0.5) * box.height / 7)
 }
 
-for (const width of [1280, 360]) {
+for (const width of [1280, 360, 375]) {
   for (const mode of ['move', 'blink', 'blocked'] as const) {
     test(`preview-${mode}-${width}`, async ({ page, browser }) => {
       if (test.info().config.updateSnapshots !== 'none' && (process.env.VISUAL_CHROMIUM || process.platform !== 'linux')) {
@@ -58,7 +58,7 @@ for (const width of [1280, 360]) {
       if (mode === 'blocked') await expect(panel).toContainText('line of sight')
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
       await page.evaluate(() => document.fonts.ready)
-      await expect(page.locator('main')).toHaveScreenshot(`preview-${mode}-${width}.png`, { animations: 'disabled' })
+      await expect(width < 600 ? page : page.locator('main')).toHaveScreenshot(`preview-${mode}-${width}.png`, { animations: 'disabled' })
       // Original Unit cancels the preview, with no Battle change.
       const original = await page.evaluate(() => {
         const s = window.previewSession.getSnapshot()

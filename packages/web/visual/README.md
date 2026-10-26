@@ -128,18 +128,18 @@ VISUAL_CHROMIUM=/usr/bin/chromium pnpm --filter @mt/web test:visual --ignore-sna
 
 `/move-preview.html` mounts the real Battle session, Board and Turn panel, with
 `?side=B` for the blocked-target layout. `move-preview.visual.ts` captures the
-whole `main` element at viewport widths **1280** and **360** px, height **900** px,
+whole `main` element at viewport widths **1280**, **360** and **375** px, height **900** px,
 and device scale 1. The captured `main` is **688 px** wide on desktop and
-**328 px** on mobile. Image height follows the content (both pages can scroll);
+**328 px** on mobile. Desktop image height follows the content; phone captures use the viewport with a fixed Board above a bottom sheet. Only sheet details scroll; its confirmation footer remains visible.
 these are not the fixed 672×672 Board-only captures. The same **0.1** threshold
 and maximum **8** differing pixels apply; animations are disabled for these
 static UI captures.
 
 | Capture | Expected view |
 | --- | --- |
-| preview-move-1280 / preview-move-360 | Move preview, reachable tiles, translucent Unit and confirmation panel |
-| preview-blink-1280 / preview-blink-360 | Blink destination preview and Blink confirmation |
-| preview-blocked-1280 / preview-blocked-360 | Team B preview with a blocked target and its line-of-sight reason |
+| preview-move-1280 / preview-move-360 / preview-move-375 | Move preview, reachable tiles, translucent Unit and confirmation panel |
+| preview-blink-1280 / preview-blink-360 / preview-blink-375 | Blink destination preview and Blink confirmation |
+| preview-blocked-1280 / preview-blocked-360 / preview-blocked-375 | Team B preview with a blocked target and its line-of-sight reason |
 
 Each case changes destinations, then taps the original Unit to cancel. It checks
 that the panel and preview disappear without changing the Battle, selection,
@@ -148,3 +148,13 @@ image: the selected Unit and destination highlights must remain. The cancelled
 Board is attached as `preview-cancelled-{mode}-{width}`. It then previews again
 and confirms through the real controls. This exercises Move, Blink and Hotseat
 team B at both widths; no compatibility branch for pre-ticket-18 sessions remains.
+
+## Actions from the shadow (P1X-40)
+
+`preview-actions.visual.ts` uses the real `/action-plan.html` session at 1280,
+360 and 375 px, with a 640 px viewport height. It captures `shadow-preview`,
+`shadow-plan` and `actions-from-here` at each width. It checks that the complete
+Board stays above the sheet, the footer stays on screen, the document does not
+scroll, an enemy tap creates a plan at the shadow without spending an action,
+and Done clears selection without changing the Battle or its current activation.
+The post-move capture includes attack odds read through an isolated session.

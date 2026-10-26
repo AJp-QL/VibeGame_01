@@ -11,6 +11,7 @@ import { BattleMenu } from './BattleMenu.tsx'
 import { StatusBar, ResultSummary } from './BattleStatus.tsx'
 import { DeploymentPanel, InitiativeResult } from './DeploymentPanel.tsx'
 import { InspirationPrompt } from './InspirationPrompt.tsx'
+import { isActionSheetOpen } from './ActionsFromHere.tsx'
 import { TurnPanel } from './TurnPanel.tsx'
 import { HpList } from './UnitDetails.tsx'
 import { EventLog } from './EventLog.tsx'
@@ -45,13 +46,22 @@ export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAga
   const scenario = data.scenarios[state.scenarioId]
   const board = data.boards[state.boardId]
 
+  const sheetOpen = isActionSheetOpen(snapshot)
+  const menuControls = state.outcome === null
+    ? <BattleMenu onExportReplay={onExportReplay} onLeave={onMenu} onStartOver={onStartOver} />
+    : null
+  const undoControls = <UndoControls snapshot={snapshot} onUndo={onUndo} />
+  const threatControls = state.phase === 'play' && state.outcome === null && snapshot.screen === 'board'
+    ? <ThreatZoneToggle previewOpen={snapshot.plan === null && snapshot.movePreview !== null} visible={showThreatZone} onChange={setShowThreatZone} />
+    : null
+
   return (
     <main className="battle">
       <StartUnitDialog confirmation={confirmation} data={data} />
       <StatusBar state={state} />
       {snapshot.aiSide !== null && <p className="muted vs-ai">{th.ai.sides(otherSide(snapshot.aiSide), snapshot.aiSide)}</p>}
 
-      {state.outcome === null && <BattleMenu onExportReplay={onExportReplay} onLeave={onMenu} onStartOver={onStartOver} />}
+      {!sheetOpen && menuControls}
 
       {state.outcome !== null && (
         <section className={`panel result side-${state.outcome.winner ?? 'draw'}`} role="status">
@@ -73,10 +83,8 @@ export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAga
         </section>
       )}
 
-      <UndoControls snapshot={snapshot} onUndo={onUndo} />
-      {state.phase === 'play' && state.outcome === null && snapshot.screen === 'board' && (
-        <ThreatZoneToggle previewOpen={snapshot.plan === null && snapshot.movePreview !== null} visible={showThreatZone} onChange={setShowThreatZone} />
-      )}
+      {!sheetOpen && undoControls}
+      {!sheetOpen && threatControls}
       <BattleView session={session} showThreatZone={showThreatZone} />
       <TerrainLegend />
 
@@ -84,7 +92,7 @@ export function BattleScreen({ data, session: sourceSession, diceSeed, onPlayAga
         <DeploymentPanel snapshot={snapshot} session={session} data={data} />
       ) : state.outcome === null ? (
         // Any accepted action closes an open End Turn warning.
-        <TurnPanel key={snapshot.revision} snapshot={snapshot} session={session} data={data} />
+        <TurnPanel key={snapshot.revision} snapshot={snapshot} session={session} data={data} tools={sheetOpen ? <>{menuControls}{undoControls}{threatControls}</> : null} />
       ) : null}
 
       {state.phase === 'play' && (
