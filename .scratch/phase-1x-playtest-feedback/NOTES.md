@@ -53,6 +53,9 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-35 | UI: Undo hide/disable + reason from session | codex | P1X-33, P1X-07 | done (PR #85) |
 | P1X-36 | Tune 9x9 Boards (balance targets) + AI approach on 9x9 | claude | — | backlog (user 2026-10-20): PR #70 (AI approach, option 3 relaxed 9x9 targets) is a draft on hold until the user confirms |
 | P1X-37 | Hide 9x9 Boards from the menu for v0.2.0 | claude | — | done (PR #73; menu offers 7x7 only) |
+| P1X-39 | Session: actions during a Move preview come from the shadow's tile | claude | — | ready (grill 2026-10-26) |
+| P1X-40 | UI: act from Move preview, phone bottom sheet, actions after a move | codex | P1X-39 | waiting |
+| P1X-41 | Release v0.2.1 + short playtest | claude | P1X-39, P1X-40 | waiting |
 
 Next (2026-10-22): v0.2.0 is live and the user has played a Battle on it. The URL can go to playtesters with `docs/playtest/v0.2.0-playtest-notes.md`; the feedback button stays hidden until `FEEDBACK_FORM_URL` is set. Backlog: P1X-36 (PR #70 draft, on hold), P1X-16 (Codex, PR #67), P1X-21/22 (low priority). After the playtest: read the Replays and decide the next phase.
 

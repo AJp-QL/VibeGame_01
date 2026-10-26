@@ -98,6 +98,18 @@
 60. As a player, I want one confirm button to do the Move and then the Action, labelled that the result cannot be undone once dice are rolled, so that I commit knowingly.
 61. As a player, I want a tap on the Board never to commit anything, so that a mis-tap on a small tile is harmless.
 
+### Act from the Move preview (added 2026-10-26, playtest of v0.2.0 on a phone)
+Problem: during a Move preview, choosing a skill, Attack or Defend, or tapping an enemy the shadow cannot reach, acted from the Unit's real tile, so the Unit seemed to "go back". Decided in a grill session with the user on 2026-10-26 (decision log).
+62. As a player, I want every action I choose during a Move preview (skills, Basic Attack, Defend, Burst with its centre in range of the shadow, Command) to be worked out from the shadow's tile and planned as Move (or Blink) + that action with one confirm, so that the Unit never acts from where it stood.
+63. As a player, I want a tap on an enemy, or a skill target, that the shadow cannot reach to do nothing but show a hint ("from this tile X is out of reach, choose another tile"), so that the shadow never jumps to a tile I did not pick.
+64. As a player, I want to cancel the Move preview (tap my Unit or Cancel) to act from my real tile again (attack first, Hit and Run), so that the old order still works.
+65. As a player, I want a free skill that cannot join a plan (Camouflage) shown but disabled during a Move preview, with the hint to confirm the move first, so that I learn the order.
+66. As a player, I want only the enemies the shadow can reach to carry the sword badge during a Move preview (others faded, line-of-sight blocked ones crossed), so that the Board shows what the shadow can do.
+67. As a player on a phone, I want the Move preview panel and the Action plan card as a bottom sheet over the lower part of the Board, so that I do not scroll to find my actions.
+68. As a player, I want the sheet to show "actions from here" right after I confirm a move only (an attack per enemy in range with hit chance, Defend, support skills and a "เสร็จ" button), and the enemies in range badged on the Board, so that I can still act in the same activation.
+69. As a player, I want "เสร็จ" to only close the sheet and deselect the Unit (the activation ends as before: starting another Unit with the switch confirmation, or ending the Turn), so that no rule changes and an Action is not lost by mistake.
+70. As a player, I want every action to keep one confirm (story 61), so that a mis-tap on a phone is harmless.
+
 ### Replay and analysis
 48. As a playtest analyst, I want the Replay to record Undo actions, so that I can see where players changed their mind.
 49. As a playtest analyst, I want Replay playback to skip undone actions by default with a toggle to show them, so that I can watch either the clean game or the full story.
@@ -116,6 +128,8 @@
 **Inspiration rule (rules §18, new D-row).** Offered only when the side's own attack roll misses (incl. Mark, each Burst target, counterattack) or its own save fails, and on initiative to the losing side as today. A hit is never offered. Rule change: ENGINE_VERSION minor bump; visual fixtures need the Codex refresh ticket (AGENTS.md rule). AI behaviour unchanged (it already uses Inspiration only on a missed attack against a Tamer and on its own failed saves); SIM_PROFILES and sim-v4 parity unchanged.
 
 **Move preview (session, additive).** A new selection step between choosing a reachable tile and moving: the session holds a previewed tile (UI state, not game state) and the snapshot exposes it with, per skill that is ready, the enemies reachable from that tile and those blocked by line of sight, computed by the engine as if the Unit stood there (no state change, no dice). A confirm command performs the Move (or Blink) to the previewed tile. Tapping another reachable tile replaces the preview; tapping the Unit cancels it. The snapshot also carries the Threat zone count for the previewed tile (story 7) once ticket 5 lands; before that the field is absent.
+
+**Act from the Move preview (session, additive; 2026-10-26).** While `movePreview` is set, `chooseSkill`, `defend`, `chooseCommand` and target aiming plan from the shadow's tile (an Action plan with origin = the shadow, `via` move or blink) instead of acting from the real tile; `defend` no longer dispatches at once during a preview. A target the shadow cannot reach is refused with a rejection code and the preview stays. Board highlights for the preview come from `movePreview.reach`. Camouflage and other free skills stay out of plans (disabled during a preview). No new engine action, no `ENGINE_VERSION` bump. "เสร็จ" after a move is UI only (deselect). UI: bottom sheet on phones, "actions from here" after a move only.
 
 **Threat zone (engine helper + session field).** Rough estimate by agreement: for each enemy Unit still on the Board, it threatens a tile if Chebyshev distance from the enemy to the tile ≤ the enemy's walk range plus the longest range among its attack or save skills. Ignores cooldown, line of sight, Command, Taunt, Pin and other Units blocking. Shown at the previewed tile as a count, and (decided 2026-10-18 after docs/research/tactics-benchmark.md) as a full-Board overlay the player can toggle, off by default. Tapping an enemy to see its own move and attack range is a separate, low-priority pair of tickets (21, 22). Built after the range experiments (its value depends on the ranges).
 
