@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import type { BattleSession } from '@mt/session'
 import { th } from '../src/strings.ts'
 
-declare global { interface Window { previewSession: BattleSession } }
+declare global { interface Window { previewSession: BattleSession; previewUnitAlpha(id: string): number | undefined } }
 
 async function tapTile(page: Page, tile: { x: number; y: number }) {
   const canvas = page.locator('canvas')
@@ -11,7 +11,7 @@ async function tapTile(page: Page, tile: { x: number; y: number }) {
   await page.mouse.click(box.x + (tile.x + 0.5) * box.width / 7, box.y + (tile.y + 0.5) * box.height / 7)
 }
 
-for (const width of [1280, 360]) {
+for (const width of [1280, 360, 375]) {
   for (const mode of ['move', 'blink', 'blocked'] as const) {
     test(`preview-${mode}-${width}`, async ({ page, browser }) => {
       if (test.info().config.updateSnapshots !== 'none' && (process.env.VISUAL_CHROMIUM || process.platform !== 'linux')) {
@@ -55,10 +55,15 @@ for (const width of [1280, 360]) {
       const panel = page.locator('.move-preview')
       await expect(panel).toBeVisible()
       await expect(page.locator('.hint')).toHaveText(th.hintMovePreview)
-      if (mode === 'blocked') await expect(panel).toContainText('line of sight')
+      if (mode === 'blocked') {
+        await expect(panel).toContainText('line of sight')
+        const blocked = preview!.reach.flatMap(reach => reach.blocked).find(blocked => blocked.reason === 'no-line-of-sight')!
+        expect(blocked).toBeDefined()
+        expect(await page.evaluate(id => window.previewUnitAlpha(id), blocked.unit)).toBe(1)
+      }
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
       await page.evaluate(() => document.fonts.ready)
-      await expect(page.locator('main')).toHaveScreenshot(`preview-${mode}-${width}.png`, { animations: 'disabled' })
+      await expect(width < 600 ? page : page.locator('main')).toHaveScreenshot(`preview-${mode}-${width}.png`, { animations: 'disabled' })
       // Original Unit cancels the preview, with no Battle change.
       const original = await page.evaluate(() => {
         const s = window.previewSession.getSnapshot()
@@ -90,4 +95,36 @@ for (const width of [1280, 360]) {
       expect(errors).toEqual([])
     })
   }
+}
+
+for (const width of [360, 375]) {
+  test(`all attack choices and target selectors fit without scrolling at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 640 })
+    await page.goto('/move-preview.html')
+    await expect(page.locator('canvas')).toBeVisible()
+    const destination = await page.evaluate(() => {
+      const s = window.previewSession
+      for (const tile of s.getSnapshot().reachable) {
+        s.previewMove(tile)
+        if (s.getSnapshot().movePreview!.reach.some(reach => reach.targets.length > 1)) return tile
+      }
+      throw new Error('Expected a multiple-target preview')
+    })
+    const buttons = page.locator('.move-preview .sheet-choices button')
+    for (const button of await buttons.all()) await expect(button).toBeInViewport({ ratio: 1 })
+    const pickers = page.locator('.preview-choice select')
+    for (const picker of await pickers.all()) {
+      await expect(picker).toBeInViewport({ ratio: 1 })
+      await expect(picker).toHaveCSS('font-family', /Noto Sans Mono/)
+    }
+    await expect(page.getByRole('button', { name: th.confirmMove, exact: true })).toBeInViewport({ ratio: 1 })
+    const row = page.locator('.preview-choice').filter({ has: page.locator('select option:nth-child(2)') }).first()
+    const key = await row.locator('select option').last().getAttribute('value')
+    await row.locator('select').selectOption(key!)
+    const before = await page.evaluate(() => window.previewSession.getSnapshot().actions.length)
+    await row.getByRole('button').click()
+    expect(await page.evaluate(() => window.previewSession.getSnapshot().plan!.choice!.key)).toBe(key)
+    expect(await page.evaluate(() => window.previewSession.getSnapshot().plan!.origin.tile)).toEqual(destination)
+    expect(await page.evaluate(() => window.previewSession.getSnapshot().actions.length)).toBe(before)
+  })
 }

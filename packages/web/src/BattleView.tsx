@@ -18,10 +18,12 @@ export function BattleView({ session, showThreatZone = false }: { session: Battl
   useLayoutEffect(() => {
     const parent = parentRef.current
     if (parent === null) return
+    const layout = parent.closest<HTMLElement>('.battle')
+    layout?.style.setProperty('--sheet-board-min', `${boardPixels(session.getSnapshot().state)}px`)
     // StrictMode mounts twice in development: the teardown removes the first canvas at once.
     const mounted = mountBattleGame(parent, session, LABELS)
     mountedRef.current = mounted
-    return () => { mountedRef.current = null; mounted() }
+    return () => { mountedRef.current = null; mounted(); layout?.style.removeProperty('--sheet-board-min') }
   }, [session])
 
   useLayoutEffect(() => {

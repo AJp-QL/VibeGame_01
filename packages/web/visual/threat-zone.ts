@@ -10,6 +10,7 @@ import { tileFromName as tile } from '@mt/shared'
 import { ThreatZoneToggle } from '../src/ThreatZone.tsx'
 import { BattleScene } from '@mt/battle'
 import { BattleView } from '../src/BattleView.tsx'
+import { isActionSheetOpen } from '../src/ActionsFromHere.tsx'
 import { TurnPanel } from '../src/TurnPanel.tsx'
 import { StartUnitDialog } from '../src/StartUnitDialog.tsx'
 import { createActionConfirmation } from '../src/actionConfirmation.ts'
@@ -36,11 +37,13 @@ Object.assign(window, { threatSession: session })
 function Review() {
   const [visible, setVisible] = useState(false)
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot)
+  const sheetOpen = isActionSheetOpen(snapshot)
+  const tools = createElement(ThreatZoneToggle, { visible, previewOpen: snapshot.plan === null && snapshot.movePreview !== null, onChange: setVisible })
   return createElement('main', { className: 'battle' },
     createElement(StartUnitDialog, { confirmation, data }),
-    createElement(ThreatZoneToggle, { visible, previewOpen: snapshot.plan === null && snapshot.movePreview !== null, onChange: setVisible }),
+    !sheetOpen && tools,
     createElement(BattleView, { session, showThreatZone: visible }),
-    createElement(TurnPanel, { key: snapshot.revision, snapshot, session, data }),
+    createElement(TurnPanel, { key: snapshot.revision, snapshot, session, data, tools: sheetOpen ? tools : null }),
   )
 }
 await document.fonts.ready
