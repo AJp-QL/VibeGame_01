@@ -5,8 +5,8 @@
 **What to build:** หลัง P1X-39 (spec stories 66–70, decision log 2026-10-26, เล่นบนมือถือก่อน):
 
 - ระหว่าง Move preview บน Board มีเครื่องหมายดาบเฉพาะศัตรูที่เงาไปถึง (`movePreview.reach` targets) ตัวอื่นจาง ตัวที่ line of sight บังมีกากบาท; แตะศัตรูที่มีดาบ = plan จากช่องเงา
-- เป้าที่เงาไปไม่ถึง: แสดง hint จาก rejection code ใหม่ของ P1X-39 ("จากช่องนี้ X อยู่นอกระยะ เลือกช่องอื่น")
-- Camouflage และ free skill ที่ session บอกว่าปิดระหว่าง preview: ปุ่มปิดพร้อม hint "ยืนยันการเดินก่อน แล้วค่อยใช้ Camouflage บนช่องป่า"
+- เป้าที่เงาไปไม่ถึง: แสดง hint จาก `snapshot.previewRefusal === 'out-of-reach-from-preview'` ของ P1X-39 (field ใหม่ ไม่ใช่ `snapshot.rejection`) ("จากช่องนี้ X อยู่นอกระยะ เลือกช่องอื่น")
+- Camouflage และ free skill ที่ session บอกว่าปิดระหว่าง preview (`SkillButton.fromMovePreview === 'move-first'`; `'out-of-reach'` = เงาใช้ไม่ถึง): ปุ่มปิดพร้อม hint "ยืนยันการเดินก่อน แล้วค่อยใช้ Camouflage บนช่องป่า"
 - มือถือ (360/375 px): แผง Move preview และการ์ด Action plan เป็น bottom sheet ทับส่วนล่างของ Board ไม่ต้องเลื่อนหน้า ไม่บังช่องเงาและเป้า; desktop คงตำแหน่งเดิมได้
 - หลังกด "เดิน" (เดินอย่างเดียว) sheet เปลี่ยนเป็น "action ที่ทำได้จากตรงนี้": ปุ่มโจมตีต่อศัตรูในระยะ (พร้อมโอกาสโดน), Defend, skill ช่วย และปุ่ม "เสร็จ"; ศัตรูในระยะมีดาบบน Board แตะแล้วได้การ์ด plan; ถ้าไม่มี action อื่น ยังแสดง Defend และ "เสร็จ"
 - "เสร็จ" = UI อย่างเดียว: เลิกเลือก Unit ปิด sheet (activation จบเมื่อเริ่ม Unit อื่นพร้อม dialog ของ ticket 02 หรือจบ Turn เหมือนเดิม)

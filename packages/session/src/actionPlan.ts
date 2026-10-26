@@ -36,9 +36,13 @@ export interface PlanOrigin {
 export interface PlanChoice {
   /** Identifies the choice across origins: the same attack on the same target has the same key anywhere. */
   readonly key: string
-  /** `attack`: Basic Attack or an attack/save skill on an enemy; `defend`; `other`: any other skill (Pack Howl, Cover, First Aid ...). */
-  readonly kind: 'attack' | 'defend' | 'other'
-  /** The skill id; `null` for Basic Attack and Defend. */
+  /**
+   * `attack`: Basic Attack or an attack/save skill on an enemy; `defend`; `other`: any other skill (Pack Howl, Cover, First Aid ...);
+   * `command` (P1X-39): a Tamer's Command on an allied Monster (`target`; the option is in `action`), only in a plan
+   * made by `chooseCommand` during a Move preview.
+   */
+  readonly kind: 'attack' | 'defend' | 'other' | 'command'
+  /** The skill id; `null` for Basic Attack, Defend and Command. */
   readonly skill: string | null
   /** The Unit aimed at, `null` when the choice has none (Defend, Pack Howl). */
   readonly target: UnitId | null
@@ -84,6 +88,8 @@ export interface OriginView {
   readonly via: Action | null
   readonly moved: BattleState
   readonly choices: readonly PlanChoice[]
+  /** The Commands the Unit (a Tamer) may issue from there (P1X-39): kept apart, a plan lists them only when one is chosen. */
+  readonly commands: readonly PlanChoice[]
 }
 
 const VIA_RANK: Readonly<Record<PlanVia, number>> = { stay: 0, move: 1, blink: 2 }
@@ -137,6 +143,15 @@ export function choicesOf(state: BattleState, actions: readonly Action[], unit: 
   return found
 }
 
+/** The Commands `unit` may issue in `actions` (the legal actions of a state), as plan choices: one per Monster and option. */
+export function commandChoicesOf(actions: readonly Action[], unit: UnitId): PlanChoice[] {
+  return actions.flatMap((action) =>
+    action.type === 'command' && action.unit === unit
+      ? [{ key: `command:${action.option}:${action.target}`, kind: 'command' as const, skill: null, target: action.target, action }]
+      : [],
+  )
+}
+
 /** The Battle after `action`, with its legal actions; `null` if the engine refuses it or it leaves a decision pending. */
 function simulate(state: BattleState, action: Action): { moved: BattleState; actions: Action[] } | null {
   const result = applyAction(state, action)
@@ -167,7 +182,10 @@ function computeViews(state: BattleState, unit: UnitId): OriginView[] {
   const actions = legalActions(state)
   const views: OriginView[] = []
   const stay = choicesOf(state, actions, unit)
-  if (stay.length > 0) views.push({ origin: { tile: self.tile, via: 'stay', steps: 0 }, via: null, moved: state, choices: stay })
+  const stayCommands = commandChoicesOf(actions, unit)
+  if (stay.length > 0 || stayCommands.length > 0) {
+    views.push({ origin: { tile: self.tile, via: 'stay', steps: 0 }, via: null, moved: state, choices: stay, commands: stayCommands })
+  }
   for (const action of actions) {
     if (!('unit' in action) || action.unit !== unit) continue
     let tile: Tile | undefined
@@ -188,7 +206,8 @@ function computeViews(state: BattleState, unit: UnitId): OriginView[] {
     const simulated = simulate(state, action)
     if (simulated === null) continue
     const choices = choicesOf(simulated.moved, simulated.actions, unit)
-    if (choices.length > 0) views.push({ origin: { tile, via, steps }, via: action, moved: simulated.moved, choices })
+    const commands = commandChoicesOf(simulated.actions, unit)
+    if (choices.length > 0 || commands.length > 0) views.push({ origin: { tile, via, steps }, via: action, moved: simulated.moved, choices, commands })
   }
   return views.sort((a, b) => compareOrigins(a.origin, b.origin, () => 0))
 }
@@ -210,7 +229,7 @@ export function attackableEnemies(state: BattleState, unit: UnitId, threat: (til
 export interface PlanWish {
   /** The enemy to attack, or `null` for a plan of a non-attack choice. */
   readonly target: UnitId | null
-  /** The origin picked, if any; ignored when it no longer offers the wish. */
+  /** The origin picked, if any: the plan is made from there or not at all (it never moves the shadow by itself, P1X-39). */
   readonly origin: Pick<PlanOrigin, 'tile' | 'via'> | null
   /** The choice picked (`PlanChoice.key`), if any. */
   readonly choice: string | null
@@ -218,7 +237,8 @@ export interface PlanWish {
 
 /**
  * The plan for `wish`, or `null` when no origin offers it. The origin is the
- * one picked if it still offers the wish, else the best one (`compareOrigins`).
+ * one picked (`null` if it does not offer the wish), else the best one (`compareOrigins`).
+ * A Command is planned only when `wish.choice` is one; its plan lists the Commands first.
  * `abandons` is the Unit the UI must warn about (ticket 02), worked out by the caller.
  */
 export function buildPlan(
@@ -228,18 +248,20 @@ export function buildPlan(
   abandons: UnitId | null,
   threat: (tile: Tile) => number,
 ): ActionPlan | null {
+  const commanding = (view: OriginView) => view.commands.some((c) => c.key === wish.choice)
   const offers = (view: OriginView) =>
     wish.target !== null
       ? view.choices.some((c) => c.kind === 'attack' && c.target === wish.target)
-      : wish.choice !== null && view.choices.some((c) => c.key === wish.choice)
+      : wish.choice !== null && (view.choices.some((c) => c.key === wish.choice) || commanding(view))
   const candidates = originViews(state, unit)
     .filter(offers)
     .sort((a, b) => compareOrigins(a.origin, b.origin, threat))
   const picked = wish.origin
-  const view = (picked === null ? undefined : candidates.find((v) => sameOrigin(v.origin, { ...picked, steps: 0 }))) ?? candidates[0]
+  const view = picked === null ? candidates[0] : candidates.find((v) => sameOrigin(v.origin, { ...picked, steps: 0 }))
   if (view === undefined) return null
   const onTarget = (c: PlanChoice) => wish.target !== null && c.kind === 'attack' && c.target === wish.target
-  const choices = [...view.choices.filter(onTarget), ...view.choices.filter((c) => !onTarget(c))]
+  const listed = commanding(view) ? [...view.commands, ...view.choices] : view.choices
+  const choices = [...listed.filter(onTarget), ...listed.filter((c) => !onTarget(c))]
   const choice = choices.find((c) => c.key === wish.choice) ?? choices.find(onTarget) ?? null
   let preview: ActionPreview | null = null
   let rolls = false
