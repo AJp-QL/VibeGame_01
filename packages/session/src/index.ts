@@ -22,6 +22,8 @@ export {
   type BlockedTarget,
   type HotseatScreen,
   type MovePreview,
+  type PreviewRefusal,
+  type SkillFromMovePreview,
   type UndoDisabledReason,
   type UndoOffer,
   type UndoState,
