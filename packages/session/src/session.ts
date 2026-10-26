@@ -76,6 +76,7 @@ import {
   sameOrigin,
   type ActionPlan,
   type AttackableEnemy,
+  type OriginView,
   type PlanChoice,
   type PlanOrigin,
 } from './actionPlan.ts'
@@ -176,15 +177,37 @@ export type UndoState =
   | { readonly kind: 'disabled'; readonly reason: UndoDisabledReason }
   | { readonly kind: 'available'; readonly offer: UndoOffer }
 
+/**
+ * What a skill button does during a Move preview (P1X-39): `plannable`: choosing it plans the skill from the
+ * shadow's tile; `out-of-reach`: the shadow's tile offers no use of it (choosing it only sets `previewRefusal`);
+ * `move-first`: a free skill that cannot join a plan (Camouflage), disabled until the Move is confirmed.
+ * Codes only; the player-facing text lives in the web package.
+ */
+export type SkillFromMovePreview = 'plannable' | 'out-of-reach' | 'move-first'
+
+/** Why a command during a Move preview did nothing (P1X-39): the shadow's tile does not reach that target or skill. */
+export type PreviewRefusal = 'out-of-reach-from-preview'
+
 /** A loadout skill button of the selected Unit. */
 export interface SkillButton extends SkillAvailability {
-  /** The engine has at least one legal use of it right now. */
+  /** The engine has at least one legal use of it right now (from the tile the Unit stands on). */
   readonly usable: boolean
+  /**
+   * Additive (P1X-39): what the button does while a Move preview is shown; `null` without a Move preview and for a
+   * skill that is itself a way to move (Blink, which keeps its old flow). The session always sets it; the field is
+   * optional only so that code that builds a `SkillButton` itself keeps compiling.
+   */
+  readonly fromMovePreview?: SkillFromMovePreview | null
 }
 
 export interface SessionSnapshot extends BattleSnapshot {
   /** Why the last attempted action was refused, if it was. */
   readonly rejection: RejectionCode | null
+  /**
+   * Additive (P1X-39): why the last command during a Move preview did nothing, if it did: the target or skill
+   * is out of reach from the shadow's tile; the shadow stays and no plan is made. Cleared by the next command.
+   */
+  readonly previewRefusal: PreviewRefusal | null
   /** Every event so far, oldest first, for the log. */
   readonly log: readonly BattleEvent[]
   /** Every action the engine accepted, in order: with the Dice Seed, this is the Battle's Replay. */
@@ -321,8 +344,9 @@ export interface BattleSession extends BattleSessionPort {
   confirmMove(): void
   /**
    * Action plan (ticket 23): pick an enemy of `snapshot.attackable` to attack. The session chooses
-   * where from: the Move preview's tile if it reaches the enemy, else the tile the Unit stands on,
-   * else the fewest steps, then tile order. Nothing is sent until `confirmPlan`.
+   * where from: the tile the Unit stands on, else the fewest steps, then tile order. During a Move
+   * preview (P1X-39) it is the shadow's tile or nothing: an enemy the shadow cannot reach makes no plan,
+   * leaves the shadow where it is and sets `previewRefusal`. Nothing is sent until `confirmPlan`.
    */
   aimTarget(unit: UnitId): void
   /** Action plan: act from another of `plan.originChoices` (a Move is preferred to a Blink to the same tile). */
@@ -645,7 +669,15 @@ const NO_PLAN = { planTarget: null, planOrigin: null, planChoice: null } as cons
 /** Where the Move preview's shadow stands, as a plan origin. */
 const shadowOrigin = (preview: MovePreview): Pick<PlanOrigin, 'tile' | 'via'> => ({ tile: preview.tile, via: preview.skill === null ? 'move' : 'blink' })
 
+/** What `unit` may do from the Move preview's shadow (P1X-39), from the engine on a copy; `undefined` if nothing. */
+const shadowView = (state: BattleState, unit: UnitId, preview: MovePreview): OriginView | undefined =>
+  originViews(state, unit).find((v) => sameOrigin(v.origin, { ...shadowOrigin(preview), steps: 0 }))
+
 const otherSide = (side: Side): Side => (side === 'A' ? 'B' : 'A')
+
+/** The first of `choices` that `match` takes and `prefer` likes, else the first `match` takes. */
+const preferred = (choices: readonly PlanChoice[], match: (c: PlanChoice) => boolean, prefer: (c: PlanChoice) => boolean) =>
+  choices.find((c) => match(c) && prefer(c)) ?? choices.find(match)
 
 export function createBattleSession(initial: BattleState, options: SessionOptions = {}): BattleSession {
   const listeners = new Set<() => void>()
@@ -768,14 +800,6 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       const result = previewAction(state, ready)
       preview = result.ok ? result.preview : null
     }
-    const selected = selectedUnit === null ? undefined : state.units.find((u) => u.id === selectedUnit)
-    const skills: SkillButton[] =
-      selected === undefined || state.phase !== 'play'
-        ? []
-        : unitSkills(state, selected.id).map((skill) => ({
-            ...skill,
-            usable: actions.some((a) => a.type === 'useSkill' && a.unit === selected.id && a.skill === skill.skill),
-          }))
     const zone = state.phase === 'play' ? threatZone(state, viewer(state)) : []
     const threatAt = (tile: Tile) => zone[tile.y]?.[tile.x] ?? 0
     const planning = state.phase === 'play' && state.pending === null && selectedUnit !== null && humanMayAct(state)
@@ -805,6 +829,23 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       const action = move ?? blink
       if (action !== null) movePreview = movePreviewOf(state, selectedUnit, action, threatAt)
     }
+    const selected = selectedUnit === null ? undefined : state.units.find((u) => u.id === selectedUnit)
+    const shadow = movePreview === null || selected === undefined ? undefined : shadowView(state, selected.id, movePreview)
+    const fromMovePreview = (skill: string): SkillFromMovePreview | null => {
+      if (movePreview === null) return null
+      const effects = state.skills[skill]?.effects
+      if (effects?.replacesMove === true) return null
+      if (effects?.free === true) return 'move-first'
+      return shadow?.choices.some((c) => c.skill === skill) === true ? 'plannable' : 'out-of-reach'
+    }
+    const skills: SkillButton[] =
+      selected === undefined || state.phase !== 'play'
+        ? []
+        : unitSkills(state, selected.id).map((skill) => ({
+            ...skill,
+            usable: actions.some((a) => a.type === 'useSkill' && a.unit === selected.id && a.skill === skill.skill),
+            fromMovePreview: fromMovePreview(skill.skill),
+          }))
     const tilesOf = (ids: readonly UnitId[]) =>
       ids.flatMap((id) => {
         const unit = state.units.find((u) => u.id === id)
@@ -870,6 +911,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     ...NO_AIM,
     inspectedUnit: null,
     rejection: null,
+    previewRefusal: null,
     log: [],
     actions: [],
     recorded: [],
@@ -879,7 +921,8 @@ export function createBattleSession(initial: BattleState, options: SessionOption
   })
 
   function update(next: Partial<Omit<SessionSnapshot, Computed>>): void {
-    snapshot = snapshotOf({ ...snapshot, ...next })
+    // A refusal during a Move preview answers one command only.
+    snapshot = snapshotOf({ ...snapshot, previewRefusal: null, ...next })
     for (const listener of listeners) listener()
   }
 
@@ -952,6 +995,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       rejection: null,
       log: [...snapshot.log, ...steps.flatMap((step) => step.events)],
       actions: [...snapshot.actions, ...actions],
+      recorded: [...snapshot.recorded, ...actions],
     })
   }
 
@@ -971,8 +1015,72 @@ export function createBattleSession(initial: BattleState, options: SessionOption
 
   /** Action plan: act from `tile` (one of `plan.originChoices`; a walk is preferred to a Blink to the same tile, `via` forces one). */
   function chooseOrigin(tile: Tile, via?: PlanOrigin['via']): void {
-    const origin = snapshot.plan?.originChoices.find((o) => sameTile(o.tile, tile) && (via === undefined || o.via === via))
-    if (origin !== undefined) update({ planOrigin: { tile: origin.tile, via: origin.via }, rejection: null })
+    const { state, selectedUnit, plan, movePreview } = snapshot
+    const origin = plan?.originChoices.find((o) => sameTile(o.tile, tile) && (via === undefined || o.via === via))
+    if (origin === undefined) return
+    const planOrigin = { tile: origin.tile, via: origin.via }
+    if (movePreview === null || selectedUnit === null) {
+      update({ planOrigin, rejection: null })
+      return
+    }
+    // During a Move preview (P1X-39) the shadow goes with the plan: a walk previews the tile, a Blink aims at it,
+    // and staying drops the preview (the plan is then made from the Unit's own tile).
+    const blink = origin.via === 'blink' ? originViews(state, selectedUnit).find((v) => sameOrigin(v.origin, origin))?.via : undefined
+    update({
+      ...NO_AIM,
+      ...(blink?.type === 'useSkill'
+        ? { mode: 'skill' as const, pendingSkill: blink.skill, pendingTile: origin.tile }
+        : { movePreviewTile: origin.via === 'move' ? origin.tile : null }),
+      planTarget: snapshot.planTarget,
+      planChoice: snapshot.planChoice,
+      planOrigin,
+      rejection: null,
+    })
+  }
+
+  /**
+   * During a Move preview (P1X-39): plan the choice `pick` takes from what the Unit may do from the shadow's
+   * tile, keeping the preview (and its aim) as it is. When there is none, no plan is made, the shadow stays and
+   * `previewRefusal` says why. `false` without a Move preview: the command then keeps its old meaning.
+   */
+  function planFromShadow(pick: (view: OriginView) => PlanChoice | undefined): boolean {
+    const { state, selectedUnit, movePreview } = snapshot
+    if (movePreview === null || !mayPlan(state, selectedUnit)) return false
+    const view = shadowView(state, selectedUnit, movePreview)
+    const choice = view === undefined ? undefined : pick(view)
+    if (choice === undefined) {
+      update({ previewRefusal: 'out-of-reach-from-preview', rejection: null })
+      return true
+    }
+    update({
+      planTarget: choice.kind === 'attack' ? choice.target : null,
+      planOrigin: shadowOrigin(movePreview),
+      planChoice: choice.key,
+      inspectedUnit: null,
+      rejection: null,
+    })
+    return true
+  }
+
+  /** `unit` is on the Board and not on the side of the selected Unit. */
+  function isEnemyOfSelected(unit: UnitId): boolean {
+    const { state, selectedUnit } = snapshot
+    const side = state.units.find((u) => u.id === selectedUnit)?.side
+    const target = state.units.find((u) => u.id === unit)
+    return side !== undefined && target !== undefined && target.side !== side
+  }
+
+  function aimTarget(unit: UnitId): void {
+    const { state, selectedUnit, attackable, movePreview, plan } = snapshot
+    if (!mayPlan(state, selectedUnit)) return
+    // During a Move preview (P1X-39): from the shadow's tile or not at all, with the plan's skill when it reaches.
+    if (movePreview !== null && isEnemyOfSelected(unit)) {
+      const skill = plan?.choice?.kind === 'attack' ? plan.choice.skill : undefined
+      planFromShadow((view) => preferred(view.choices, (c) => c.kind === 'attack' && c.target === unit, (c) => c.skill === skill))
+      return
+    }
+    if (!attackable.some((enemy) => enemy.unit === unit)) return
+    update({ ...NO_AIM, movePreviewTile: snapshot.movePreviewTile, planTarget: unit, rejection: null })
   }
 
   /** A Unit is selected, in play with no decision pending, and the human may act: an Action plan can be made. */
@@ -1050,6 +1158,11 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       if (state.pending !== null) {
         const owing = state.pending.kind === 'retreat' ? state.pending.unit : null
         update({ inspectedUnit: boardInput.unit === owing ? null : boardInput.unit })
+        return
+      }
+      // During a Move preview (P1X-39) a tap on an enemy aims from the shadow's tile, or only says it is out of reach.
+      if (snapshot.movePreview !== null && isEnemyOfSelected(boardInput.unit)) {
+        aimTarget(boardInput.unit)
         return
       }
       if (mode === 'command') {
@@ -1145,6 +1258,9 @@ export function createBattleSession(initial: BattleState, options: SessionOption
       if (humanMayAct(snapshot.state)) dispatch({ type: 'endTurn' })
     },
     chooseAttack() {
+      // During a Move preview (P1X-39): a Basic Attack from the shadow's tile, on the plan's target if it reaches.
+      const target = snapshot.plan?.target
+      if (planFromShadow((view) => preferred(view.choices, (c) => c.kind === 'attack' && c.skill === null, (c) => c.target === target))) return
       if (snapshot.selectedUnit !== null && (snapshot.canAttack || snapshot.blocked.length > 0)) {
         update({ ...NO_AIM, mode: 'attack', rejection: null })
       }
@@ -1152,16 +1268,26 @@ export function createBattleSession(initial: BattleState, options: SessionOption
     chooseSkill(skill) {
       const button = snapshot.skills.find((s) => s.skill === skill)
       if (snapshot.selectedUnit === null || button === undefined) return
+      // During a Move preview (P1X-39): planned from the shadow's tile (on the plan's target if it reaches);
+      // a free skill cannot join a plan and waits for the Move. Blink (`null`) keeps its own flow.
+      if (button.fromMovePreview === 'move-first') return
+      const target = snapshot.plan?.target
+      if (button.fromMovePreview != null && planFromShadow((view) => preferred(view.choices, (c) => c.skill === skill, (c) => c.target === target))) return
       const blocked = blockedTargets(snapshot.state, snapshot.selectedUnit, skill)
       if (button.usable || blocked.length > 0) {
         update({ mode: 'skill', pendingSkill: skill, pendingTarget: null, pendingTile: null, chosenTargets: [], ...NO_PLAN, rejection: null })
       }
     },
     defend() {
+      // During a Move preview (P1X-39): planned as Move + Defend, sent by `confirmPlan`.
+      if (planFromShadow((view) => view.choices.find((c) => c.kind === 'defend'))) return
       const { selectedUnit } = snapshot
       if (selectedUnit !== null && humanMayAct(snapshot.state)) dispatch({ type: 'defend', unit: selectedUnit })
     },
     chooseCommand() {
+      // During a Move preview (P1X-39): a Tamer plans Move + Command; Monster and option change with `choosePlanAction`.
+      const tamer = snapshot.state.units.find((u) => u.id === snapshot.selectedUnit)?.kind === 'tamer'
+      if (tamer && planFromShadow((view) => view.commands[0])) return
       if (snapshot.selectedUnit !== null && snapshot.canCommand) update({ ...NO_AIM, mode: 'command', rejection: null })
     },
     chooseCommandOption(option) {
@@ -1212,14 +1338,7 @@ export function createBattleSession(initial: BattleState, options: SessionOption
         dispatch({ type: 'move', unit: selectedUnit, to: movePreview.tile })
       }
     },
-    aimTarget(unit) {
-      const { state, selectedUnit, attackable, movePreview } = snapshot
-      if (!mayPlan(state, selectedUnit)) return
-      if (!attackable.some((enemy) => enemy.unit === unit)) return
-      // Tile-first: the shadow's tile is the place to attack from when it reaches the enemy (else the plan falls back to the rule).
-      const shadow = movePreview === null ? null : shadowOrigin(movePreview)
-      update({ ...NO_AIM, movePreviewTile: snapshot.movePreviewTile, planTarget: unit, planOrigin: shadow, rejection: null })
-    },
+    aimTarget,
     chooseOrigin,
     choosePlanAction(key) {
       const { state, selectedUnit, plan, movePreview } = snapshot
@@ -1230,7 +1349,8 @@ export function createBattleSession(initial: BattleState, options: SessionOption
         update({ planChoice: key, planTarget: choice.kind === 'attack' ? choice.target : plan.target, rejection: null })
         return
       }
-      // No plan yet: from the shadow of the Move preview, or from where the Unit stands.
+      // No plan yet: from the shadow of the Move preview (keeping its aim), or from where the Unit stands.
+      if (planFromShadow((view) => view.choices.find((c) => c.key === key) ?? view.commands.find((c) => c.key === key))) return
       const self = state.units.find((u) => u.id === selectedUnit)
       const origin =
         movePreview !== null

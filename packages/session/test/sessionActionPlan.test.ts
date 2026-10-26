@@ -345,15 +345,17 @@ describe('Action plan: tile-first, from the Move preview', () => {
     expect(plan.target).toBe(found.target)
   })
 
-  it('if the shadow\'s tile does not reach the enemy the rule picks the tile', () => {
+  it('if the shadow\'s tile does not reach the enemy the plan is refused', () => {
     const session = newSession(MIDDLE, 'A')
     session.selectUnit('A.m1')
     session.previewMove(tileFromName('a4'))
     const preview = session.getSnapshot().movePreview!
     expect(preview.reach.find((r) => r.skill === null)!.targets).toEqual([])
+    // P1X-39: the shadow never moves by itself; nothing is planned and the code says why.
     session.aimTarget('B.m1')
-    const plan = session.getSnapshot().plan!
-    expect(plan.origin).toEqual(session.getSnapshot().attackable.find((e) => e.unit === 'B.m1')!.origins[0])
+    expect(session.getSnapshot().plan).toBeNull()
+    expect(session.getSnapshot().previewRefusal).toBe('out-of-reach-from-preview')
+    expect(session.getSnapshot().movePreviewTile).toEqual(tileFromName('a4'))
   })
 
   it('the Move preview lists what the Unit can do from the shadow, Defend included, and one can be planned', () => {
