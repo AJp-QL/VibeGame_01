@@ -134,7 +134,9 @@ height. Phones capture the full **360×900** or **375×900** viewport: the full 
 sits above the bottom sheet, whose action choices and confirmation footer stay
 visible while informational details scroll. These differ from the fixed
 672×672 Board-only captures. The same **0.1** threshold and maximum **8** differing
-pixels apply; animations are disabled for static UI captures.
+pixels apply; animations are disabled for static UI captures. Target selectors
+inherit the pinned UI fonts and use explicit CSS appearance, avoiding native
+control font/theme differences between Linux hosts.
 
 | Capture | Expected view |
 | --- | --- |

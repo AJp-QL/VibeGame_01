@@ -38,3 +38,4 @@
 
 - PR #90 review fixes: use only `movedWithoutAction` and `canCommand`; generic move-first hints; named refusal targets/skills; deduplicated preview actions with target selectors; visible phone choices and confirm footer; desktop Unit cards and End Turn; revision/Unit memoization of session-provided odds; blocked enemies crossed without fading; consolidated/named CSS values; animation-completion waits; grouped tests and corrected visual/evidence documentation. Status remains done.
 - Review validation: 1,116 unit tests passed (one existing skip); all 46 visual refresh/interaction tests passed with pinned Linux Chromium; every baseline inspected. Final comparison and CI results are recorded in PR #90.
+- CI follow-up: target selectors now inherit the pinned UI font and use explicit CSS appearance/chevrons so Linux host fonts/themes cannot change the captures.

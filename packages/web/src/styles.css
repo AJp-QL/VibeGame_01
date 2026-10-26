@@ -889,6 +889,21 @@ body {
 
 .preview-choice { display: flex; gap: 6px; margin-block: 4px; }
 .preview-choice button, .preview-choice select { flex: 1; min-width: 0; }
+/* Native control fonts/themes vary across Linux images; use the same UI font and a CSS chevron. */
+.preview-choice select {
+  appearance: none;
+  font: inherit;
+  color: var(--text);
+  background-color: var(--panel);
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  padding: 8px 24px 8px 8px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text) 50%), linear-gradient(135deg, var(--text) 50%, transparent 50%);
+  background-position: right 10px center, right 6px center;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+}
+
 
 /* Keep the entire Board available above the phone's action sheet. */
 .action-sheet { overflow-wrap: anywhere; }
@@ -955,5 +970,6 @@ body {
   .sheet-choices .skills button { width: 100%; min-height: 32px; padding: 4px 6px; font-size: .75rem; }
   .sheet-choices .skill-summary { display: none; }
   .sheet-choices .skill-info { font-size: .7rem; line-height: 1.2; }
+  .preview-choice select { padding-right: 22px; }
 
 }

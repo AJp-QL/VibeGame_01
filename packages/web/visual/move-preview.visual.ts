@@ -113,7 +113,10 @@ for (const width of [360, 375]) {
     const buttons = page.locator('.move-preview .sheet-choices button')
     for (const button of await buttons.all()) await expect(button).toBeInViewport({ ratio: 1 })
     const pickers = page.locator('.preview-choice select')
-    for (const picker of await pickers.all()) await expect(picker).toBeInViewport({ ratio: 1 })
+    for (const picker of await pickers.all()) {
+      await expect(picker).toBeInViewport({ ratio: 1 })
+      await expect(picker).toHaveCSS('font-family', /Noto Sans Mono/)
+    }
     await expect(page.getByRole('button', { name: th.confirmMove, exact: true })).toBeInViewport({ ratio: 1 })
     const row = page.locator('.preview-choice').filter({ has: page.locator('select option:nth-child(2)') }).first()
     const key = await row.locator('select option').last().getAttribute('value')
