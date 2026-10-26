@@ -23,14 +23,18 @@ selection, preserving the Battle, recorded actions and current activation.
 Checks:
 
 - Frozen dependency install, typecheck, production build and path ownership check.
-- Full unit suite: 1,114 passed; one existing skipped test. Cloud run used two
+- Full unit suite: 1,116 passed; one existing skipped test. Cloud run used two
   workers and a 30-second timeout to accommodate simulation tests on this CPU.
 - Replay fixtures match this build; no engine/data fixture refresh was needed.
-- Final visual comparison: 43/43 passed.
-- [CI run 418](https://github.com/AJp-QL/VibeGame_01/actions/runs/40292375833): all three jobs passed, including the actual screenshot comparison.
+- Review baseline refresh and interaction checks: 46/46 passed; final comparison and current CI results are linked in PR #90.
+- Original implementation [CI run 418](https://github.com/AJp-QL/VibeGame_01/actions/runs/40292375833): all three jobs passed, including the actual screenshot comparison.
 - [PR #90](https://github.com/AJp-QL/VibeGame_01/pull/90).
 
 Image review: all 39 baselines inspected, including the 20 new/updated PNGs.
-Board marks, dimming, blocked crosses, ghost/target visibility, attack odds and
+Board marks, dimming, blocked crosses, Move preview/target visibility, attack odds and
 phone footers were checked. The existing Undo, menu and Threat zone flows also
 pass with their controls inside the sheet.
+
+Review fixes keep action choices outside the scrollable details and preserve desktop Unit cards and End Turn. Attack target selectors and choice buttons are checked in the phone viewport before any scrolling.
+
+Review validation: session flags alone determine continuation and Command availability. Refusal text names the attempted target or skill; generic move-first hints apply to every free skill. All available preview buttons, selectors and confirm controls fit at 360/375×640 without scrolling. Desktop tests exercise End Turn and its warning from both preview and plan; Board tests check that line-of-sight-blocked targets stay fully visible under their cross.

@@ -7,10 +7,7 @@ import { th } from './strings.ts'
 
 /** Only a move-only confirmation opens this continuation; selection is still session-owned. */
 export function isAfterMove(snapshot: SessionSnapshot): boolean {
-  if (snapshot.selectedUnit !== null && snapshot.movedWithoutAction.includes(snapshot.selectedUnit)) return true
-  const last = snapshot.actions.at(-1)
-  return snapshot.selectedUnit !== null && last !== undefined && 'unit' in last && last.unit === snapshot.selectedUnit &&
-    (last.type === 'move' || (last.type === 'useSkill' && snapshot.state.skills[last.skill]?.effects?.replacesMove === true))
+  return snapshot.selectedUnit !== null && snapshot.movedWithoutAction.includes(snapshot.selectedUnit)
 }
 
 export function isActionSheetOpen(snapshot: SessionSnapshot): boolean {
@@ -19,7 +16,8 @@ export function isActionSheetOpen(snapshot: SessionSnapshot): boolean {
 
 export function ActionsFromHere({ snapshot, session, data, tools }: { snapshot: SessionSnapshot; session: BattleSession; data: GameData; tools?: ReactNode }) {
   const name = namer(snapshot.state, data)
-  // Ask an isolated session for its plans and odds. No commands reach the live Battle.
+  // Read plans and hit chance through session data; web does not calculate engine rules.
+  // Cache across aim/UI updates: accepted actions change revision, selection changes the Unit.
   const attacks = useMemo(() => {
     const review = createBattleSession(snapshot.state)
     review.selectUnit(snapshot.selectedUnit)
@@ -27,7 +25,7 @@ export function ActionsFromHere({ snapshot, session, data, tools }: { snapshot: 
       review.aimTarget(enemy.unit)
       return { enemy, preview: review.getSnapshot().plan?.preview }
     })
-  }, [snapshot.state, snapshot.selectedUnit, snapshot.attackable])
+  }, [snapshot.revision, snapshot.selectedUnit])
   return (
     <section className="actions-from-here" aria-labelledby="actions-from-here-title">
       <div className="sheet-details">

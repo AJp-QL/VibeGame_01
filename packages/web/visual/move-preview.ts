@@ -7,12 +7,17 @@ import { createElement, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBattle, createBattleSession } from '@mt/session'
 import { tileFromName as tile } from '@mt/shared'
+import { BattleScene } from '@mt/battle'
 import { BattleView } from '../src/BattleView.tsx'
 import { TurnPanel } from '../src/TurnPanel.tsx'
 import { StartUnitDialog } from '../src/StartUnitDialog.tsx'
 import { createActionConfirmation } from '../src/actionConfirmation.ts'
 import { withMovePreview } from '../src/movePreviewSession.ts'
 import { loadBundledGameData } from '../src/gameData.ts'
+
+let scene: BattleScene
+const createScene = BattleScene.prototype.create
+BattleScene.prototype.create = function () { scene = this; createScene.call(this) }
 
 document.documentElement.style.fontFamily = '"Noto Sans Mono", "Noto Sans Thai"'
 const data = loadBundledGameData()
@@ -26,7 +31,9 @@ const source = createBattleSession(createBattle({
 const confirmation = createActionConfirmation(source)
 const session = withMovePreview(confirmation.session)
 session.selectUnit(`${side}.m2`)
-Object.assign(window, { previewSession: session })
+Object.assign(window, { previewSession: session, previewUnitAlpha: (id: string) =>
+  (scene as unknown as { unitViews: Map<string, { container: { alpha: number } }> }).unitViews.get(id)?.container.alpha,
+})
 function Review() {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot)
   return createElement('main', { className: 'battle' },

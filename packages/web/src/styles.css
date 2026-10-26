@@ -1,4 +1,5 @@
 :root {
+  --sheet-board-min: 224px;
   --bg: #15161a;
   --panel: #20222a;
   --text: #ecebe6;
@@ -886,6 +887,9 @@ body {
 .threat-value { display: inline-flex; align-items: center; gap: 8px; }
 .threat-value svg { flex: none; }
 
+.preview-choice { display: flex; gap: 6px; margin-block: 4px; }
+.preview-choice button, .preview-choice select { flex: 1; min-width: 0; }
+
 /* Keep the entire Board available above the phone's action sheet. */
 .action-sheet { overflow-wrap: anywhere; }
 .action-sheet > section { margin: 0; }
@@ -903,14 +907,14 @@ body {
     top: 8px;
     left: 16px;
     width: calc(100% - 32px);
-    height: max(var(--board-pixels), min(100vw - 32px, 40dvh));
+    height: var(--board-pixels);
     z-index: 10;
   }
   .action-sheet {
     position: fixed;
     inset: auto 0 0;
     z-index: 11;
-    max-height: calc(100dvh - max(224px, min(100vw - 32px, 40dvh)) - 16px);
+    max-height: calc(100dvh - var(--sheet-board-min) - 16px);
     display: flex;
     flex-direction: column;
     border-radius: 16px 16px 0 0;
@@ -926,19 +930,30 @@ body {
     border: 0;
     padding: 0;
   }
-  .sheet-details { overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+  .sheet-turn, .sheet-unit-cards { display: none; }
+  .sheet-choices { flex-shrink: 0; }
+  .sheet-details { flex: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
   .sheet-footer { flex-shrink: 0; background: var(--panel); }
   .sheet-footer button { min-height: 44px; flex: 1; }
   .action-sheet h2 { font-size: .95rem; }
   .action-sheet .move-reach { margin-block: 8px; }
-}
-@media (max-width: 600px) {
   .continuation-sheet { display: block; overflow-y: auto; }
   .continuation-sheet > .unit-card { display: none; }
   .continuation-sheet > .sheet-footer { position: sticky; bottom: -12px; padding-bottom: 12px; }
-}
-@media (max-width: 600px) {
   .action-sheet .move-preview .sheet-details > .muted { display: none; }
   .action-sheet .threat-count { margin-block: 6px; padding: 6px; }
   .action-sheet .threat-count p { font-size: .75rem; margin-block: 4px; }
+  .action-plan > p { margin: 4px 0; font-size: .75rem; }
+  .plan-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .plan-choices button, .preview-choice button, .preview-choice select, .move-support button {
+    min-height: 32px; padding: 4px 6px; font-size: .75rem; line-height: 1.2;
+  }
+  .move-support { margin-block: 4px; }
+  .sheet-choices .skills > strong { display: none; }
+  .sheet-choices .skills ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin: 4px 0; }
+  .sheet-choices .skills li { display: block; margin: 0; }
+  .sheet-choices .skills button { width: 100%; min-height: 32px; padding: 4px 6px; font-size: .75rem; }
+  .sheet-choices .skill-summary { display: none; }
+  .sheet-choices .skill-info { font-size: .7rem; line-height: 1.2; }
+
 }

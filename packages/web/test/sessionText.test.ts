@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { isAfterMove } from '../src/ActionsFromHere.tsx'
 import { withMovePreview } from '../src/movePreviewSession.ts'
 import { ActionPlanPanel } from '../src/ActionPlanPanel.tsx'
 import { ThreatCount, ThreatZoneToggle } from '../src/ThreatZone.tsx'
@@ -364,7 +365,7 @@ describe('phase 1.x Move preview UI', () => {
     }
     const blocked = { ...snapshot, movePreview: { ...snapshot.movePreview!, options: [{ key: 'basicAttack::B.m1', kind: 'attack' as const, skill: null, target: 'B.m1', action: { type: 'basicAttack' as const, unit: 'A.m2', target: 'B.m1' } }], reach: [{ skill: null, targets: ['B.m1'], blocked: [{ unit: 'B.m2', tile: t('b6')!, reason: 'no-line-of-sight' as const, blockedBy: ['B.m1'] }] }] } }
     const blockedPanel = renderToStaticMarkup(createElement(MovePreviewPanel, { snapshot: blocked, session: s, data }))
-    expect(blockedPanel).toMatch(/<button[^>]*>Tidewall \(ทีม B\)/)
+    expect(blockedPanel).toMatch(/<option[^>]*>Tidewall \(ทีม B\)/)
     expect(blockedPanel).toContain(th.blockedBy('Quillfox (ทีม B)', 'Tidewall (ทีม B)', false))
   })
 
@@ -668,7 +669,11 @@ describe('P1X-40 actions from the Move preview', () => {
     expect(snapshot.state).toBe(before.state)
     expect(snapshot.movePreview?.tile).toEqual(before.movePreview?.tile)
     const html = renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))
-    expect(html).toContain(th.previewOutOfReach)
+    expect(html).toContain(th.previewOutOfReach('Tamer (ทีม B)'))
+    const skill = snapshot.skills.find(button => button.fromMovePreview === 'out-of-reach')!
+    s.chooseSkill(skill.skill)
+    const refusedSkill = renderToStaticMarkup(createElement(TurnPanel, { snapshot: s.getSnapshot(), session: s, data }))
+    expect(refusedSkill).toContain(th.previewOutOfReach(data.skills[skill.skill]!.name))
   })
 
   it('uses preview availability even when a skill is unusable at the real origin; disables move-first with its hint', () => {
@@ -723,37 +728,66 @@ describe('P1X-40 actions from the Move preview', () => {
       if (choice.action.type === 'command') expect(html).toContain(th.commandOption[choice.action.option])
     }
   })
-})
 
-it('after a move with no attack, still offers Defend and the UI-only Done control', () => {
-  const s = createBattleSession(playing({ A: ['a1', 'a2', 'b1'], B: ['g7', 'g6', 'f7'] }))
-  s.selectUnit('A.m1')
-  s.previewMove(t('a3'))
-  s.confirmMove()
-  const snapshot = s.getSnapshot()
-  expect(snapshot.attackable).toHaveLength(0)
-  const html = renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))
-  expect(html).toContain(th.actionsFromHere)
-  expect(html).toContain(th.defend)
-  expect(html).toContain(th.finishUnit)
-  expect(s.getSnapshot().state).toBe(snapshot.state)
-})
+  it('after a move with no attack, still offers Defend and the UI-only Done control', () => {
+    const s = createBattleSession(playing({ A: ['a1', 'a2', 'b1'], B: ['g7', 'g6', 'f7'] }))
+    s.selectUnit('A.m1')
+    s.previewMove(t('a3'))
+    s.confirmMove()
+    const snapshot = s.getSnapshot()
+    expect(snapshot.attackable).toHaveLength(0)
+    const html = renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))
+    expect(html).toContain(th.actionsFromHere)
+    expect(html).toContain(th.defend)
+    expect(html).toContain(th.finishUnit)
+    expect(s.getSnapshot().state).toBe(snapshot.state)
+  })
 
-it('keeps actions from here open after a post-move Command that leaves the Action available', () => {
-  const s = createBattleSession(playing({ A: ['d2', 'c3', 'e2'], B: ['d7', 'c5', 'e6'] }))
-  s.endTurn()
-  s.endTurn()
-  s.selectUnit('A.tamer')
-  s.previewMove(t('d3'))
-  s.confirmMove()
-  s.chooseCommand()
-  s.input({ type: 'tapUnit', unit: 'A.m1' })
-  s.chooseCommandOption('advantage')
-  s.confirmAttack()
-  const snapshot = s.getSnapshot()
-  expect(snapshot.actions.at(-1)?.type).toBe('command')
-  expect(snapshot.movedWithoutAction).toContain('A.tamer')
-  const html = renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))
-  expect(html).toContain(th.actionsFromHere)
-  expect(html).toContain(th.finishUnit)
+  it('keeps actions from here open after a post-move Command that leaves the Action available', () => {
+    const s = createBattleSession(playing({ A: ['d2', 'c3', 'e2'], B: ['d7', 'c5', 'e6'] }))
+    s.endTurn()
+    s.endTurn()
+    s.selectUnit('A.tamer')
+    s.previewMove(t('d3'))
+    s.confirmMove()
+    s.chooseCommand()
+    s.input({ type: 'tapUnit', unit: 'A.m1' })
+    s.chooseCommandOption('advantage')
+    s.confirmAttack()
+    const snapshot = s.getSnapshot()
+    expect(snapshot.actions.at(-1)?.type).toBe('command')
+    expect(snapshot.movedWithoutAction).toContain('A.tamer')
+    const html = renderToStaticMarkup(createElement(TurnPanel, { snapshot, session: s, data }))
+    expect(html).toContain(th.actionsFromHere)
+    expect(html).toContain(th.finishUnit)
+  })
+
+  it('uses only movedWithoutAction for continuation, regardless of the action log', () => {
+    const session = createBattleSession(playing({ A: ['a1', 'c5', 'c6'], B: ['g7', 'e5', 'c2'] }))
+    session.selectUnit('A.m1')
+    const snapshot = session.getSnapshot()
+    expect(isAfterMove({ ...snapshot, movedWithoutAction: ['A.m1'], actions: [] })).toBe(true)
+    expect(isAfterMove({ ...snapshot, movedWithoutAction: [], actions: [{ type: 'move', unit: 'A.m1', to: t('d4') }] })).toBe(false)
+  })
+
+  it('gates Command on canCommand and shows each planned action only once', () => {
+    const session = createBattleSession(playing({ A: ['a1', 'c5', 'c6'], B: ['g7', 'e5', 'c2'] }))
+    session.selectUnit('A.m1')
+    const tile = session.getSnapshot().reachable.find(tile => {
+      session.previewMove(tile)
+      return session.getSnapshot().movePreview!.options.some(choice => choice.kind === 'attack')
+    })
+    expect(tile).toBeDefined()
+    const snapshot = session.getSnapshot()
+    const render = (canCommand: boolean) => renderToStaticMarkup(createElement(MovePreviewPanel, { snapshot: { ...snapshot, canCommand }, session, data }))
+    expect(render(false)).not.toContain(`>${th.command}</button>`)
+    // Trust the supplied flag, independently of the selected Unit's kind.
+    expect(render(true)).toContain(`>${th.command}</button>`)
+    const html = render(false)
+    expect(html.split(`>${th.attack}</button>`)).toHaveLength(2)
+    for (const skill of new Set(snapshot.movePreview!.options.map(choice => choice.skill).filter(skill => skill !== null))) {
+      expect(html.split(`>${data.skills[skill]!.name}</button>`)).toHaveLength(2)
+      expect(html).not.toContain(`skill-reason-${skill}`)
+    }
+  })
 })

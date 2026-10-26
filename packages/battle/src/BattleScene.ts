@@ -218,7 +218,7 @@ export class BattleScene extends Phaser.Scene {
       const spent = state.phase === 'play' && unit.side === state.sideToAct && !snapshot.canAct.includes(unit.id)
       // A running animation (Blink's fade) owns the alpha until it ends.
       const outOfPreviewReach = snapshot.movePreview != null && unit.side !== state.sideToAct &&
-        !snapshot.movePreview.reach.some(reach => reach.targets.includes(unit.id))
+        !snapshot.movePreview.reach.some(reach => reach.targets.includes(unit.id) || reach.blocked.some(blocked => blocked.unit === unit.id))
       if (!this.animating.has(unit.id)) view.container.setAlpha(spent || outOfPreviewReach ? SPENT_ALPHA : 1)
       // Units being placed are not on the Board yet, and are at full HP.
       const maxHp = state.phase === 'play' ? derivedValues(state, unit.id).maxHp : unit.hp
@@ -316,10 +316,11 @@ export class BattleScene extends Phaser.Scene {
     }
     // Attack origins and enemies come entirely from the session's Action plan data.
     const shadowTargets = snapshot.movePreview == null ? null : new Set(snapshot.movePreview.reach.flatMap(reach => reach.targets))
-    const enemies = shadowTargets !== null
-      ? snapshot.units.filter(unit => shadowTargets.has(unit.id)).map(unit => ({ unit: unit.id, tile: unit.tile, origins: [] }))
-      : snapshot.mode === 'move' ? snapshot.attackable ?? [] : []
-    const origins = snapshot.plan?.originChoices ?? enemies.flatMap(enemy => enemy.origins)
+    const enemies = snapshot.mode === 'move' ? snapshot.attackable ?? [] : []
+    const origins = snapshot.plan?.originChoices ?? (shadowTargets === null ? enemies.flatMap(enemy => enemy.origins) : [])
+    const swordTiles = shadowTargets === null ? enemies.map(enemy => enemy.tile)
+      : snapshot.movePreview!.reach.flatMap(reach => reach.targets).filter((id, index, ids) => ids.indexOf(id) === index)
+        .flatMap(id => snapshot.units.filter(unit => unit.id === id).map(unit => unit.tile))
     for (const origin of origins) {
       const centre = tileCentre(origin.tile)
       g.fillStyle(OUTLINE, 1)
@@ -329,10 +330,10 @@ export class BattleScene extends Phaser.Scene {
     }
     const markers = this.planMarkers
     markers.clear()
-    for (const enemy of enemies) {
+    for (const tile of swordTiles) {
       // A small sword in a dark badge; status icons keep their own corners.
-      const left = enemy.tile.x * TILE_SIZE + 12
-      const top = enemy.tile.y * TILE_SIZE + 2
+      const left = tile.x * TILE_SIZE + 12
+      const top = tile.y * TILE_SIZE + 2
       markers.fillStyle(OUTLINE, 1)
       markers.fillRect(left - 1, top - 1, 9, 10)
       markers.fillStyle(TARGET, 1)

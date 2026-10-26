@@ -1,6 +1,8 @@
 import { test, expect, type Page } from '@playwright/test'
 import { th } from '../src/strings.ts'
 
+declare global { interface Window { planViewSettled(): boolean } }
+
 async function tap(page: Page, tile: { x: number; y: number }) {
   const box = (await page.locator('canvas').boundingBox())!
   await page.mouse.click(box.x + (tile.x + .5) * box.width / 7, box.y + (tile.y + .5) * box.height / 7)
@@ -39,6 +41,11 @@ for (const width of [1280, 360, 375]) {
     })
     await expect(page.locator('.move-preview')).toBeVisible()
     await checkPhoneLayout(page, width)
+    if (width < 600) {
+      for (const button of await page.locator('.move-preview .sheet-choices button').all()) await expect(button).toBeInViewport({ ratio: 1 })
+      for (const selector of await page.locator('.move-preview .sheet-choices select').all()) await expect(selector).toBeInViewport({ ratio: 1 })
+      await expect(page.getByRole('button', { name: th.confirmMove, exact: true })).toBeInViewport({ ratio: 1 })
+    }
     await expect(page).toHaveScreenshot(`shadow-preview-${width}.png`, { animations: 'disabled', fullPage: width > 600 })
     const enemyTile = await page.evaluate(() => {
       const s = window.planSession.getSnapshot()
@@ -51,9 +58,8 @@ for (const width of [1280, 360, 375]) {
     expect(await page.evaluate(() => window.planSession.getSnapshot().actions.length)).toBe(start)
     await checkPhoneLayout(page, width)
     if (width < 600) {
-      const odds = (await page.locator('.preview-numbers').boundingBox())!
-      const footer = (await page.locator('.sheet-footer').boundingBox())!
-      expect(odds.y + odds.height).toBeLessThan(footer.y)
+      for (const button of await page.locator('.plan-choices button').all()) await expect(button).toBeInViewport({ ratio: 1 })
+      await expect(page.getByRole('button', { name: th.actionPlan.confirm, exact: true })).toBeInViewport({ ratio: 1 })
     }
     await expect(page).toHaveScreenshot(`shadow-plan-${width}.png`, { animations: 'disabled', fullPage: width > 600 })
     await page.getByRole('button', { name: th.cancel, exact: true }).click()
@@ -64,7 +70,7 @@ for (const width of [1280, 360, 375]) {
     await expect(page.locator('.actions-from-here')).toContainText('%')
     await checkPhoneLayout(page, width)
     // Wait for the real Move animation to complete before the static capture.
-    await page.waitForTimeout(500)
+    await page.waitForFunction(() => window.planViewSettled())
     await expect(page).toHaveScreenshot(`actions-from-here-${width}.png`, { animations: 'disabled', fullPage: width > 600 })
     const beforeDone = await page.evaluate(() => {
       const s = window.planSession.getSnapshot()
@@ -79,3 +85,24 @@ for (const width of [1280, 360, 375]) {
     expect(await page.evaluate(() => window.planSession.getSnapshot().selectedUnit)).toBeNull()
   })
 }
+
+test('desktop keeps Unit cards and End Turn reachable during Move preview and Action plan', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/action-plan.html')
+  await expect(page.locator('canvas')).toBeVisible()
+  await page.evaluate(() => {
+    const s = window.planSession
+    s.previewMove(s.getSnapshot().reachable[0]!)
+  })
+  await expect(page.locator('.sheet-unit-cards .unit-card')).toBeVisible()
+  await page.getByRole('button', { name: th.endTurn, exact: true }).click()
+  await expect(page.getByRole('alertdialog')).toBeVisible()
+  await page.getByRole('button', { name: th.keepPlaying, exact: true }).click()
+  await expect(page.locator('.move-preview')).toBeVisible()
+  await page.locator('.move-support button').filter({ hasText: th.defend }).click()
+  await expect(page.locator('.action-plan')).toBeVisible()
+  await expect(page.locator('.sheet-unit-cards .unit-card')).toBeVisible()
+  await page.getByRole('button', { name: th.endTurn, exact: true }).click()
+  await page.getByRole('button', { name: th.endTurnAnyway, exact: true }).click()
+  expect(await page.evaluate(() => window.planSession.getSnapshot().actions.at(-1)?.type)).toBe('endTurn')
+})
