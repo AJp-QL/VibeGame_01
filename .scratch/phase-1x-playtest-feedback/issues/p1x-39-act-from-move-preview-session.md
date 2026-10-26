@@ -14,7 +14,7 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** done (PR #TBD)
+**Status:** done (PR #89)
 
 - [x] ระหว่าง Move preview ทุก action ข้างบน (Move และ Blink, Hotseat ทั้งสองฝั่ง, vs AI) สร้าง plan จากช่องของเงา; ยืนยันแล้ว state เท่ากับการเดินไปช่องเงาแล้วทำ action จริง (test เทียบ)
 - [x] เป้าที่เงาไปไม่ถึง: rejection code ใหม่ เงาไม่ย้าย plan ไม่เกิด; test

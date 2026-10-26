@@ -53,7 +53,7 @@ Working state for the session that controls phase 1.x. Read this first, then `sp
 | P1X-35 | UI: Undo hide/disable + reason from session | codex | P1X-33, P1X-07 | done (PR #85) |
 | P1X-36 | Tune 9x9 Boards (balance targets) + AI approach on 9x9 | claude | — | backlog (user 2026-10-20): PR #70 (AI approach, option 3 relaxed 9x9 targets) is a draft on hold until the user confirms |
 | P1X-37 | Hide 9x9 Boards from the menu for v0.2.0 | claude | — | done (PR #73; menu offers 7x7 only) |
-| P1X-39 | Session: actions during a Move preview come from the shadow's tile | claude | — | done (PR #TBD) |
+| P1X-39 | Session: actions during a Move preview come from the shadow's tile | claude | — | done (PR #89) |
 | P1X-40 | UI: act from Move preview, phone bottom sheet, actions after a move | codex | P1X-39 | waiting |
 | P1X-41 | Release v0.2.1 + short playtest | claude | P1X-39, P1X-40 | waiting |
 
